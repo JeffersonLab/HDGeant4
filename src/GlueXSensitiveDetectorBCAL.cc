@@ -20,6 +20,8 @@
 
 #include <JANA/JApplication.h>
 
+#define USE_ENERGY_WEIGHTED_TIMES 1
+
 // Cutoff on the total number of allowed hits
 int GlueXSensitiveDetectorBCAL::MAX_HITS = 100;
 
@@ -234,7 +236,7 @@ G4bool GlueXSensitiveDetectorBCAL::ProcessHits(G4Step* step,
          cell = (*fCellsMap)[key];
       }
 
-      // Add the hit to the hits vector, maintaining strict time ordering
+      // Add the hit to the bcal truth hits list, maintaining strict time ordering
 
       int merge_hit = 0;
       std::vector<GlueXHitBCALcell::hitinfo_t>::iterator hiter;
@@ -249,20 +251,115 @@ G4bool GlueXSensitiveDetectorBCAL::ProcessHits(G4Step* step,
       }
       if (merge_hit) {
          // Use the time from the earlier hit but add the energy deposition
-         hiter->E_GeV += dEsum/GeV;
+#if USE_ENERGY_WEIGHTED_TIMES
+         hiter->t_ns = (hiter->t_ns * hiter->E_GeV + 
+                               t/ns * dEsum/GeV) /
+                       (hiter->E_GeV + dEsum/GeV);
+         hiter->zlocal_cm = (hiter->zlocal_cm * hiter->E_GeV +
+                                    xlocal[2]/cm * dEsum/GeV) /
+                            (hiter->E_GeV + dEsum/GeV);
+#else
          if (hiter->t_ns*ns > t) {
             hiter->t_ns = t/ns;
             hiter->zlocal_cm = xlocal[2]/cm;
             hiter->incidentId_ = trackinfo->GetBCALincidentID();
          }
+#endif
+         // correction factor makes shower yields match hdgeant
+         hiter->E_GeV += dEsum/GeV * 1.015;
       }
       else if ((int)cell->hits.size() < MAX_HITS) {
          // create new hit 
          hiter = cell->hits.insert(hiter, GlueXHitBCALcell::hitinfo_t());
-         hiter->E_GeV = dEsum/GeV;
+         // correction factor makes shower yields match hdgeant
+         hiter->E_GeV = dEsum/GeV * 1.015;
          hiter->t_ns = t/ns;
          hiter->zlocal_cm = xlocal[2]/cm;
          hiter->incidentId_ = trackinfo->GetBCALincidentID();
+      }
+      else {
+         G4cerr << "GlueXSensitiveDetectorBCAL::ProcessHits error: "
+             << "max hit count " << MAX_HITS << " exceeded, truncating!"
+             << G4endl;
+      }
+
+      // Add the hit to the upstream sipm hits list, with strict time ordering
+
+      double udist = MODULE_FULL_LENGTH/2 + xlocal[2];
+      double dEup = dEsum * exp(-udist/ATTENUATION_LENGTH);
+      double tup = t + udist / C_EFFECTIVE;
+      merge_hit = 0;
+      for (hiter = cell->hits.begin(); hiter != cell->hits.end(); ++hiter) {
+         if (fabs(hiter->tup_ns*ns - tup) < TWO_HIT_TIME_RESOL) {
+            merge_hit = 1;
+            break;
+         }
+         else if (hiter->tup_ns*ns > tup) {
+            break;
+         }
+      }
+      if (merge_hit) {
+         // Use the time from the earlier hit but add the energy deposition
+#if USE_ENERGY_WEIGHTED_TIMES
+         hiter->tup_ns = (hiter->tup_ns * hiter->Eup_GeV + 
+                                 tup/ns * dEup/GeV) /
+                       (hiter->Eup_GeV + dEup/GeV);
+#else
+         if (hiter->tup_ns*ns > tup) {
+            hiter->tup_ns = tup/ns;
+         }
+#endif
+         // correction factor makes shower yields match hdgeant
+         hiter->Eup_GeV += dEup/GeV * 1.015;
+      }
+      else if ((int)cell->hits.size() < MAX_HITS) {
+         // create new hit 
+         hiter = cell->hits.insert(hiter, GlueXHitBCALcell::hitinfo_t());
+         // correction factor makes shower yields match hdgeant
+         hiter->Eup_GeV = dEup/GeV * 1.015;
+         hiter->tup_ns = tup/ns;
+      }
+      else {
+         G4cerr << "GlueXSensitiveDetectorBCAL::ProcessHits error: "
+             << "max hit count " << MAX_HITS << " exceeded, truncating!"
+             << G4endl;
+      }
+
+      // Add the hit to the downstream sipm hits list, with strict time ordering
+
+      double ddist = MODULE_FULL_LENGTH/2 - xlocal[2];
+      double dEdown = dEsum * exp(-ddist/ATTENUATION_LENGTH);
+      double tdown = t + ddist / C_EFFECTIVE;
+      merge_hit = 0;
+      for (hiter = cell->hits.begin(); hiter != cell->hits.end(); ++hiter) {
+         if (fabs(hiter->tdown_ns*ns - tdown) < TWO_HIT_TIME_RESOL) {
+            merge_hit = 1;
+            break;
+         }
+         else if (hiter->tdown_ns*ns > tdown) {
+            break;
+         }
+      }
+      if (merge_hit) {
+         // Use the time from the earlier hit but add the energy deposition
+#if USE_ENERGY_WEIGHTED_TIMES
+         hiter->tdown_ns = (hiter->tdown_ns * hiter->Edown_GeV + 
+                                   tdown/ns * dEdown/GeV) /
+                       (hiter->Edown_GeV + dEdown/GeV);
+#else
+         if (hiter->tdown_ns*ns > tdown) {
+            hiter->tdown_ns = tdown/ns;
+         }
+#endif
+         // correction factor makes shower yields match hdgeant
+         hiter->Edown_GeV += dEdown/GeV * 1.015;
+      }
+      else if ((int)cell->hits.size() < MAX_HITS) {
+         // create new hit 
+         hiter = cell->hits.insert(hiter, GlueXHitBCALcell::hitinfo_t());
+         // correction factor makes shower yields match hdgeant
+         hiter->Edown_GeV = dEdown/GeV * 1.015;
+         hiter->tdown_ns = tdown/ns;
       }
       else {
          G4cerr << "GlueXSensitiveDetectorBCAL::ProcessHits error: "
@@ -340,6 +437,16 @@ void GlueXSensitiveDetectorBCAL::EndOfEvent(G4HCofThisEvent*)
             thit(0).setT(hits[ih].t_ns);
             thit(0).setZLocal(hits[ih].zlocal_cm);
             thit(0).setIncident_id(hits[ih].incidentId_);
+            if (hits[ih].Eup_GeV >= THRESH_MEV/1e3) {
+               hddm_s::BcalSiPMUpHitList uhit = cell(0).addBcalSiPMUpHits(1);
+               uhit(0).setE(hits[ih].Eup_GeV);
+               uhit(0).setT(hits[ih].tup_ns);
+            }
+            if (hits[ih].Edown_GeV >= THRESH_MEV/1e3) {
+               hddm_s::BcalSiPMDownHitList dhit = cell(0).addBcalSiPMDownHits(1);
+               dhit(0).setE(hits[ih].Edown_GeV);
+               dhit(0).setT(hits[ih].tdown_ns);
+            }
          }
       }
    }

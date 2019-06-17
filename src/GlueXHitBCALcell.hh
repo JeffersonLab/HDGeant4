@@ -42,6 +42,10 @@ class GlueXHitBCALcell : public G4VHit
       G4double t_ns;        // pulse leading-edge time (ns)
       G4double zlocal_cm;   // z coordinate of the hit in local refsys
       G4double incidentId_; // id of particle that generated this shower
+      G4double Eup_GeV;     // upstream end energy deposition (GeV)
+      G4double Edown_GeV;   // downstream end energy deposition (GeV)
+      G4double tup_ns;      // upstream end pulse leading-edge time (ns)
+      G4double tdown_ns;    // downstream end pulse leading-edge time (ns)
    };
    std::vector<hitinfo_t> hits;
 

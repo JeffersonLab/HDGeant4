@@ -403,6 +403,15 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
       }
       fHDDMistream = new hddm_s::istream(*fHDDMinfile);
       G4cout << "Opened input file: " << infile[1] << G4endl;
+      std::map<int,int> skippars;
+      if (user_opts->Find("SKIP", skippars))
+      {
+         if (skippars[1] > 0) 
+         {
+            fHDDMistream->skip(skippars[1]);
+            G4cout << "skipped first " << skippars[1] << " input events." << G4endl;
+         }
+      }
       fPrimaryGenerator = new GlueXPrimaryGenerator(fHDDMistream);
       fSourceType = SOURCE_TYPE_HDDM;
    }
@@ -505,7 +514,7 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
       }
       fGunParticle.tlogOption = 0;
       std::map<int,int> tlogpars;
-      if (user_opts->Find("PLOG", tlogpars)) {
+      if (user_opts->Find("TLOG", tlogpars)) {
          fGunParticle.tlogOption = tlogpars[1];
       }
 

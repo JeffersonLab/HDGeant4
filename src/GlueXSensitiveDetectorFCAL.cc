@@ -201,7 +201,7 @@ G4bool GlueXSensitiveDetectorFCAL::ProcessHits(G4Step* step,
          // Apply effective response corrections, depending on particle type
          int pmass = track->GetDynamicParticle()->GetMass();
          if (pmass < 1 * MeV) { // must be one of e+,e-,gamma
-            dEcorr *= 0.977;
+            dEcorr *= 0.976;
          }
          else {
             double gamma = Ein / pmass; // nothing massless here
@@ -263,11 +263,10 @@ G4bool GlueXSensitiveDetectorFCAL::ProcessHits(G4Step* step,
             }
          }
          if (merge_hit) {
-            // Use the time from the earlier hit but add the energy deposition
+            hiter->t_lightguide_ns = 
+                   (hiter->t_lightguide_ns * hiter->dE_lightguide_GeV +
+                    t/ns * dEsum/GeV) / (hiter->dE_lightguide_GeV + dEsum/GeV);
             hiter->dE_lightguide_GeV += dEsum/GeV;
-            if (hiter->t_lightguide_ns*ns > t || hiter->t_lightguide_ns == 0) {
-               hiter->t_lightguide_ns = t/ns;
-            }
          }
          else if ((int)block->hits.size() < MAX_HITS) {
             // create new hit 
