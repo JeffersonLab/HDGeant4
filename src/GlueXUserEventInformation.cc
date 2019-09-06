@@ -13,6 +13,7 @@
 #include "Randomize.hh"
 
 int GlueXUserEventInformation::fWriteNoHitEvents = 0;
+long int *GlueXUserEventInformation::fStartingSeeds = 0;
 
 GlueXUserEventInformation::GlueXUserEventInformation(hddm_s::HDDM *hddmevent)
  : fKeepEvent(true),
@@ -364,8 +365,26 @@ void GlueXUserEventInformation::AddMCtrajectoryPoint(const G4Step &step,
    }
 }
 
+void GlueXUserEventInformation::SetStartingSeeds(const long int seeds[2])
+{
+   if (fStartingSeeds)
+      delete [] fStartingSeeds;
+   fStartingSeeds = new long int[2];
+   fStartingSeeds[0] = seeds[0];
+   fStartingSeeds[1] = seeds[1];
+}
+
 void GlueXUserEventInformation::SetRandomSeeds()
 {
+   // Three sources of the starting random number seed for each
+   // event are supported, in order of high priority to low:
+   //   1) the <random> tag in the input hddm file, if any
+   //   2) seeds set by a recent call to SetStartingSeeds()
+   //   3) the current internal state of the generator
+   // In case (2), the starting seeds are used to reset the
+   // internal state of the randoms generator just once, and
+   // then never used again.
+
    hddm_s::PhysicsEventList pev = fOutputRecord->getPhysicsEvents();
    hddm_s::ReactionList rea = pev(0).getReactions();
    if (rea.size() == 0) {
@@ -377,8 +396,17 @@ void GlueXUserEventInformation::SetRandomSeeds()
       seed[0] = rnd(0).getSeed1();
       seed[1] = rnd(0).getSeed2();
       G4Random::setTheSeeds(seed);
+#if VERBOSE_RANDOMS
+      G4cout << "New event with starting seeds " 
+             << seed[0] << ", " << seed[1] << G4endl;
+#endif
    }
    else {
+      if (fStartingSeeds) {
+         G4Random::setTheSeeds(fStartingSeeds);
+         delete fStartingSeeds;
+         fStartingSeeds = 0;
+      }
       const long int *seed = G4Random::getTheSeeds();
       rnd = rea(0).addRandoms();
       rnd(0).setSeed1(seed[0]);

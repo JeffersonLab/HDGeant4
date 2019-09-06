@@ -55,6 +55,7 @@ class GlueXUserEventInformation: public G4VUserEventInformation
    void SetKeepEvent(int flag) { fKeepEvent = flag; }
    int GetKeepEvent() const { return fKeepEvent; }
 
+   static void SetStartingSeeds(const long int seeds[2]);
    void SetRandomSeeds();
    void Print() const;
 
@@ -63,6 +64,7 @@ class GlueXUserEventInformation: public G4VUserEventInformation
    }
 
    static int fWriteNoHitEvents;
+   static long int *fStartingSeeds;
 
  protected:
    hddm_s::HDDM *fOutputRecord;
