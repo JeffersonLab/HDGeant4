@@ -69,7 +69,7 @@ ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer
 DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -lANALYSIS -lBCAL -lCCAL -lCDC -lCERE -lDIRC -lFCAL \
            -lFDC -lFMWPC -lHDDM -lPAIR_SPECTROMETER -lPID -lRF \
-           -lSTART_COUNTER -lTAGGER -lTOF -lTPOL -lTRACKING \
+           -lSTART_COUNTER -lTAGGER -lTOF -lTPOL -lTRACKING -lTRD \
            -lTRIGGER -lDAQ -lTTAB -lEVENTSTORE -lKINFITTER -lTAC \
            -L$(SQLITECPP_HOME)/lib -lSQLiteCpp -L$(SQLITE_HOME)/lib -Wl,-rpath=$(SQLITE_HOME)/lib -lsqlite3 \
            -lxstream -lbz2 -lz \
@@ -196,4 +196,4 @@ $(G4BINDIR)/beamtree: src/utils/beamtree.cc
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
 
 $(G4BINDIR)/genBH: src/utils/genBH.cc
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(DANALIBS) $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
