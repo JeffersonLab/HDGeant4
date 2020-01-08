@@ -63,7 +63,7 @@ GlueXSensitiveDetectorDIRC::GlueXSensitiveDetectorDIRC(const G4String& name)
     jcalib->Get("DIRC/mc_parms", mc_parms);
     fEFFIC_SCALE = mc_parms.at("PAR0");
 
-    G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
+    G4cout << "DIRC: ALL parameters loaded from ccdb" << " effic = " << fEFFIC_SCALE << G4endl;
   }
 
   GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
