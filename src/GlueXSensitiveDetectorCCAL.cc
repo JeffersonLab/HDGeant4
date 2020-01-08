@@ -24,20 +24,20 @@
 int GlueXSensitiveDetectorCCAL::MAX_HITS = 100;
 
 // Geometry constants for the CCal
-int GlueXSensitiveDetectorCCAL::CENTRAL_ROW = 8;
-int GlueXSensitiveDetectorCCAL::CENTRAL_COLUMN = 8;
+//int GlueXSensitiveDetectorCCAL::CENTRAL_ROW = 8;
+//int GlueXSensitiveDetectorCCAL::CENTRAL_COLUMN = 8;
 double GlueXSensitiveDetectorCCAL::WIDTH_OF_BLOCK = 2.0*cm;
-double GlueXSensitiveDetectorCCAL::LENGTH_OF_BLOCK = 18.0*cm;
+double GlueXSensitiveDetectorCCAL::LENGTH_OF_BLOCK = 20.0*cm;
 
 // Light propagation parameters in Compton calorimeter
-double GlueXSensitiveDetectorCCAL::ATTENUATION_LENGTH = 60.*cm;
+double GlueXSensitiveDetectorCCAL::ATTENUATION_LENGTH = 200.*cm;
 double GlueXSensitiveDetectorCCAL::C_EFFECTIVE = 13.*cm/ns;
 
 // Minimum hit time difference for two hits on the same block
 double GlueXSensitiveDetectorCCAL::TWO_HIT_TIME_RESOL = 75.*ns;
 
 // Minimum energy deposition for a hit
-double GlueXSensitiveDetectorCCAL::THRESH_MEV = 20.;
+double GlueXSensitiveDetectorCCAL::THRESH_MEV = 5.;
 
 int GlueXSensitiveDetectorCCAL::instanceCount = 0;
 G4Mutex GlueXSensitiveDetectorCCAL::fMutex = G4MUTEX_INITIALIZER;

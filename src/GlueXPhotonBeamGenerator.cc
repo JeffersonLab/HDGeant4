@@ -539,7 +539,7 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
    }
 
    // Include information about the radiating electron, but do not track it
-   G4ParticleDefinition *ve = GlueXPrimaryGeneratorAction::GetParticle("electron");
+   G4ParticleDefinition *ve = GlueXPrimaryGeneratorAction::GetParticle("e-");
    double vpx = Ebeam * thxBeam;
    double vpy = Ebeam * thyBeam;
    double vpz = sqrt(Ebeam*Ebeam - vpx*vpx - vpy*vpy);

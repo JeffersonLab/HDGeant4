@@ -154,7 +154,13 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
    int plane = GetIdent("plane", touch);
    int column = GetIdent("column", touch);
    int barNo = GetIdent("row", touch);
-   barNo = (barNo > 44)? barNo - 23 : barNo;
+   int barIndex = (column < 2)? barNo : GetIdent("paired_row", touch);
+   if (barIndex < 1) {
+      G4cerr << "GlueXSensitiveDetectorFTOF::ProcessHits error - "
+             << "hdds geometry for FTOF is missing paired_row identifier, "
+             << "cannot continue!" << G4endl;
+      exit(1);
+   }
    G4Track *track = step->GetTrack();
    G4int trackID = track->GetTrackID();
    int pdgtype = track->GetDynamicParticle()->GetPDGcode();
@@ -191,10 +197,10 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
    // Post the hit to the hits map, ordered by plane,bar,end index
 
    if (dEsum > 0) {
-      int key = GlueXHitFTOFbar::GetKey(plane, barNo);
+      int key = GlueXHitFTOFbar::GetKey(plane, barIndex);
       GlueXHitFTOFbar *counter = (*fBarHitsMap)[key];
       if (counter == 0) {
-         GlueXHitFTOFbar newcounter(plane, barNo);
+         GlueXHitFTOFbar newcounter(plane, barIndex);
          fBarHitsMap->add(key, newcounter);
          counter = (*fBarHitsMap)[key];
       }

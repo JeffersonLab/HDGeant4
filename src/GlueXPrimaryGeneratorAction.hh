@@ -21,6 +21,7 @@
 #include "GlueXPrimaryGenerator.hh"
 #include "G4ParticleDefinition.hh"
 #include "G4ParticleTable.hh"
+#include "G4IonTable.hh"
 #include "G4AutoLock.hh"
 #include "GlueXParticleGun.hh"
 #include "G4Event.hh"
@@ -155,15 +156,5 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    vector<G4ThreeVector> FDTHs_InHall;
 
 };
-
-inline G4ParticleDefinition *GlueXPrimaryGeneratorAction::GetParticle(int PDGtype)
-{
-   return fParticleTable->FindParticle(PDGtype);
-}
-
-inline G4ParticleDefinition *GlueXPrimaryGeneratorAction::GetParticle(const G4String &name)
-{
-   return fParticleTable->FindParticle(name);
-}
 
 #endif

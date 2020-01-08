@@ -23,6 +23,7 @@
 #include <G4UImanager.hh>
 #include <G4Timer.hh>
 #include <G4LogicalVolumeStore.hh>
+#include <G4HadronicProcessStore.hh>
 
 #ifdef G4VIS_USE
 #include <G4VisExecutive.hh>
@@ -151,7 +152,7 @@ int main(int argc,char** argv)
 #else
    G4RunManager runManager;
 #endif
-   runManager.SetVerboseLevel(3);
+   runManager.SetVerboseLevel(0);
 
    // Let user turn off geometry optimization for faster startup
    // (and slower running)
@@ -184,6 +185,8 @@ int main(int argc,char** argv)
    // Physics process initialization
    GlueXPhysicsList *physicslist = new GlueXPhysicsList();
    runManager.SetUserInitialization(physicslist);
+   G4HadronicProcessStore *pstore = G4HadronicProcessStore::Instance();
+   pstore->SetVerbose(0);
 
    // User actions initialization
    GlueXUserActionInitialization *userinit;

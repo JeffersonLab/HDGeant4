@@ -31,6 +31,7 @@ class GlueXPhysicsList: public G4VModularPhysicsList
                     G4int verbosity=0);
    virtual ~GlueXPhysicsList();
 
+   virtual void ConstructParticle();
    virtual void ConstructProcess();
    virtual void SetCuts();
 

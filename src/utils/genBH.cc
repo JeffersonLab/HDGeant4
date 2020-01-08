@@ -38,7 +38,7 @@
 //     these weights.
 //
 
-#include <HDDM/hddm_s.hpp>
+#include <HDDM/hddm_mc_s.hpp>
 
 #include <CobremsGeneration.hh>
 #include <TPhoton.h>

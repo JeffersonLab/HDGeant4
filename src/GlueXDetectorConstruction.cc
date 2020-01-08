@@ -361,7 +361,9 @@ void GlueXDetectorConstruction::ConstructSDandField()
          }
          iter->second->SetSensitiveDetector(ccalHandler);
       }
-      else if (volname == "FTOC" || volname == "FTOX" || volname == "FTOH") {
+      else if (volname == "FTOC" || volname == "FTOX" || 
+               volname == "FTOH" || volname == "FTOL")
+      {
          if (ftofHandler == 0) {
             ftofHandler = new GlueXSensitiveDetectorFTOF("ftof");
             SDman->AddNewDetector(ftofHandler);

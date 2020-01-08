@@ -134,6 +134,19 @@ GlueXPhysicsList::GlueXPhysicsList(const GlueXDetectorConstruction *geometry,
 GlueXPhysicsList::~GlueXPhysicsList()
 {}
 
+void GlueXPhysicsList::ConstructParticle()
+{
+   G4VModularPhysicsList::ConstructParticle();
+#if VERBOSE_PARTICLES
+   GetParticleIterator()->reset();
+   while ( (*GetParticleIterator())() ) {
+      G4ParticleDefinition* particle = GetParticleIterator()->value();
+      G4String particleName = particle->GetParticleName();
+      G4cout << "*** particle type " <<  particleName << G4endl;
+   }
+#endif
+}
+
 void GlueXPhysicsList::ConstructProcess()
 {
    // Read special cuts from the user options file
@@ -253,7 +266,7 @@ void GlueXPhysicsList::ConstructProcess()
          else
             continue;
       }
-      else if (particleName == "muon-" || particleName == "muon+") {
+      else if (particleName == "mu-" || particleName == "mu+") {
          if (KEcut_muon > 0) {
             G4UserLimits *mlimits = new G4UserLimits();
             mlimits->SetUserMaxTime(tcut);
@@ -265,6 +278,9 @@ void GlueXPhysicsList::ConstructProcess()
          }
          else
             continue;
+      }
+      else if (particleName == "GenericIon") {
+         // mgr->DumpInfo();
       }
       else {
          continue;

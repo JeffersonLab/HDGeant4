@@ -475,7 +475,7 @@ int HddsG4Builder::createSolid(DOMElement* el, Refsys& ref)
             G4OpticalSurface *surface = new G4OpticalSurface(S(nameS));
             surface->SetType(dielectric_metal);
             surface->SetModel(glisur);
-	    surface->SetMaterialPropertiesTable(mpt);
+            surface->SetMaterialPropertiesTable(mpt);
             if (poli_vector != 0) {
                double polish = poli_vector->GetMaxValue();
                surface->SetPolish(polish);
@@ -492,7 +492,7 @@ int HddsG4Builder::createSolid(DOMElement* el, Refsys& ref)
             G4OpticalSurface *surface = new G4OpticalSurface(S(nameS));
             surface->SetType(dielectric_dielectric);
             surface->SetModel(glisur);
-	    surface->SetMaterialPropertiesTable(mpt);
+            surface->SetMaterialPropertiesTable(mpt);
             if (poli_vector != 0) {
                double polish = poli_vector->GetMaxValue();
                surface->SetPolish(polish);

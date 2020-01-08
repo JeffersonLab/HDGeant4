@@ -8,6 +8,7 @@
 *.o
 *.so
 src/G4fixes
+src/G4debug
 .clone_done
 .link_to_fixes_done
 .make_done

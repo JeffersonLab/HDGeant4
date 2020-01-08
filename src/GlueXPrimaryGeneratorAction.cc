@@ -12,6 +12,8 @@
 
 #include "G4Event.hh"
 #include "G4ParticleTable.hh"
+#include "G4ProcessManager.hh"
+#include "G4IonTable.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 
@@ -1105,6 +1107,58 @@ int GlueXPrimaryGeneratorAction::ConvertGeant3ToPdg(int Geant3type)
       case 48  : return 0;        // geantino (no PDG type)
       case 49  : return 1000020030; // He3 ion
       case 50  : return 0;        // Cerenkov photon (no PDG type)
+      case 61  : return 1000030060;  // Li6
+      case 62  : return 1000030070;  // Li7
+      case 63  : return 1000040070;  // Be7
+      case 64  : return 1000040090;  // Be9
+      case 65  : return 1000050100;  // B10
+      case 66  : return 1000050110;  // B11
+      case 67  : return 1000060120;  // C12
+      case 68  : return 1000070140;  // N14
+      case 69  : return 1000080160;  // O16
+      case 70  : return 1000090190;  // F19
+      case 71  : return 1000100200;  // Ne20
+      case 72  : return 1000110230;  // Na23
+      case 73  : return 1000120240;  // Mg24
+      case 74  : return 1000130270;  // Al27
+      case 75  : return 1000140280;  // Si28
+      case 76  : return 1000150310;  // P31
+      case 77  : return 1000160320;  // S32
+      case 78  : return 1000170350;  // Cl35
+      case 79  : return 1000180360;  // Ar36
+      case 80  : return 1000190390;  // K39
+      case 81  : return 1000200400;  // Ca40
+      case 82  : return 1000210450;  // Sc45
+      case 83  : return 1000220480;  // Ti48
+      case 84  : return 1000230510;  // V51
+      case 85  : return 1000240520;  // Cr52
+      case 86  : return 1000250550;  // Mn55
+      case 87  : return 1000260560;  // Fe56
+      case 88  : return 1000270590;  // Co59
+      case 89  : return 1000280580;  // Ni58
+      case 90  : return 1000290630;  // Cu63
+      case 91  : return 1000300640;  // Zn64
+      case 92  : return 1000320740;  // Ge74
+      case 93  : return 1000340800;  // Se80
+      case 94  : return 1000360840;  // Kr84
+      case 95  : return 1000380880;  // Sr88
+      case 96  : return 1000400900;  // Zr90
+      case 97  : return 1000420980;  // Mo98
+      case 98  : return 1000461060;  // Pd106
+      case 99  : return 1000481140;  // Cd114
+      case 100 : return 1000501200;  // Sn120
+      case 101 : return 1000541320;  // Xe132
+      case 102 : return 1000561380;  // Ba138
+      case 103 : return 1000581400;  // Ce140
+      case 104 : return 1000621520;  // Sm152
+      case 105 : return 1000661640;  // Dy164
+      case 106 : return 1000701740;  // Yb174
+      case 107 : return 1000741840;  // W184
+      case 108 : return 1000781940;  // Pt194
+      case 109 : return 1000791970;  // Au197
+      case 110 : return 1000802020;  // Hg202
+      case 111 : return 1000822080;  // Pb208
+      case 112 : return 1000922380;  // U238
 
       // These are "private" Geant3 types that were defined in hdgeant
       case 33  : return 223;      // omega(782)
@@ -1120,19 +1174,19 @@ int GlueXPrimaryGeneratorAction::ConvertGeant3ToPdg(int Geant3type)
       case 43  : return -213;     // rho(770)-
       case 44  : return 113;      // rho(770)0
 
-      case 82  : return 2224;     // Delta++
-      case 83  : return 443;      // Jpsi
-      case 84  : return 441;      // Eta_c
-      case 85  : return 10441;    // Chi_c0
-      case 86  : return 20443;    // Chi_c1
-      case 87  : return 445;      // Chi_c2
-      case 88  : return 100443;   // Psi2s
-      case 89  : return 421;      // D0
-      case 90  : return 411;      // D+
-      case 91  : return 10421;    // Dstar0
-      case 92  : return 10411;    // Dstar+
-      case 93  : return 4022;     // Lambda_c+
-      case 94  : return -421;     // anti-D0
+      case 182  : return 2224;    // Delta++
+      case 183  : return 443;     // Jpsi
+      case 184  : return 441;     // Eta_c
+      case 185  : return 10441;   // Chi_c0
+      case 186  : return 20443;   // Chi_c1
+      case 187  : return 445;     // Chi_c2
+      case 188  : return 100443;  // Psi2s
+      case 189  : return 421;     // D0
+      case 190  : return 411;     // D+
+      case 191  : return 10421;   // Dstar0
+      case 192  : return 10411;   // Dstar+
+      case 193  : return 4022;    // Lambda_c+
+      case 194  : return -421;    // anti-D0
 
       case 163  : return 9000111; // a0(980)
       case 164  : return 9010221; // f0(980)
@@ -1205,6 +1259,58 @@ int GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(int PDGtype)
       case 1000010030 : return 46;    // triton
       case 1000020040 : return 47;    // alpha
       case 1000020030 : return 49;    // He3
+      case 1000030060 : return 61;    // Li6
+      case 1000030070 : return 62;    // Li7
+      case 1000040070 : return 63;    // Be7
+      case 1000040090 : return 64;    // Be9
+      case 1000050100 : return 65;    // B10
+      case 1000050110 : return 66;    // B11
+      case 1000060120 : return 67;    // C12
+      case 1000070140 : return 68;    // N14
+      case 1000080160 : return 69;    // O16
+      case 1000090190 : return 70;    // F19
+      case 1000100200 : return 71;    // Ne20
+      case 1000110230 : return 72;    // Na23
+      case 1000120240 : return 73;    // Mg24
+      case 1000130270 : return 74;    // Al27
+      case 1000140280 : return 75;    // Si28
+      case 1000150310 : return 76;    // P31
+      case 1000160320 : return 77;    // S32
+      case 1000170350 : return 78;    // Cl35
+      case 1000180360 : return 79;    // Ar36
+      case 1000190390 : return 80;    // K39
+      case 1000200400 : return 81;    // Ca40
+      case 1000210450 : return 82;    // Sc45
+      case 1000220480 : return 83;    // Ti48
+      case 1000230510 : return 84;    // V51
+      case 1000240520 : return 85;    // Cr52
+      case 1000250550 : return 86;    // Mn55
+      case 1000260560 : return 87;    // Fe56
+      case 1000270590 : return 88;    // Co59
+      case 1000280580 : return 89;    // Ni58
+      case 1000290630 : return 90;    // Cu63
+      case 1000300640 : return 91;    // Zn64
+      case 1000320740 : return 92;    // Ge74
+      case 1000340800 : return 93;    // Se80
+      case 1000360840 : return 94;    // Kr84
+      case 1000380880 : return 95;    // Sr88
+      case 1000400900 : return 96;    // Zr90
+      case 1000420980 : return 97;    // Mo98
+      case 1000461060 : return 98;    // Pd106
+      case 1000481140 : return 99;    // Cd114
+      case 1000501200 : return 100;   // Sn120
+      case 1000541320 : return 101;   // Xe132
+      case 1000561380 : return 102;   // Ba138
+      case 1000581400 : return 103;   // Ce140
+      case 1000621520 : return 104;   // Sm152
+      case 1000661640 : return 105;   // Dy164
+      case 1000701740 : return 106;   // Yb174
+      case 1000741840 : return 107;   // W184
+      case 1000781940 : return 108;   // Pt194
+      case 1000791970 : return 109;   // Au197
+      case 1000802020 : return 110;   // Hg202
+      case 1000822080 : return 111;   // Pb208
+      case 1000922380 : return 112;   // U238
 
       // These are "private" Geant3 types that were defined in hdgeant
       case 223        : return 33;    // omega(782)
@@ -1214,19 +1320,19 @@ int GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(int PDGtype)
       case -213       : return 43;    // rho(770)-
       case 113        : return 44;    // rho(770)0
 
-      case 2224       : return 82;    // Delta++
-      case 443        : return 83;    // Jpsi
-      case 441        : return 84;    // Eta_c
-      case 10441      : return 85;    // Chi_c0
-      case 20443      : return 86;    // Chi_c1
-      case 445        : return 87;    // Chi_c2
-      case 100443     : return 88;    // Psi2s
-      case 421        : return 89;    // D0
-      case 411        : return 90;    // D+
-      case 10421      : return 91;    // Dstar0
-      case 10411      : return 92;    // Dstar+
-      case 4022       : return 93;    // Lambda_c+
-      case -421       : return 94;    // anti-D0
+      case 2224       : return 182;    // Delta++
+      case 443        : return 183;    // Jpsi
+      case 441        : return 184;    // Eta_c
+      case 10441      : return 185;    // Chi_c0
+      case 20443      : return 186;    // Chi_c1
+      case 445        : return 187;    // Chi_c2
+      case 100443     : return 188;    // Psi2s
+      case 421        : return 189;    // D0
+      case 411        : return 190;    // D+
+      case 10421      : return 191;    // Dstar0
+      case 10411      : return 192;    // Dstar+
+      case 4022       : return 193;    // Lambda_c+
+      case -421       : return 194;    // anti-D0
 
       case 9000111    : return 163;   // a0(980)
       case 9010221    : return 164;   // f0(980)
@@ -1260,4 +1366,33 @@ double GlueXPrimaryGeneratorAction::GetMassPDG(int PDGtype)
 double GlueXPrimaryGeneratorAction::GetMass(int Geant3Type)
 {
    return GetMassPDG(ConvertGeant3ToPdg(Geant3Type));
+}
+
+G4ParticleDefinition *GlueXPrimaryGeneratorAction::GetParticle(int PDGtype)
+{
+   G4ParticleDefinition *p = fParticleTable->FindParticle(PDGtype);
+   if (p==0) {
+      if (PDGtype > 1000000000) {
+         p = fParticleTable->GetIonTable()->GetIon(PDGtype);
+      }
+      else {
+         G4cout << "unknown particle type " << PDGtype
+                << ", substituting geantino in its place!"
+                << G4endl;
+         p = fParticleTable->FindParticle("geantino");
+      }
+   }
+   return p;
+}
+
+G4ParticleDefinition *GlueXPrimaryGeneratorAction::GetParticle(const G4String &name)
+{
+   G4ParticleDefinition *p = fParticleTable->FindParticle(name);
+   if (p==0) {
+      G4cout << "unknown particle type " << name
+             << ", substituting geantino in its place!"
+             << G4endl;
+      p = fParticleTable->FindParticle("geantino");
+   }
+   return p;
 }
