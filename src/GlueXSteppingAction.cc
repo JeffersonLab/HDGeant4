@@ -107,6 +107,14 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       }
    }
 
+   // Kill reflections inside DIRC's PMT
+   if(true) {
+     if (pvol && (pvol->GetName() == "BWPV")) {
+       track->SetTrackStatus(fStopAndKill);
+     }
+   }
+
+
    // Post new vertices to the MC record for primary particle decays
    if (trackinfo) {
       int primeID = trackinfo->GetGlueXTrackID();
