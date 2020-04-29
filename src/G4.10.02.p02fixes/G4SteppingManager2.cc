@@ -260,7 +260,11 @@ void G4SteppingManager::GetProcessNumber()
        }
 
     	  // Transportation is assumed to be the last process in the vector
-       if(kp == MAXofAlongStepLoops-1)
+       // This is a bad assumption, should actually check! -rtj-
+       //if(kp == MAXofAlongStepLoops-1)
+	//  fStepStatus = fGeomBoundary;
+       G4ProcessType ptype = fCurrentProcess->GetProcessType();
+       if (ptype == fTransportation || ptype == fParallel)
 	  fStepStatus = fGeomBoundary;
      }
 
@@ -341,6 +345,7 @@ void G4SteppingManager::InvokeAtRestDoItProcs()
          = fCurrentProcess->AtRestDoIt( *fTrack, *fStep);
                                
        // Set the current process as a process which defined this Step length
+       // Do not select a ParallelWorld process as the defining AtRestProc
        if (fCurrentProcess->GetProcessType() != fParallel)
           fStep->GetPostStepPoint()
               ->SetProcessDefinedStep(fCurrentProcess);
