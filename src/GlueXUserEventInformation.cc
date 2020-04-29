@@ -12,6 +12,73 @@
 #include "HddsG4Builder.hh"
 #include "Randomize.hh"
 
+#include <map>
+std::map<G4String, G4String> process_4letter_abbrev = {
+    {"CoupledTransportation", "geom"},
+    {"ParallelWorld1", "geom"},
+    {"phot", "peEf"},
+    {"compt", "Cmpt"},
+    {"conv", "conv"},
+    {"msc", "msca"},
+    {"eIoni", "ioni"},
+    {"eBrem", "brem"},
+    {"CoulombScat", "Coul"},
+    {"annihil", "anni"},
+    {"muIoni", "ioni"},
+    {"muBrems", "brem"},
+    {"muPairProd", "pair"},
+    {"hIoni", "ioni"},
+    {"hBrems", "brem"},
+    {"hPairProd", "pair"},
+    {"ionIoni", "ioni"},
+    {"photonNuclear", "nucl"},
+    {"electronNuclear", "nucl"},
+    {"positronNuclear", "nucl"},
+    {"muonNuclear", "nucl"},
+    {"Decay", "dcay"},
+    {"hadElastic", "hEla"},
+    {"neutronInelastic", "inel"},
+    {"nCapture", "ncap"},
+    {"protonInelastic", "inel"},
+    {"pi+Inelastic", "inel"},
+    {"pi-Inelastic", "inel"},
+    {"kaon+Inelastic", "inel"},
+    {"kaon-Inelastic", "inel"},
+    {"kaon0LInelastic", "inel"},
+    {"kaon0SInelastic", "inel"},
+    {"lambdaInelastic", "inel"},
+    {"anti-lambdaInelastic", "inel"},
+    {"sigma-Inelastic", "inel"},
+    {"anti_sigma-Inelastic", "inel"},
+    {"sigma+Inelastic", "inel"},
+    {"anti_sigma+Inelastic", "inel"},
+    {"xi-Inelastic", "inel"},
+    {"anti_xi-Inelastic", "inel"},
+    {"xi0Inelastic", "inel"},
+    {"anti_xi0Inelastic", "inel"},
+    {"anti_omega-omega-Inelastic", "inel"},
+    {"anti_protonInelastic", "inel"},
+    {"anti_neutronInelastic", "inel"},
+    {"anti_deuteronInelastic", "inel"},
+    {"anti_tritonInelastic", "inel"},
+    {"anti_He3Inelastic", "inel"},
+    {"anti_alphaInelastic", "inel"},
+    {"hFritiofCaptureAtRest", "capt"},
+    {"hBertiniCaptureAtRest", "capt"},
+    {"muMinusCaptureAtRest", "capt"},
+    {"dInelastic", "inel"},
+    {"tInelastic", "inel"},
+    {"He3Inelastic", "inel"},
+    {"alphaInelastic", "inel"},
+    {"ionInelastic", "inel"},
+    {"nKiller", "kill"},
+    {"OpAbsorption", "abso"},
+    {"OpBoundary", "boun"},
+    {"Cerenkov", "ckov"},
+    {"TPolBeamConversion", "trip"},
+    {"User Limit", "user"}
+};
+
 int GlueXUserEventInformation::fWriteNoHitEvents = 0;
 long int *GlueXUserEventInformation::fStartingSeeds = 0;
 
@@ -301,39 +368,22 @@ void GlueXUserEventInformation::AddMCtrajectoryPoint(const G4Step &step,
        (save_option == 4 && (isPrimary || isDead)) ||
        (save_option == 5))
    {
-      G4ProcessType mechtype(xout->GetProcessDefinedStep()->GetProcessType());
       int mech4c[2];
-      switch (mechtype) {
-         case fTransportation:
-            snprintf((char*)mech4c, 5, "GEOM");
-            break;
-         case fElectromagnetic:
-            snprintf((char*)mech4c, 5, "ELEC");
-            break;
-         case fOptical:
-            snprintf((char*)mech4c, 5, "OPTI");
-            break;
-         case fHadronic:
-            snprintf((char*)mech4c, 5, "HADR");
-            break;
-         case fPhotolepton_hadron:
-            snprintf((char*)mech4c, 5, "PHOT");
-            break;
-         case fDecay:
-            snprintf((char*)mech4c, 5, "DCAY");
-            break;
-         case fGeneral:
-            snprintf((char*)mech4c, 5, "GENE");
-            break;
-         case fParameterisation:
-            snprintf((char*)mech4c, 5, "PARA");
-            break;
-         case fUserDefined:
-            snprintf((char*)mech4c, 5, "USER");
-            break;
-         default:
-            snprintf((char*)mech4c, 5, "STOP");
-            break;
+      G4String procname("User Limit");
+      const G4VProcess *proc = step.GetPostStepPoint()->GetProcessDefinedStep();
+      if (proc != 0) {
+         procname = proc->GetProcessName();
+      }
+      std::map<G4String, G4String>::iterator iproc;
+      iproc = process_4letter_abbrev.find(procname);
+      if (iproc != process_4letter_abbrev.end()) {
+          snprintf((char*)mech4c, 5, iproc->second.c_str());
+      }
+      else {
+          G4cerr << "GlueXUserEventInformation::AddMCTrajectoryPoint error - "
+                 << "unrecognized process \"" << procname << "\""
+                 << " encountered, reporting ????" << G4endl;
+          snprintf((char*)mech4c, 5, "????");
       }
       G4ThreeVector mom(xout->GetMomentum());
       G4ThreeVector pos(xout->GetPosition());
@@ -404,7 +454,7 @@ void GlueXUserEventInformation::SetRandomSeeds()
    else {
       if (fStartingSeeds) {
          G4Random::setTheSeeds(fStartingSeeds);
-         delete fStartingSeeds;
+         delete [] fStartingSeeds;
          fStartingSeeds = 0;
       }
       const long int *seed = G4Random::getTheSeeds();

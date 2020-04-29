@@ -26,7 +26,6 @@ CPPFLAGS += -I./src/G4debug
 CPPFLAGS += -I$(HALLD_RECON_HOME)/$(BMS_OSNAME)/include
 CPPFLAGS += -I$(JANA_HOME)/include
 CPPFLAGS += -I$(shell root-config --incdir)
-CPPFLAGS += -I/usr/include/Qt
 CPPFLAGS += $(shell python-config --includes)
 CPPFLAGS += -Wno-unused-parameter -Wno-unused-but-set-variable
 CPPFLAGS += -DUSE_SSE2 -std=c++11
@@ -35,6 +34,7 @@ CPPFLAGS += -DUSE_SSE2 -std=c++11
 #CPPFLAGS += -DCHECK_OVERLAPS_MM=1e-6
 CPPFLAGS += -DBYPASS_DRAWING_CLIPPED_VOLUMES
 CPPFLAGS += -DLAYERED_GEOMETRY_PICKING_EXTENSIONS
+CPPFLAGS += -DREDUCE_OPTIMIZATION_OF_CDC=1
 #CPPFLAGS += -DG4UI_USE_EXECUTIVE
 CPPFLAGS += -DG4VIS_BUILD_OPENGL_DRIVER
 CPPFLAGS += -DG4VIS_BUILD_OPENGLX_DRIVER
@@ -46,13 +46,9 @@ CPPFLAGS += -DG4MULTITHREADED
 #CPPFLAGS += -DDEBUG_PLACEMENT
 #CPPFLAGS += -DDEBUG_SECTIONPLANE
 #CPPFLAGS += -DDEBUG_SECTIONPLANE_ZAVE
-#CPPFLAGS += -DG4VERSION_10_04_OR_LATER=1
 ifneq (, $(wildcard $(HALLD_RECON_HOME)/src/libraries/DIRC/DDIRCPmtHit.*))
 	CPPFLAGS += -DDIRCTRUTHEXTRA
 endif
-
-# If you want to build against Geant4.10.03 or greater, you will need this line uncommented
-#CPPFLAGS += -DG4VUSERPHYSICSLIST_HAS_GETPARTICLEITERATOR
 
 G4LIB_USE_GDML = 1
 CPPVERBOSE = 1
@@ -64,7 +60,7 @@ G4fixes_sources := $(wildcard src/G4fixes/*.cc)
 G4debug_sources := $(wildcard src/G4debug/*.cc)
 HDDS_sources := $(HDDS_HOME)/XString.cpp $(HDDS_HOME)/XParsers.cpp $(HDDS_HOME)/hddsCommon.cpp
 
-ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer
+ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer -ltbb
 
 DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -lANALYSIS -lBCAL -lCCAL -lCDC -lCERE -lTRD -lDIRC -lFCAL \
@@ -106,7 +102,7 @@ cobrems: $(G4TMPDIR)/libcobrems.so
 hdds:  $(G4TMPDIR)/libhdds.so
 g4fixes: $(G4TMPDIR)/libG4fixes.so
 
-CXXFLAGS = -O4 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
+CXXFLAGS = -std=c++11 -O4 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
 
 HDDSDIR := $(G4TMPDIR)/hdds
 G4FIXESDIR := $(G4TMPDIR)/G4fixes

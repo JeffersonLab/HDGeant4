@@ -17,6 +17,7 @@
 
 #include <DANA/DApplication.h>
 #include <unistd.h>
+#include <sstream>
 
 #include <G4MTRunManager.hh>
 #include <G4RunManager.hh>
@@ -24,6 +25,7 @@
 #include <G4Timer.hh>
 #include <G4LogicalVolumeStore.hh>
 #include <G4HadronicProcessStore.hh>
+#include <G4StateManager.hh>
 
 #ifdef G4VIS_USE
 #include <G4VisExecutive.hh>
@@ -43,6 +45,7 @@ void usage()
           << "Usage: hdgeant4 [options] [<batch.mac>]" << G4endl
           << " where options include:" << G4endl
           << "    -v : open a graphics window for visualization" << G4endl
+          << "    -i : start the simulation in interactive mode" << G4endl
           << "    -tN : start N worker threads, default 1" << G4endl
           << "    -rN : set run to N, default taken from control.in" << G4endl
           << G4endl;
@@ -62,9 +65,10 @@ int main(int argc,char** argv)
 
    // Interpret special command-line arguments
    int use_visualization = 0;
+   int interactive_mode = 0;
    int worker_threads = 1;
    int c;
-   while ((c = getopt(argc, argv, "vt:r:")) != -1) {
+   while ((c = getopt(argc, argv, "vit:r:")) != -1) {
       if (c == 'v') {
          use_visualization = 1;
       }
@@ -73,6 +77,9 @@ int main(int argc,char** argv)
       }
       else if (c == 'r') {
          run_number = atoi(optarg);
+      }
+      else if (c == 'i') {
+         interactive_mode = 1;
       }
       else {
          usage();
@@ -172,7 +179,8 @@ int main(int argc,char** argv)
    }
    runManager.SetUserInitialization(geometry);
 
-#if REDUCE_OPTIMIZATION_OF_CDC
+#if G4VERSION_NUMBER >= 1030
+# if REDUCE_OPTIMIZATION_OF_CDC
    // Save some time at startup by reducing the level
    // of optimization of the CDC geometry
    G4LogicalVolumeStore *volumes = G4LogicalVolumeStore::GetInstance();
@@ -180,6 +188,7 @@ int main(int argc,char** argv)
    if (logvol) {
       logvol->SetSmartless(0.5);
    }
+# endif
 #endif
 
    // Physics process initialization
@@ -197,8 +206,6 @@ int main(int argc,char** argv)
    std::cout << "Initializing the Geant4 kernel..." << std::endl;
    runManager.Initialize();
    
-   //describe("DCLS");
-
    // Initialize graphics (option -v)
    G4VisManager* visManager = 0;
    if (use_visualization) {
@@ -233,9 +240,18 @@ int main(int argc,char** argv)
       UIterm.SessionStart();
 #endif
    }
-   else {    // interactive mode without visualization
+   else if (interactive_mode) {    // interactive mode without visualization
       G4UIterminal UIterm(new G4UItcsh());
       UIterm.SessionStart();
+   }
+   else {
+      std::map<int, int> trigopt;
+      if (opts.Find("TRIG", trigopt) && trigopt[1] > 0) {
+         UImanager->ApplyCommand("/control/suppressAbortion 2");
+         std::stringstream command;
+         command << "/run/beamOn " << trigopt[1];
+         UImanager->ApplyCommand(command.str());
+      }
    }
 
    double nsim = GlueXPrimaryGeneratorAction::GetInstance()->getEventCount();

@@ -371,6 +371,9 @@ class BooleanProcessor {
   static int get_shift(); //G.Barrand
   static void set_shift(int a_shift); //G.Barrand
   static int get_num_shift(); //G.Barrand
+
+  int verbosity = 0;
+  void set_verbose(int level) {verbosity = level;}
 };
 
 inline void ExtFace::invert()
@@ -963,6 +966,11 @@ void BooleanProcessor::testFaceVsFace(int iface1, int iface2)
   ExtEdge edge1, edge2;
   int     irep1, irep2;
 
+  if (verbosity > 1) {
+    G4cerr << "testFaceVsFace: testing iface1=" << iface1
+           << " against iface2=" << iface2 << std::endl;
+  }
+
   //   M I N - M A X
 
  {const ExtFace& face_1 = faces[iface1]; //G.Barrand : optimize
@@ -1001,7 +1009,9 @@ void BooleanProcessor::testFaceVsFace(int iface1, int iface2)
 
   //   F I N D   I N T E R S E C T I O N   P A R T
 
-  if (testEdgeVsEdge(edge1, edge2) == 0) return;
+  if (testEdgeVsEdge(edge1, edge2) == 0) {
+    return;
+  }
 
   //   C O N S I D E R   D I F F E R E N T   C A S E S  
 
@@ -1064,7 +1074,7 @@ void BooleanProcessor::assembleFace(int what, int iface)
 
 #define INSERT_EDGE_TO_THE_LIST(A) \
 *ilink = A; ilink = &edges[A].inext; *ilink = 0
-
+ 
   ExtFace& face = faces[iface]; //G.Barrand : optimize.
   ilink = &ihead;
   for(;;) {
@@ -2133,13 +2143,6 @@ HepPolyhedron BooleanProcessor::execute(int op,
     { -31,  23, -17}
   };           
 
-/*
-  G4cerr << "BooleanProcessor::execute : ++++++++++++++++++++++"
-            << a.getName().getString()
-            << b.getName().getString()
-            << G4endl;
-*/
-
   //   I N I T I A T E   P R O C E S S O R
 
   processor_error = 0;
@@ -2198,13 +2201,12 @@ HepPolyhedron BooleanProcessor::execute(int op,
 
   //   W O R K A R O U N D   T O   A V O I D   I E   A N D   E E
           
-/*
 #define PROCESSOR_ERROR(a_what) \
-  G4cerr << "BooleanProcessor: boolean operation problem (" << a_what \
-            << "). Try again with other shifts."\
-            << G4endl;
-*/
-#define PROCESSOR_ERROR(a_what)
+  if (verbosity > 0) { \
+    G4cerr << "BooleanProcessor: boolean operation problem (" << a_what \
+           << "). Try again with other shifts."\
+           << G4endl; \
+  }
 
   unsigned int try_count = 1;
   while(true) { //G.Barrand
@@ -2483,6 +2485,7 @@ BooleanProcessor::draw_contour(int i1col, int i2col, int ihead) {
   int i; 
   std::cin >> i; 
 }
+*/
 
 //--------------------------------------------------------------------
 void
@@ -2560,7 +2563,6 @@ BooleanProcessor::print_edge(int iedge) {
        << edges[i].ivis   << ", "
        << edges[i].inext  << G4endl;
 }
-*/
 
 void BooleanProcessor::dump() {//G.Barrand
   unsigned int number = nodes.size();

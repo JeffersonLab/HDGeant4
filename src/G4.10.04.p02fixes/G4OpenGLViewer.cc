@@ -509,10 +509,12 @@ G4String G4OpenGLViewer::Pick(GLdouble x, GLdouble y)
 #ifdef LAYERED_GEOMETRY_PICKING_EXTENSIONS
     G4ThreeVector xlast;
     for (unsigned int a = 0; a < pickMap.size(); a++) {
-      G4ThreeVector x = pickMap[a]->getPickCoordinates3D();
-      if (!x.isNear(xlast, 0.001 * cm)) {
-        txt += pickMap[a]->print();
-        xlast = x;
+      if (pickMap[a]->getAttributes().size() > 0) {
+        G4ThreeVector x = pickMap[a]->getPickCoordinates3D();
+        if (!x.isNear(xlast, 0.001 * cm)) {
+          txt += pickMap[a]->print();
+          xlast = x;
+        }
       }
     }
 #else
@@ -570,7 +572,6 @@ const std::vector < G4OpenGLViewerPickMap* > & G4OpenGLViewer::GetPickDetails(GL
     for (GLint i = 0; i < hits; ++i) {
       GLuint nnames = *p++;
 #ifdef LAYERED_GEOMETRY_PICKING_EXTENSIONS
-      G4OpenGLViewerPickMap* pickMap = new G4OpenGLViewerPickMap();
       double zmin = *p++;
       double zmax = *p++;
       zmin /= (1LL << 32) - 1.0;
@@ -583,7 +584,6 @@ const std::vector < G4OpenGLViewerPickMap* > & G4OpenGLViewer::GetPickDetails(GL
       glGetDoublev(GL_PROJECTION_MATRIX,proj);
       glGetIntegerv(GL_VIEWPORT,view);
       gluUnProject(x,y,(zmin+zmax)/2,model,proj,view,&gx[0],&gx[1],&gx[2]);
-      pickMap->setPickCoordinates3D(G4ThreeVector(gx[0],gx[1],gx[2]));
 #else
       // This bit of debug code or...
       //GLuint zmin = *p++;
@@ -607,6 +607,9 @@ const std::vector < G4OpenGLViewerPickMap* > & G4OpenGLViewer::GetPickDetails(GL
 	      oss << G4AttCheck(attHolder->GetAttValues()[iAtt],
                                 attHolder->GetAttDefs()[iAtt]);
               G4OpenGLViewerPickMap* pickMap = new G4OpenGLViewerPickMap();
+#ifdef LAYERED_GEOMETRY_PICKING_EXTENSIONS
+              pickMap->setPickCoordinates3D(G4ThreeVector(gx[0],gx[1],gx[2]));
+#endif
 //              G4cout
 //              << "i,j, attHolder->GetAttDefs().size(): "
 //              << i << ',' << j
@@ -1576,6 +1579,9 @@ G4String G4OpenGLViewerPickMap::print() {
   bool seen = false;
   for (int world = tmanager->GetNoWorlds() - 1; world >= 0; --world) {
     G4Navigator *navigator = tmanager->GetNavigator(iter[world]);
+    if (navigator->GetWorldVolume() == 0) {
+       continue;
+    }
     G4VPhysicalVolume *pvol = navigator->
                               LocateGlobalPointAndSetup(fCoordinates,0,false);
     if (!pvol)
@@ -1632,6 +1638,10 @@ G4String G4OpenGLViewerPickMap::print() {
   }
 
 #else
+  txt << fName;
+
+  txt << "Hit: " << fHitNumber << ", Sub-hit: " << fSubHitNumber << ", PickName: " << fPickName << "\n";
+  
   for (unsigned int a=0; a<fAttributes.size(); a++) {
     txt << fAttributes[a];
     if (a < fAttributes.size() - 1) txt << "\n";

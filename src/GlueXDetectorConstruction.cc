@@ -25,6 +25,7 @@
 #include "GlueXSensitiveDetectorPS.hh"
 #include "GlueXSensitiveDetectorTPOL.hh"
 
+#include "G4Version.hh"
 #include "G4LogicalVolume.hh"
 #include "G4PVPlacement.hh"
 #include "G4SDManager.hh"
@@ -372,9 +373,9 @@ void GlueXDetectorConstruction::ConstructSDandField()
       }
       // radiator volume: BNNM (NN = bar number 0-47 and M is sub-bar character A-D)
       else if (volname == "PIXV" || 
-               (volname(0,1)(0) == 'B' && 
-                10*((int)volname(1,1)(0)-48)+(int)volname(2,1)(0)-48 >= 0 &&
-                10*((int)volname(1,1)(0)-48)+(int)volname(2,1)(0)-48 < 48))
+               (volname[0] == 'B' && 
+                10*((int)volname[1]-48)+(int)volname[2]-48 >= 0 &&
+                10*((int)volname[1]-48)+(int)volname[2]-48 < 48))
       {  // this is nasty, but it works
          if (dircHandler == 0) {
             dircHandler = new GlueXSensitiveDetectorDIRC("dirc");
@@ -383,12 +384,11 @@ void GlueXDetectorConstruction::ConstructSDandField()
          iter->second->SetSensitiveDetector(dircHandler);
       }
       else if (volname == "WM1N" || volname == "WM2N" || volname == "WM1S" || volname == "WM2S" ||
-	       volname == "FTMN" || volname == "FTMS" ||
+               volname == "FTMN" || volname == "FTMS" ||
                volname == "TM1N" || volname == "TM2N" || volname == "TM3N" ||
                volname == "TM1S" || volname == "TM2S" || volname == "TM3S" ||
                volname == "SM1N" || volname == "SM2N" || volname == "SM1S" || volname == "SM2S" ||
-               volname == "OWDG" ||
-               (volname(0,1)(0) == 'A' && volname(0,1)(1) == 'G') )
+               volname == "OWDG" || volname(0,2) == "AG" )
       {
          if (dircHandler == 0) {
            dircHandler = new GlueXSensitiveDetectorDIRC("dirc");
@@ -468,7 +468,7 @@ void GlueXDetectorConstruction::CloneF()
             // First time we see this FM, let's clone and remember...
 
             G4ChordFinder *cfinder = masterFM->GetChordFinder();
-#if G4VERSION_10_04_OR_LATER
+#if G4VERSION_NUMBER >= 1040
             G4VIntegrationDriver *midriver = cfinder->GetIntegrationDriver();
             double stepMinimum = 1e-2;
 #else

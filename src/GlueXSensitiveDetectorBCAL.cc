@@ -22,6 +22,9 @@
 
 #define USE_ENERGY_WEIGHTED_TIMES 1
 
+// Energy rescale factor to match reconstructed to generated
+double GlueXSensitiveDetectorBCAL::SHOWER_ENERGY_SCALE_FACTOR = 1.04;
+
 // Cutoff on the total number of allowed hits
 int GlueXSensitiveDetectorBCAL::MAX_HITS = 100;
 
@@ -266,13 +269,13 @@ G4bool GlueXSensitiveDetectorBCAL::ProcessHits(G4Step* step,
          }
 #endif
          // correction factor makes shower yields match hdgeant
-         hiter->E_GeV += dEsum/GeV * 1.015;
+         hiter->E_GeV += dEsum/GeV * SHOWER_ENERGY_SCALE_FACTOR;
       }
       else if ((int)cell->hits.size() < MAX_HITS) {
          // create new hit 
          hiter = cell->hits.insert(hiter, GlueXHitBCALcell::hitinfo_t());
          // correction factor makes shower yields match hdgeant
-         hiter->E_GeV = dEsum/GeV * 1.015;
+         hiter->E_GeV = dEsum/GeV * SHOWER_ENERGY_SCALE_FACTOR;
          hiter->t_ns = t/ns;
          hiter->zlocal_cm = xlocal[2]/cm;
          hiter->incidentId_ = trackinfo->GetBCALincidentID();
@@ -310,13 +313,13 @@ G4bool GlueXSensitiveDetectorBCAL::ProcessHits(G4Step* step,
          }
 #endif
          // correction factor makes shower yields match hdgeant
-         hiter->Eup_GeV += dEup/GeV * 1.015;
+         hiter->Eup_GeV += dEup/GeV * SHOWER_ENERGY_SCALE_FACTOR;
       }
       else if ((int)cell->hits.size() < MAX_HITS) {
          // create new hit 
          hiter = cell->hits.insert(hiter, GlueXHitBCALcell::hitinfo_t());
          // correction factor makes shower yields match hdgeant
-         hiter->Eup_GeV = dEup/GeV * 1.015;
+         hiter->Eup_GeV = dEup/GeV * SHOWER_ENERGY_SCALE_FACTOR;
          hiter->tup_ns = tup/ns;
       }
       else {
@@ -352,13 +355,13 @@ G4bool GlueXSensitiveDetectorBCAL::ProcessHits(G4Step* step,
          }
 #endif
          // correction factor makes shower yields match hdgeant
-         hiter->Edown_GeV += dEdown/GeV * 1.015;
+         hiter->Edown_GeV += dEdown/GeV * SHOWER_ENERGY_SCALE_FACTOR;
       }
       else if ((int)cell->hits.size() < MAX_HITS) {
          // create new hit 
          hiter = cell->hits.insert(hiter, GlueXHitBCALcell::hitinfo_t());
          // correction factor makes shower yields match hdgeant
-         hiter->Edown_GeV = dEdown/GeV * 1.015;
+         hiter->Edown_GeV = dEdown/GeV * SHOWER_ENERGY_SCALE_FACTOR;
          hiter->tdown_ns = tdown/ns;
       }
       else {

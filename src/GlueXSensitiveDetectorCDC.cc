@@ -661,11 +661,6 @@ void GlueXSensitiveDetectorCDC::add_cluster(hit_vector_t &hits,
    }
    double tdrift_ns = my_t_ns / (fBscale_par1 + fBscale_par2 * BmagT);
 
-   // Longitudinal diffusion 
-
-   double dt_ns = (7.515 * dradius_cm - 2.139 * d2 + 12.63 * d3) * ns;
-   tdrift_ns += dt_ns * G4RandGauss::shoot();
-
    // Prevent unphysical times (drift electrons arriving 
    // at wire before particle passes the doca to the wire) 
    double v_max = 0.08; // guess for now based on Garfield, near wire 

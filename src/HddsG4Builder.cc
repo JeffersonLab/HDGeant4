@@ -1461,7 +1461,7 @@ void HddsG4Builder::addReflections(int volume_id)
         ++mine)
    {
       G4FieldManager* fieldmgr = mine->second->GetFieldManager();
-      for (int child = 0; child < mine->second->GetNoDaughters(); ++child) {
+      for (int child = 0; child < (int)mine->second->GetNoDaughters(); ++child) {
          G4VPhysicalVolume* pvol = mine->second->GetDaughter(child);
          G4LogicalVolume* lvol = pvol->GetLogicalVolume();
          G4FieldManager* mgr = lvol->GetFieldManager();

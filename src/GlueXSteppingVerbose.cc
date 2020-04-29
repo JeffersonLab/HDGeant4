@@ -33,8 +33,9 @@ void GlueXSteppingVerbose::StepInfo()
               << G4setw(11) << "dEStep"     << " "
               << G4setw(12) << "StepLeng"
               << G4setw(12) << "TrakLeng"
-              << G4setw(10) << "Volume"    << "  "
-              << G4setw(10) << "Process"
+              << G4setw(12) << "Volume"    << "  "
+              << G4setw(12) << "Process"   << "  "
+              << G4setw(12) << "Status"
               << G4endl;
      }
  
@@ -50,7 +51,7 @@ void GlueXSteppingVerbose::StepInfo()
             << G4setw(8) << G4BestUnit(fStep->GetTotalEnergyDeposit(),"Energy")
             << G4setw(8) << G4BestUnit(fStep->GetStepLength(),"Length")
             << G4setw(8) << G4BestUnit(fTrack->GetTrackLength(),"Length")
-            << G4setw(10) << volname << ":" << copyno;
+            << G4setw(12) << volname << ":" << copyno;
  
      const G4VProcess* process
                        = fStep->GetPostStepPoint()->GetProcessDefinedStep();
@@ -58,6 +59,25 @@ void GlueXSteppingVerbose::StepInfo()
      if (process) procName = process->GetProcessName();
      if (fStepStatus == fWorldBoundary) procName = "OutOfWorld";
      G4cout << "   " << G4setw(10) << procName;
+     G4String stepstat;
+     G4StepStatus stepStatus = fStep->GetPostStepPoint()->GetStepStatus();
+     if (stepStatus == fWorldBoundary)
+        stepstat = "WorldBoundary";
+     else if (stepStatus == fGeomBoundary)
+        stepstat = "GeomBoundary";
+     else if (stepStatus == fAtRestDoItProc)
+        stepstat = "AtRestDoItProc";
+     else if (stepStatus == fAlongStepDoItProc)
+        stepstat = "AlongStepDoItProc";
+     else if (stepStatus == fPostStepDoItProc)
+        stepstat = "PostStepDoItProc";
+     else if (stepStatus == fUserDefinedLimit)
+        stepstat = "UserDefinedLimit";
+     else if (stepStatus == fExclusivelyForcedProc)
+        stepstat = "ExclusivelyForcedProc";
+     else
+        stepstat == "Undefined";
+     G4cout << "   " << G4setw(10) << stepstat;
      G4cout << G4endl;
  
      if (verboseLevel == 2) {
@@ -107,8 +127,9 @@ void GlueXSteppingVerbose::TrackingStarted()
             << G4setw(11) << "dEStep"     << " "
             << G4setw(12) << "StepLeng"
             << G4setw(12) << "TrakLeng"
-            << G4setw(10) << "Volume"     << "  "
-            << G4setw(10) << "Process"
+            << G4setw(12) << "Volume"     << "  "
+            << G4setw(12) << "Process"    << "  "
+            << G4setw(12) << "Status"
             << G4endl;
  
      // PathFinder is not yet initialized for this track, so drill down
@@ -140,7 +161,7 @@ void GlueXSteppingVerbose::TrackingStarted()
             << G4setw(8) << G4BestUnit(fStep->GetTotalEnergyDeposit(),"Energy")
             << G4setw(8) << G4BestUnit(fStep->GetStepLength(),"Length")
             << G4setw(8) << G4BestUnit(fTrack->GetTrackLength(),"Length")
-            << G4setw(10) << volname << ":" << copyno
+            << G4setw(12) << volname << ":" << copyno
             << "   initStep"
             << G4endl;
    }

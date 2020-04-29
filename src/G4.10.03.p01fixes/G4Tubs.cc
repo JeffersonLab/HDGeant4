@@ -24,7 +24,7 @@
 // ********************************************************************
 //
 //
-// $Id: G4Tubs.cc 101121 2016-11-07 09:18:01Z gcosmo $
+// $Id: G4Tubs.cc 105148 2017-07-14 08:35:13Z gcosmo $
 //
 // 
 // class G4Tubs
@@ -282,7 +282,7 @@ G4bool G4Tubs::CalculateExtent( const EAxis              pAxis,
   // Find bounding envelope and calculate extent
   //
   const G4int NSTEPS = 24;            // number of steps for whole circle
-  G4double astep  = (360/NSTEPS)*deg; // max angle for one step
+  G4double astep  = twopi/NSTEPS;     // max angle for one step
   G4int    ksteps = (dphi <= astep) ? 1 : (G4int)((dphi-deg)/astep) + 1;
   G4double ang    = dphi/ksteps;
 
@@ -1277,8 +1277,8 @@ G4double G4Tubs::DistanceToOut( const G4ThreeVector& p,
 
         if ( calcNorm ) 
         {
-          *n         = G4ThreeVector(p.x(),p.y(),0) ;
-		  n->setMag(1) ;
+          *n = G4ThreeVector(p.x(), p.y(), 0) ;
+          n->setMag(1) ;
           *validNorm = true ;
         }
         return snxt = 0 ; // Leaving by rmax immediately
@@ -1326,8 +1326,8 @@ G4double G4Tubs::DistanceToOut( const G4ThreeVector& p,
           {
             if (calcNorm)
             {
-              *n = G4ThreeVector(p.x(),p.y(),0) ;
-			  n->setMag(1) ;
+              *n = G4ThreeVector(p.x(), p.y(), 0) ;
+              n->setMag(1) ;
               *validNorm = true ;
             }
             return snxt = 0.0;
@@ -1351,8 +1351,8 @@ G4double G4Tubs::DistanceToOut( const G4ThreeVector& p,
         {
           if (calcNorm)
           {
-            *n = G4ThreeVector(p.x(),p.y(),0) ;
-			n->setMag(1) ;
+            *n = G4ThreeVector(p.x(), p.y(), 0) ;
+            n->setMag(1) ;
             *validNorm = true ;
           }
           return snxt = 0.0;
@@ -1517,8 +1517,8 @@ G4double G4Tubs::DistanceToOut( const G4ThreeVector& p,
         //
         xi = p.x() + snxt*v.x() ;
         yi = p.y() + snxt*v.y() ;
-        *n = G4ThreeVector(xi,yi,0) ;
-		n->setMag(1) ;
+        *n = G4ThreeVector(xi, yi, 0) ;
+        n->setMag(1) ;
         *validNorm = true ;
         break ;
 
@@ -1529,8 +1529,8 @@ G4double G4Tubs::DistanceToOut( const G4ThreeVector& p,
       case kSPhi:
         if ( fDPhi <= pi )
         {
-          *n         = G4ThreeVector(sinSPhi,-cosSPhi,0) ;
-		  n->setMag(1) ;
+          *n = G4ThreeVector(sinSPhi, -cosSPhi, 0) ;
+          n->setMag(1) ;
           *validNorm = true ;
         }
         else
@@ -1542,8 +1542,8 @@ G4double G4Tubs::DistanceToOut( const G4ThreeVector& p,
       case kEPhi:
         if (fDPhi <= pi)
         {
-          *n = G4ThreeVector(-sinEPhi,cosEPhi,0) ;
-		  n->setMag(1) ;
+          *n = G4ThreeVector(-sinEPhi, cosEPhi, 0) ;
+          n->setMag(1) ;
           *validNorm = true ;
         }
         else
@@ -1553,12 +1553,12 @@ G4double G4Tubs::DistanceToOut( const G4ThreeVector& p,
         break ;
 
       case kPZ:
-        *n         = G4ThreeVector(0,0,1) ;
+        *n = G4ThreeVector(0,0,1) ;
         *validNorm = true ;
         break ;
 
       case kMZ:
-        *n         = G4ThreeVector(0,0,-1) ;
+        *n = G4ThreeVector(0,0,-1) ;
         *validNorm = true ;
         break ;
 

@@ -49,6 +49,7 @@ class GlueXSensitiveDetectorBCAL : public G4VSensitiveDetector
    static double MODULE_FULL_LENGTH;
    static double ATTENUATION_FULL_LENGTH;
    static double THRESH_ATTENUATED_GEV;
+   static double SHOWER_ENERGY_SCALE_FACTOR;
 
    static int instanceCount;
    static G4Mutex fMutex;

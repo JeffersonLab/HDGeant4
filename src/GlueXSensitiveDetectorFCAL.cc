@@ -20,6 +20,10 @@
 
 #include <JANA/JApplication.h>
 
+// Scale factors to match reconstructed to generated
+double GlueXSensitiveDetectorFCAL::SHOWER_ENERGY_SCALE_FACTOR =  1.0;
+double GlueXSensitiveDetectorFCAL::MIP_ENERGY_SCALE_FACTOR = 1.35;
+
 // Cutoff on the total number of allowed hits
 int GlueXSensitiveDetectorFCAL::MAX_HITS = 100;
 
@@ -201,11 +205,11 @@ G4bool GlueXSensitiveDetectorFCAL::ProcessHits(G4Step* step,
          // Apply effective response corrections, depending on particle type
          int pmass = track->GetDynamicParticle()->GetMass();
          if (pmass < 1 * MeV) { // must be one of e+,e-,gamma
-            dEcorr *= 0.976;
+            dEcorr *= SHOWER_ENERGY_SCALE_FACTOR;
          }
          else {
             double gamma = Ein / pmass; // nothing massless here
-            dEcorr *= (gamma > 1.25)? 1.35 : 0;
+            dEcorr *= (gamma > 1.25)? MIP_ENERGY_SCALE_FACTOR : 0;
          }
 
          if (dEcorr == 0)

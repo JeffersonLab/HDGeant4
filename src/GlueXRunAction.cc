@@ -8,6 +8,9 @@
 #include "GlueXPhysicsList.hh"
 #include "GlueXUserEventInformation.hh"
 
+#include "G4VisManager.hh"
+#include "G4ViewParameters.hh"
+#include "G4VViewer.hh"
 #include "G4ios.hh"
 
 GlueXRunAction::GlueXRunAction(GlueXPhysicsList *plist)
@@ -16,6 +19,17 @@ GlueXRunAction::GlueXRunAction(GlueXPhysicsList *plist)
 
 void GlueXRunAction::BeginOfRunAction(const G4Run*)
 {
+   G4VisManager *vmgr = dynamic_cast<G4VisManager*>
+                        (G4VVisManager::GetConcreteInstance());
+   if (vmgr) {
+      G4VViewer *viewer = vmgr->GetCurrentViewer();
+      if (viewer) {
+         G4ViewParameters pars(viewer->GetViewParameters());
+         pars.SetPicking(false);
+         viewer->SetViewParameters(pars);
+      }
+   }
+
    GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
    if (user_opts == 0) {
       G4cerr << "Error in GlueXRunAction constructor - "

@@ -24,7 +24,6 @@
 // ********************************************************************
 //
 //
-// $Id: G4OpenGLViewer.cc 101714 2016-11-22 08:53:13Z gcosmo $
 //
 // 
 // Andrew Walkden  27th March 1996
@@ -33,7 +32,7 @@
 #ifdef G4VIS_BUILD_OPENGL_DRIVER
 
 #include "G4ios.hh"
-#include "G4SystemOfUnits.hh"
+#include <CLHEP/Units/SystemOfUnits.h>
 #include "G4OpenGLViewer.hh"
 #include "G4OpenGLSceneHandler.hh"
 #include "G4OpenGLTransform3D.hh"
@@ -82,24 +81,6 @@ background (G4Colour(0.,0.,0.)),
 transparency_enabled (true),
 antialiasing_enabled (false),
 haloing_enabled (false),
-fStartTime(-DBL_MAX),
-fEndTime(DBL_MAX),
-fFadeFactor(0.),
-fDisplayHeadTime(false),
-fDisplayHeadTimeX(-0.9),
-fDisplayHeadTimeY(-0.9),
-fDisplayHeadTimeSize(24.),
-fDisplayHeadTimeRed(0.),
-fDisplayHeadTimeGreen(1.),
-fDisplayHeadTimeBlue(1.),
-fDisplayLightFront(false),
-fDisplayLightFrontX(0.),
-fDisplayLightFrontY(0.),
-fDisplayLightFrontZ(0.),
-fDisplayLightFrontT(0.),
-fDisplayLightFrontRed(0.),
-fDisplayLightFrontGreen(1.),
-fDisplayLightFrontBlue(0.),
 fRot_sens(1.),
 fPan_sens(0.01),
 fWinSize_x(0),
@@ -501,32 +482,40 @@ void G4OpenGLViewer::HaloingSecondPass () {
 
 G4String G4OpenGLViewer::Pick(GLdouble x, GLdouble y)
 {
-  std::vector < G4OpenGLViewerPickMap* >  pickMap = GetPickDetails(x,y);
+  const std::vector < G4OpenGLViewerPickMap* > & pickMap = GetPickDetails(x,y);
   G4String txt = "";
   if (pickMap.size() == 0) {
-    txt += "Too many hits.  Zoom in to reduce overlaps.";;
+//        txt += "No hits recorded.";;
   } else {
 #ifdef LAYERED_GEOMETRY_PICKING_EXTENSIONS
     G4ThreeVector xlast;
     for (unsigned int a = 0; a < pickMap.size(); a++) {
-      G4ThreeVector x = pickMap[a]->getPickCoordinates3D();
-      if (!x.isNear(xlast, 0.001 * cm)) {
-        txt += pickMap[a]->print();
-        xlast = x;
+      if (pickMap[a]->getAttributes().size() > 0) {
+        G4ThreeVector x = pickMap[a]->getPickCoordinates3D();
+        if (!x.isNear(xlast, 0.001 * CLHEP::cm)) {
+          txt += pickMap[a]->print();
+          xlast = x;
+        }
       }
     }
 #else
-    for (unsigned int a=0; a< pickMap.size(); a++) {
-      txt += pickMap[a]->print();
+    for (unsigned int a=0; a < pickMap.size(); a++) {
+      if (pickMap[a]->getAttributes().size() > 0) {
+        txt += pickMap[a]->print();
+      }
     }
 #endif
   }
   return txt;
 }
 
-std::vector < G4OpenGLViewerPickMap* > G4OpenGLViewer::GetPickDetails(GLdouble x, GLdouble y)
+const std::vector < G4OpenGLViewerPickMap* > & G4OpenGLViewer::GetPickDetails(GLdouble x, GLdouble y)
 {
-  std::vector < G4OpenGLViewerPickMap* > pickMapVector;
+  static std::vector < G4OpenGLViewerPickMap* > pickMapVector;
+  for (auto pickMap: pickMapVector) {
+    delete pickMap;
+  }
+  pickMapVector.clear();
   
   const G4int BUFSIZE = 512;
   GLuint selectBuffer[BUFSIZE];
@@ -541,6 +530,12 @@ std::vector < G4OpenGLViewerPickMap* > G4OpenGLViewer::GetPickDetails(GLdouble x
   glLoadIdentity();
   GLint viewport[4];
   glGetIntegerv(GL_VIEWPORT, viewport);
+/*  G4cout
+  << "viewport, x,y: "
+  << viewport[0] << ',' << viewport[1] << ',' << viewport[2] << ',' << viewport[3]
+  << ", " << x << ',' << y
+  << G4endl;
+*/
   fIsGettingPickInfos = true;
   // Define 5x5 pixel pick area
   g4GluPickMatrix(x, viewport[3] - y, 5., 5., viewport);
@@ -549,11 +544,13 @@ std::vector < G4OpenGLViewerPickMap* > G4OpenGLViewer::GetPickDetails(GLdouble x
   DrawView();
   GLint hits = glRenderMode(GL_RENDER);
   fIsGettingPickInfos = false;
+  if (hits < 0) {
+    G4cout << "Too many hits.  Zoom in to reduce overlaps." << G4endl;
+    goto restoreMatrices;
+  }
   if (hits > 0) {
-    
     GLuint* p = selectBuffer;
     for (GLint i = 0; i < hits; ++i) {
-      G4OpenGLViewerPickMap* pickMap = new G4OpenGLViewerPickMap();
       GLuint nnames = *p++;
 #ifdef LAYERED_GEOMETRY_PICKING_EXTENSIONS
       double zmin = *p++;
@@ -568,7 +565,6 @@ std::vector < G4OpenGLViewerPickMap* > G4OpenGLViewer::GetPickDetails(GLdouble x
       glGetDoublev(GL_PROJECTION_MATRIX,proj);
       glGetIntegerv(GL_VIEWPORT,view);
       gluUnProject(x,y,(zmin+zmax)/2,model,proj,view,&gx[0],&gx[1],&gx[2]);
-      pickMap->setPickCoordinates3D(G4ThreeVector(gx[0],gx[1],gx[2]));
 #else
       // This bit of debug code or...
       //GLuint zmin = *p++;
@@ -581,9 +577,6 @@ std::vector < G4OpenGLViewerPickMap* > G4OpenGLViewer::GetPickDetails(GLdouble x
 #endif
       for (GLuint j = 0; j < nnames; ++j) {
         GLuint name = *p++;
-        pickMap->setHitNumber(i);
-        pickMap->setSubHitNumber(j);
-        pickMap->setPickName(name);
 	std::map<GLuint, G4AttHolder*>::iterator iter =
 	  fOpenGLSceneHandler.fPickMap.find(name);
 	if (iter != fOpenGLSceneHandler.fPickMap.end()) {
@@ -594,17 +587,33 @@ std::vector < G4OpenGLViewerPickMap* > G4OpenGLViewer::GetPickDetails(GLdouble x
               std::ostringstream oss;
 	      oss << G4AttCheck(attHolder->GetAttValues()[iAtt],
                                 attHolder->GetAttDefs()[iAtt]);
+              G4OpenGLViewerPickMap* pickMap = new G4OpenGLViewerPickMap();
+#ifdef LAYERED_GEOMETRY_PICKING_EXTENSIONS
+              pickMap->setPickCoordinates3D(G4ThreeVector(gx[0],gx[1],gx[2]));
+#endif
+//              G4cout
+//              << "i,j, attHolder->GetAttDefs().size(): "
+//              << i << ',' << j
+//              << ", " << attHolder->GetAttDefs().size()
+//              << G4endl;
+//              G4cout << "G4OpenGLViewer::GetPickDetails: " << oss.str() << G4endl;
               pickMap->addAttributes(oss.str());
+              pickMap->setHitNumber(i);
+              pickMap->setSubHitNumber(j);
+              pickMap->setPickName(name);
+              pickMapVector.push_back(pickMap);
             }
           }
         }
       }
-      pickMapVector.push_back(pickMap);
     }
   }
+
+restoreMatrices:
   glMatrixMode(GL_PROJECTION);
   glPopMatrix();
   glMatrixMode(GL_MODELVIEW);
+
   return pickMapVector;
 }
 
@@ -1232,8 +1241,8 @@ void G4OpenGLViewer::rotateSceneThetaPhi(G4double dx, G4double dy)
     delta_theta = dx * fRot_sens;
   }    
   
-  delta_alpha *= deg;
-  delta_theta *= deg;
+  delta_alpha *= CLHEP::deg;
+  delta_theta *= CLHEP::deg;
   
   new_vp = std::cos(delta_alpha) * vp + std::sin(delta_alpha) * zprime;
   
@@ -1579,9 +1588,9 @@ G4String G4OpenGLViewerPickMap::print() {
                << ":" << hist->GetVolume(depth)->GetCopyNo();
       }
    
-      txt << "(" << fCoordinates[0] / cm 
-          << "," << fCoordinates[1] / cm
-          << "," << fCoordinates[2] / cm << ")"
+      txt << "(" << fCoordinates[0] / CLHEP::cm 
+          << "," << fCoordinates[1] / CLHEP::cm
+          << "," << fCoordinates[2] / CLHEP::cm << ")"
           << " found in " << pvol->GetName() << " copy " << pvol->GetCopyNo()
           << " of " << lvol->GetName() << " with " << std::endl
           << "   complete path: " << pvpath.str() << std::endl
@@ -1594,9 +1603,9 @@ G4String G4OpenGLViewerPickMap::print() {
           double xglob[4] = {fCoordinates[0],fCoordinates[1],fCoordinates[2],0};
           fld->GetFieldValue(xglob,Bfld);
           txt << "   magnetic field (Tesla): "
-              << Bfld[0] / tesla << "," 
-              << Bfld[1] / tesla << "," 
-              << Bfld[2] / tesla << std::endl;
+              << Bfld[0] / CLHEP::tesla << "," 
+              << Bfld[1] / CLHEP::tesla << "," 
+              << Bfld[2] / CLHEP::tesla << std::endl;
         }
         else {
           txt << "   magnetic field: UNDEFINED" << std::endl;
@@ -1615,7 +1624,8 @@ G4String G4OpenGLViewerPickMap::print() {
   txt << "Hit: " << fHitNumber << ", Sub-hit: " << fSubHitNumber << ", PickName: " << fPickName << "\n";
   
   for (unsigned int a=0; a<fAttributes.size(); a++) {
-    txt << fAttributes[a] << "\n";
+    txt << fAttributes[a];
+    if (a < fAttributes.size() - 1) txt << "\n";
   }
 #endif
   return txt.str();

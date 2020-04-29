@@ -1520,6 +1520,9 @@ G4String G4OpenGLViewerPickMap::print() {
   bool seen = false;
   for (int world = tmanager->GetNoWorlds() - 1; world >= 0; --world) {
     G4Navigator *navigator = tmanager->GetNavigator(iter[world]);
+    if (navigator->GetWorldVolume() == 0) {
+       continue;
+    }
     G4VPhysicalVolume *pvol = navigator->
                               LocateGlobalPointAndSetup(fCoordinates,0,false);
     if (!pvol)
