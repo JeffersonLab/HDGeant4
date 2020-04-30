@@ -205,8 +205,8 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
 	       BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
 	       BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
 
-               DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML01_XYZ[0] + DCBR_XYZ[0] + 0.   + BXXA_posXYZ[0] + BXXA_boxXYZ_loc[0]/2.) * cm - 0.25;
-               DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML01_XYZ[1] + DCBR_XYZ[1] - 1.75 + BXXA_boxXYZ_loc[1]/2.) * cm;
+               DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML01_XYZ[0] - DCBR_XYZ[0] + 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
+               DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML01_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
                DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML01_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
 
             }
@@ -229,8 +229,8 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
 	       BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
 	       BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
 
-               DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML00_XYZ[0] + DCBR_XYZ[0] + 0.   + BXXA_posXYZ[0] + BXXA_boxXYZ_loc[0]/2.) * cm - 0.25;
-               DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML00_XYZ[1] + DCBR_XYZ[1] - 1.75 + BXXA_boxXYZ_loc[1]/2.) * cm;
+               DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML00_XYZ[0] + DCBR_XYZ[0] + 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
+               DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML00_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
                DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML00_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
 
             }            
@@ -797,14 +797,14 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesParticleGun(G4Event* anEvent)
       vec_to_rot.setX(PreRot_x-RefInHall.getX()); 
       vec_to_rot.setY(PreRot_y-RefInHall.getY()); 
       vec_to_rot.setZ(PreRot_z-RefInHall.getZ()); 
+      //G4cout<<"vec_to_rot = "<<vec_to_rot.x()<<" "<<vec_to_rot.y()<<" "<<vec_to_rot.z()<<G4endl;
 
       vec_to_rot.rotateX(rot_factor*DCML_rot[0]*degree);
       vec_to_rot.rotateY(rot_factor*DCML_rot[1]*degree);
       vec_to_rot.rotateZ((DCML_rot[2]-180.)*degree);
 
-
       G4ThreeVector final_pos = vec_to_rot + RefInHall;
-
+      //G4cout<<"position = "<<final_pos.x()<<" "<<final_pos.y()<<" "<<final_pos.z()<<G4endl;
 
       G4ThreeVector vec(0,0,1);
       double rand1 = G4UniformRand();
@@ -812,13 +812,12 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesParticleGun(G4Event* anEvent)
       vec.setTheta(acos(rand1));
       vec.setPhi(2*M_PI*rand2);
       vec.rotateY(M_PI/2.);
-      if (dirclutpars[1] < 24) {
-        vec.rotateY(M_PI);
-      }
+      vec.rotateY(M_PI);
 
       vec.rotateX(rot_factor*DCML_rot[0]*degree);
       vec.rotateY(rot_factor*DCML_rot[1]*degree);
       vec.rotateZ((DCML_rot[2]-180.)*degree);
+      //G4cout<<"momentum = "<<vec.x()<<" "<<vec.y()<<" "<<vec.z()<<G4endl;
 
       thetap = vec.theta();
       phip = vec.phi();
