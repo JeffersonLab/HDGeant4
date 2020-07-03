@@ -131,7 +131,12 @@ GlueXPhysicsList::GlueXPhysicsList(const GlueXDetectorConstruction *geometry,
 }
 
 GlueXPhysicsList::~GlueXPhysicsList()
-{}
+{
+#if USING_DIRACXX
+   if (fBeamConversion)
+      delete fBeamConversion;
+#endif
+}
 
 void GlueXPhysicsList::ConstructParticle()
 {

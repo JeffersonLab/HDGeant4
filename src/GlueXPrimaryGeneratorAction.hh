@@ -60,6 +60,7 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    static double GetMass(int Geant3Type);
  
    static const GlueXPrimaryGeneratorAction* GetInstance();
+   static const CobremsGeneration* GetCobremsGeneration();
 
  private:
    static int instanceCount;
@@ -112,6 +113,36 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    static double fTargetCenterZ;
    static double fTargetLength;
 
+   // The following model parameters are introduced to superseded the
+   // above model which assumes a uniform circular beam spot that is
+   // centered on the z axis. The values for these parameters are
+   // specified using the VERTEX line in control.in, either by including
+   // the values directly on the VERTEX line or by a lookup reference to
+   // ccdb. This more sophisticated model incorporates a Gaussian beam
+   // spot with a general elliptical transverse profile, assumed to be
+   // uniformly distributed along the length of the target in z. The
+   // walk of the beam centroid in the transverse plane with z is also
+   // allowed for by the model. Note that the length of the beam spot in
+   // z is not redundant with the target thickness, as one may wish to
+   // generate events with a more restricted fiducial volume than would
+   // be allowed by the geometry alone. All lengths are specified in
+   // standard Geant4 units.
+   struct beam_spot_t {
+      double x;       // centroid of beam spot in x
+      double y;       // centroid of beam spot in y
+      double z;       // centroid in beam spot in z
+      double var_xx;  // variance of beam spot in x
+      double var_xy;  // covariance of beam spot in xy
+      double var_yy;  // variance of beam spot in y
+      double dxdz;    // slope of beam spot center walk in xz plane
+      double dydz;    // slope of beam spot center walk in yz plane
+      double length;  // length of the beam spot in z
+      double sigma[2];// minor,major sigmas of the gaussian ellipse
+      double alpha;   // rotation angle in xy plane of the beam ellipse
+   };
+   struct beam_spot_t fBeamvertex;
+   int fBeamvertex_activated;  // uninitialized=0, active=1, disabled=-1
+
  public:
    static void setTargetCenterZ(double Z) {
       fTargetCenterZ = Z;
@@ -140,6 +171,8 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    int getEventCount() const {
       return fEventCount;
    }
+   void configure_beam_vertex();
+   void generate_beam_vertex(double v[3]);
 
  private:
    static G4Mutex fMutex;

@@ -40,6 +40,7 @@ class GlueXBeamConversionProcess: public G4VDiscreteProcess
    virtual G4double GetMeanFreePath(const G4Track &track, 
                                     G4double previousStepSize,
                                     G4ForceCondition *condition);
+   void GenerateBetheHeitlerProcess(const G4Step &step);
 
 #if USING_DIRACXX
    static PairConversionGeneration *fPairsGeneration;
@@ -47,11 +48,13 @@ class GlueXBeamConversionProcess: public G4VDiscreteProcess
 
    int fStopBeamBeforeConverter;
    int fStopBeamAfterConverter;
+   int fStopBeamAfterTarget;
 
    void prepareImportanceSamplingPDFs();
 
    static ImportanceSampler fPaircohPDF;
    static ImportanceSampler fTripletPDF;
+   static G4double fBHpair_mass_min;
 
  private:
    GlueXBeamConversionProcess operator=(GlueXBeamConversionProcess &src);

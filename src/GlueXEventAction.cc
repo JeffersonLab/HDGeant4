@@ -10,29 +10,9 @@
 #include "G4ios.hh"
 
 GlueXEventAction::GlueXEventAction()
- : G4UserEventAction()
-{
-   GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
-   if (user_opts == 0) {
-      G4cerr << "Error in GlueXEventAction constructor - "
-             << "GlueXUserOptions::GetInstance() returns null, "
-             << "cannot continue." << G4endl;
-      exit(-1);
-   }
-
-   fDebugPrint[0] = 0;
-   fDebugPrint[1] = 0;
-   fDebugPrint[2] = 1;
-   std::map<int,int> debugpars;
-   if (user_opts->Find("DEBU", debugpars)) {
-      if (debugpars.find(1) != debugpars.end())
-         fDebugPrint[0] = debugpars[1];
-      if (debugpars.find(2) != debugpars.end())
-         fDebugPrint[1] = debugpars[2];
-      if (debugpars.find(3) != debugpars.end())
-         fDebugPrint[2] = debugpars[3];
-   }
-}
+ : G4UserEventAction(),
+   fProgressStep(0)
+{}
 
 void GlueXEventAction::BeginOfEventAction(const G4Event*)
 {}
@@ -43,9 +23,14 @@ void GlueXEventAction::EndOfEventAction(const G4Event* evt)
 
    // periodic printing
 
-   if (event_id % fDebugPrint[2] == 1 || 
-      (event_id >= fDebugPrint[0] && event_id < fDebugPrint[1]))
-   {
-      G4cout << ">>> Event " << event_id << G4endl;
+   if (fProgressStep == 0) {
+      long tens=1;
+      while (tens * 10 <= event_id)
+         tens *= 10;
+      if (event_id % tens == 0)
+         G4cout << event_id << " events simulated" << G4endl;
+   }
+   else if (event_id % fProgressStep == 0) {
+      G4cout << event_id << " events simulated" << G4endl;
    }
 }

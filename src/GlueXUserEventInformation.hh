@@ -59,6 +59,8 @@ class GlueXUserEventInformation: public G4VUserEventInformation
    void SetRandomSeeds();
    void Print() const;
 
+   static void Dlog(std::string msg);
+
    hddm_s::HDDM *getOutputRecord() {
       return fOutputRecord;
    }
@@ -77,6 +79,11 @@ class GlueXUserEventInformation: public G4VUserEventInformation
  private:
    GlueXUserEventInformation(const GlueXUserEventInformation &src);
    GlueXUserEventInformation &operator=(const GlueXUserEventInformation &src);
+
+   void Dlog(std::string msg, bool rewind);
+   std::map<long int, std::fstream*> fDlogfile;
+   std::map<long int, int> fDlogreading;
+   long int fEventSeeds[2];
 };
 
 class BCALincidentParticle {

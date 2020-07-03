@@ -17,7 +17,7 @@
 // GlueXPhotonBeamGenerator, which uses analytic distribution formulas
 // to generate distributions in photon energy, angle, and polarization.
 // By contrast, this GlueXBremsstrahlungGenerator directly computes the
-// QED amplitude for a specific choise for the event kinematics, and
+// QED amplitude for a specific choice for the event kinematics, and
 // then employs importance sampling to achieve a true reproduction of
 // the parent distribution without needing to know any formulas that
 // describe them. This latter method has the advantage that one can

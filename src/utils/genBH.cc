@@ -7,13 +7,14 @@
 // usage: genBH -n <#> [options] <output_file.hddm>
 //   where options may include any of the following
 //      -t <#> : number of threads to run, default 1
-//      -E <val> : energy of incident photon (GeV), default 9.0
-//      -e <val> : use bremsstrahlung spectrum with endpoint e (GeV)
+//      -E <val> : energy of incident photon (GeV), default 9.0 GeV
+//      -m <val> : generate e+e- pairs with invariant mass >= val (GeV/c^2)
+//      -r <val> : set initial random number seed to val
+//      -R <run> : set simulation run number, default 9000
 //
 // notes:
-//  1) If option -e is specified, the value of the E option is taken
-//     as the minimum photon energy in the generated bremsstrahlung 
-//     spectrum.
+//  1) If option -m is not given then the full invariant mass spectrum
+//     of the pairs is generated, from 2*mElectron to the rootS-mProton.
 //
 //  2) The event count option -n <#> must be present, but it does not
 //     have to be first among options, as shown in the usage pattern.
@@ -59,7 +60,10 @@
 #include <stdexcept>
 
 double Ephoton(9.0);
-double Endpoint(0.);
+LDouble_t M12_minimum(0);
+int seedVal(0);
+uint runno(9000);
+
 std::atomic<int> eventNo(0);
 
 typename hddm_mc_s::ostream *esink;
@@ -71,7 +75,9 @@ void usage()
       "  where options may include any of the following\n"
       "     -t <#> : number of threads to run, default 1\n"
       "     -E <val> : energy of incident photon (GeV), default 9.0\n"
-      "     -e <val> : use bremsstrahlung spectrum with endpoint e (GeV)\n"
+      "     -m <val> : generate e+e- pairs with invariant mass >= val (GeV/c^2)\n"
+      "     -r <val> : set initial random number seed to val\n"
+      "     -R <run> : set simulation run number, default 9000\n"
       << std::endl;
    exit(1);
 }
@@ -80,6 +86,7 @@ int generate(int nevents)
 {
    thread_local TRandom2 *randoms;
    randoms = new TRandom2(0);
+   randoms->SetSeed(seedVal);
 
    double sum(0);
    double sum2(0);
@@ -100,13 +107,17 @@ int generate(int nevents)
       weight *= 2*PI_;
    
       // generate Mpair with weight (1/M) / (Mcut^2 + M^2)
-      LDouble_t Mmin = 2 * mElectron;
+      LDouble_t Mthresh = 2 * mElectron;
       LDouble_t Mcut = 5e-3;                  // 5 MeV cutoff parameter
-      LDouble_t um0 = 1 + sqr(Mcut / Mmin);
-      LDouble_t um = pow(um0, randoms->Uniform(1));
+      LDouble_t um0 = 1 + sqr(Mcut / Mthresh);
+      LDouble_t umax = 1;
+      if (M12_minimum > Mthresh)
+         umax = log(1 + sqr(Mcut / M12_minimum)) / log(um0);
+      LDouble_t um = pow(um0, randoms->Uniform(umax));
       LDouble_t Mpair = Mcut / sqrt(um - 1);
       weight *= Mpair * (sqr(Mcut) + sqr(Mpair))
                       * log(um0) / (2 * sqr(Mcut));
+      weight *= umax;
 
       // generate qR^2 with weight (1/qR^2) / sqrt(qRcut^2 + qR^2)
       LDouble_t qRmin = sqr(Mpair )/ (2 * kin);
@@ -177,10 +188,17 @@ int generate(int nevents)
          nOut.AllPol();
 
          // Compute the polarized differential cross section
+         LDouble_t t = -(qR2 - sqr(Erec - mProton));
+         LDouble_t tau = -t / sqr(2 * mProton);
+         LDouble_t proton_magnetic_moment = 2.793;
          LDouble_t F1_spacelike = 1;
          LDouble_t F2_spacelike = 0;
          LDouble_t F1_timelike = 1;
          LDouble_t F2_timelike = 0;
+         F1_spacelike = (1 / sqr(1 - t/0.71)) / (1 + tau) *
+                        (1 + proton_magnetic_moment * tau);
+         F2_spacelike = (1 / sqr(1 - t/0.71)) / (1 + tau) * 
+                        (proton_magnetic_moment - 1);
          diffXS = TCrossSection::BetheHeitlerNucleon(gIn, nIn,
                                                      eOut, pOut, nOut,
                                                      F1_spacelike,
@@ -193,9 +211,9 @@ int generate(int nevents)
          // These events have no cross section, but do not discard
          // them because they are needed to get the right MC integral.
  
-         nOut.SetMom(TThreeVectorReal(0,0,0));
-         eOut.SetMom(TThreeVectorReal(0,0,0));
-         pOut.SetMom(TThreeVectorReal(0,0,0));
+         nOut.SetMom(TThreeVectorReal(0,0,1e-12));
+         eOut.SetMom(TThreeVectorReal(0,0,1e-12));
+         pOut.SetMom(TThreeVectorReal(0,0,1e-12));
          diffXS = 0;
       }
 
@@ -213,9 +231,20 @@ int generate(int nevents)
       hddm_mc_s::HDDM record;
       hddm_mc_s::PhysicsEventList events = record.addPhysicsEvents();
       events(0).setEventNo(++eventNo);
+      events(0).setRunNo(runno);
       hddm_mc_s::ReactionList reactions = events(0).addReactions();
       reactions(0).setType(235586);
       reactions(0).setWeight(weight * diffXS);
+      // Write 4 random seeds to the hddm file.
+      // seed1 = saved by generator, saved for future reference, not to be reused
+      // seed2 = saved by simulator (hdgeant or hdgeant4), saved for future reference, not to be reused
+      // seed3 = saved by mcsmear, not to be reused
+      // seed4 = saved by analyzer, not to be reused
+      hddm_mc_s::RandomList ranl = reactions(0).addRandoms();
+      ranl().setSeed1(randoms->GetSeed());
+      ranl().setSeed2(gRandom->Integer(std::numeric_limits<int32_t>::max()));
+      ranl().setSeed3(gRandom->Integer(std::numeric_limits<int32_t>::max()));
+      ranl().setSeed4(gRandom->Integer(std::numeric_limits<int32_t>::max()));
       hddm_mc_s::BeamList beams = reactions(0).addBeams();
       hddm_mc_s::MomentumList bmoms = beams(0).addMomenta();
       hddm_mc_s::PropertiesList bprops = beams(0).addPropertiesList();
@@ -325,11 +354,23 @@ int main(int argc, char *argv[])
          else
             Ephoton = atof(argv[++iarg]);
       }
-      else if (arg[1] == 'e') {
+      else if (arg[1] == 'm') {
          if (strlen(arg) > 2)
-            Endpoint = std::atof(arg+2);
+            M12_minimum = std::atof(arg+2);
          else
-            Endpoint = atof(argv[++iarg]);
+            M12_minimum = atof(argv[++iarg]);
+      }
+      else if (arg[1] == 'r') {
+         if (strlen(arg) > 2)
+            seedVal = std::atoi(arg+2);
+         else
+            seedVal = atoi(argv[++iarg]);
+      }
+      else if (arg[1] == 'R') {
+         if (strlen(arg) > 2)
+            runno = std::atoi(arg+2);
+         else
+            runno = atoi(argv[++iarg]);
       }
       else {
          usage();

@@ -809,6 +809,8 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
       else {
          double t_ns = -1e9;
          for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
+            if (hiter == hits.begin())
+               continue;
             // combine separate hits that are too close together in time
             if (fabs(hiter->t_ns - t_ns) < TWO_HIT_TIME_RESOL || 
                 hiter->q_fC == 0)
@@ -816,7 +818,7 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                // Use the time from the earlier hit but add the charge
                (hiter - 1)->q_fC += hiter->q_fC;
                hits.erase(hiter);
-               --hiter;
+               hiter = hits.begin();
             }
             else {
                t_ns = hiter->t_ns;

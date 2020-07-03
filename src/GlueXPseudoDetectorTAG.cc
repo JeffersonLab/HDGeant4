@@ -74,14 +74,22 @@ inline void GlueXPseudoDetectorTAG::setRunNo(int runno)
    std::map<string, float> beam_parms;
    jcalib->Get("PHOTON_BEAM/endpoint_energy", beam_parms);
    double endpoint_energy = beam_parms.at("PHOTON_BEAM_ENDPOINT_ENERGY")*GeV;
+   std::map<string, float> beam_calib;
+   jcalib->Get("PHOTON_BEAM/hodoscope/endpoint_calib", beam_calib);
+   double endpoint_calib = endpoint_energy;
+   if (beam_calib.find("TAGGER_CALIB_ENERGY") != beam_calib.end()) {
+      endpoint_calib = beam_calib.at("TAGGER_CALIB_ENERGY")*GeV;
+   }
    std::vector<std::map<string, float> > micro_parms;
    jcalib->Get("PHOTON_BEAM/microscope/scaled_energy_range", micro_parms);
    double Emin = 1e9;
    double Emax = -1e9;
    for (unsigned int i=0; i < micro_parms.size(); ++i) {
       MICRO_CHANNEL_NUMBER[i] = micro_parms[i]["column"];
-      MICRO_CHANNEL_EMIN[i] = micro_parms[i]["xlow"] * endpoint_energy;
-      MICRO_CHANNEL_EMAX[i] = micro_parms[i]["xhigh"] * endpoint_energy;
+      MICRO_CHANNEL_EMIN[i] = micro_parms[i]["xlow"] * endpoint_calib
+                              + endpoint_energy - endpoint_calib;
+      MICRO_CHANNEL_EMAX[i] = micro_parms[i]["xhigh"] * endpoint_calib
+                              + endpoint_energy - endpoint_calib;
       Emin = (MICRO_CHANNEL_EMIN[i] < Emin)? MICRO_CHANNEL_EMIN[i] : Emin;
       Emax = (MICRO_CHANNEL_EMAX[i] > Emax)? MICRO_CHANNEL_EMAX[i] : Emax;
    }
@@ -91,8 +99,10 @@ inline void GlueXPseudoDetectorTAG::setRunNo(int runno)
    jcalib->Get("PHOTON_BEAM/hodoscope/scaled_energy_range", hodo_parms);
    for (unsigned int i=0; i < hodo_parms.size(); ++i) {
       HODO_CHANNEL_NUMBER[i] = hodo_parms[i]["counter"];
-      HODO_CHANNEL_EMIN[i] = hodo_parms[i]["xlow"] * endpoint_energy;
-      HODO_CHANNEL_EMAX[i] = hodo_parms[i]["xhigh"] * endpoint_energy;
+      HODO_CHANNEL_EMIN[i] = hodo_parms[i]["xlow"] * endpoint_calib
+                              + endpoint_energy - endpoint_calib;
+      HODO_CHANNEL_EMAX[i] = hodo_parms[i]["xhigh"] * endpoint_calib
+                              + endpoint_energy - endpoint_calib;
       Emin = (HODO_CHANNEL_EMIN[i] < Emin)? HODO_CHANNEL_EMIN[i] : Emin;
       Emax = (HODO_CHANNEL_EMAX[i] > Emax)? HODO_CHANNEL_EMAX[i] : Emax;
    }

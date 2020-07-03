@@ -54,73 +54,73 @@ class CobremsGeneration {
    void setCollimatedFlag(bool flag);
    void setPolarizedFlag(bool flag);
 
-   double getBeamEnergy() {
+   double getBeamEnergy() const {
       return fBeamEnergy; // (GeV)
    }
-   double getBeamErms() {
+   double getBeamErms() const {
       return fBeamErms; // (GeV)
    }
-   double getBeamEmittance() {
+   double getBeamEmittance() const {
       return fBeamEmittance; // (m rad)
    }
-   double getCollimatorSpotrms() {
+   double getCollimatorSpotrms() const {
       return fCollimatorSpotrms; // (m)
    }
-   double getCollimatorDistance() {
+   double getCollimatorDistance() const {
       return fCollimatorDistance; // (m)
    }
-   double getCollimatorDiameter() {
+   double getCollimatorDiameter() const {
       return fCollimatorDiameter; // (m)
    }
-   double getTargetThickness() {
+   double getTargetThickness() const {
       return fTargetThickness; // (m)
    }
-   std::string getTargetCrystal() {
+   std::string getTargetCrystal() const {
       return fTargetCrystal.name;
    }
-   int getTargetCrystalNsites() {
+   int getTargetCrystalNsites() const {
       return fTargetCrystal.nsites;
    }
-   double getTargetCrystalAtomicNumber() {
+   double getTargetCrystalAtomicNumber() const {
       return fTargetCrystal.Z;
    }
-   double getTargetCrystalAtomicWeight() {
+   double getTargetCrystalAtomicWeight() const {
       return fTargetCrystal.A;  // (amu)
    }
-   double getTargetCrystalDensity() {
+   double getTargetCrystalDensity() const {
       return fTargetCrystal.density; // (g/cm^3)
    }
-   double getTargetCrystalLatticeConstant() {
+   double getTargetCrystalLatticeConstant() const {
       return fTargetCrystal.lattice_constant; // (m)
    }
-   double getTargetCrystalRadiationLength() {
+   double getTargetCrystalRadiationLength() const {
       return fTargetCrystal.radiation_length; // (m)
    }
-   double getTargetCrystalDebyeWallerConst() {
+   double getTargetCrystalDebyeWallerConst() const {
       return fTargetCrystal.Debye_Waller_const; // (1/GeV^2)
    }
-   double getTargetCrystalMosaicSpread() {
+   double getTargetCrystalMosaicSpread() const {
       return fTargetCrystal.mosaic_spread; // (rad)
    }
-   double getTargetCrystalBetaFF() {
+   double getTargetCrystalBetaFF() const {
       return fTargetCrystal.betaFF; // (1/GeV^2)
    }
-   double getTargetThetax() {
+   double getTargetThetax() const {
       return fTargetThetax; // (rad)
    }
-   double getTargetThetay() {
+   double getTargetThetay() const {
       return fTargetThetay; // (rad)
    }
-   double getTargetThetaz() {
+   double getTargetThetaz() const {
       return fTargetThetaz; // (rad)
    }
-   double getPhotonEnergyMin() {
+   double getPhotonEnergyMin() const {
       return fPhotonEnergyMin; // (GeV)
    }
-   bool getCollimatedFlag() {
+   bool getCollimatedFlag() const {
       return fCollimatedFlag;
    }
-   bool getPolarizedFlag() {
+   bool getPolarizedFlag() const {
       return fPolarizedFlag;
    }
 

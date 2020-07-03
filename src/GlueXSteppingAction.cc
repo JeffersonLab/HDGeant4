@@ -9,7 +9,7 @@
 #include "GlueXPrimaryGeneratorAction.hh"
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserTrackInformation.hh"
-#include "GlueXPathFinder.hh"
+#include "G4ParallelWorldProcess.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4RunManager.hh"
 #include "G4Threading.hh"
@@ -94,7 +94,8 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
                                           event->GetUserInformation();
    GlueXUserTrackInformation *trackinfo;
    trackinfo = (GlueXUserTrackInformation*)track->GetUserInformation();
-   G4VPhysicalVolume *pvol = GlueXPathFinder::GetLocatedVolume();
+   const G4Step *hyperstep = G4ParallelWorldProcess::GetHyperStep();
+   G4VPhysicalVolume *pvol = hyperstep->GetPostStepPoint()->GetPhysicalVolume();
 
    // Kill tracks at entry to primary collimator or active collimator
    // if this was asked for in the control file.
@@ -108,12 +109,15 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
    }
 
    // Kill reflections inside DIRC's PMT
-   if(true) {
-     if (pvol && (pvol->GetName() == "BWPV")) {
-       track->SetTrackStatus(fStopAndKill);
-     }
+   if (pvol && (pvol->GetName() == "BWPV")) {
+      track->SetTrackStatus(fStopAndKill);
    }
 
+   // Kill tracks when they enter the walls / ceiling / floor,
+   // otherwise a lot of time is spent showering in the walls.
+   if (pvol && (pvol->GetName() == "World")) {
+      track->SetTrackStatus(fStopAndKill);
+   }
 
    // Post new vertices to the MC record for primary particle decays
    if (trackinfo) {

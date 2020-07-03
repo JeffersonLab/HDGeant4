@@ -46,6 +46,20 @@ double GlueXPhotonBeamGenerator::fFixedPolarization_phi = 0;
 
 GlueXPseudoDetectorTAG *GlueXPhotonBeamGenerator::fTagger = 0;
 
+// This utility function is useful in the debugger,
+// but do not use it for actual simulation operatons.
+
+int g4random_seeds(CLHEP::HepRandomEngine *eng=0) {
+   const long int *seed = G4Random::getTheSeeds();
+   G4cout << "current seeds are " << seed[0] << ", " << seed[1] << G4endl;
+   printf("seeds array pointer is %lx\n", (unsigned long)seed);
+   CLHEP::HepRandomEngine *engine = CLHEP::HepRandom::getTheEngine();
+   printf("randoms generator engine pointer is %lx\n", (unsigned long)engine);
+   if (eng != 0)
+      CLHEP::HepRandom::setTheEngine(eng);
+   return 0;
+}
+
 GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
  : fCobrems(gen)
 {
@@ -117,7 +131,7 @@ GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
                              &GlueXPhotonBeamGenerator::disableFixedPolarization,
        "Tell the photon beam generator not to force a fixed polarization\n"
        " on beam photons created by the simulation.");
-   std::cout << "GlueXPhotonBeamGenerator initialization complete." << std::endl;
+   G4cout << "GlueXPhotonBeamGenerator initialization complete." << G4endl;
 }
 
 GlueXPhotonBeamGenerator::~GlueXPhotonBeamGenerator()
@@ -288,6 +302,18 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
    if (fCoherentPDFx.density.size() == 0) {
       prepareImportanceSamplingPDFs();
    }
+
+   // The GlueXUserEventInformation constructor can set the random number
+   // seeds for this event, so this must happen at here at the top.
+   GlueXUserEventInformation *event_info;
+   if (t0 == 0) {
+      event_info = new GlueXUserEventInformation();
+      anEvent->SetUserInformation(event_info);
+   }
+   else {
+      event_info = (GlueXUserEventInformation*)anEvent->GetUserInformation();
+   }
+   assert (event_info != 0);
 
    double phiMosaic = 2*M_PI * G4UniformRand();
    double rhoMosaic = sqrt(-2 * log(G4UniformRand()));
@@ -503,15 +529,12 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
    G4ThreeVector mom(px, py, pz);
 
    // If beam photon is primary particle, use it to initialize event info
-   GlueXUserEventInformation *event_info;
    double targetCenterZ = GlueXPrimaryGeneratorAction::getTargetCenterZ();
    int bg = 1;
    double tvtx;
    if (t0 == 0) {
       tvtx = (vtx[2] - targetCenterZ) / fBeamVelocity;
       tvtx -= GenerateTriggerTime(anEvent);
-      event_info = new GlueXUserEventInformation();
-      anEvent->SetUserInformation(event_info);
       if (fGenerateNotSimulate == 0) {
          event_info->AddBeamParticle(1, tvtx, vtx, mom, pol);
       }
@@ -525,8 +548,6 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
          fTagger->addTaggerPhoton(anEvent, pabs, ttag, bg);
          return;
       }
-      event_info = (GlueXUserEventInformation*)anEvent->GetUserInformation();
-      assert (event_info != 0);
    }
 
    // Generate new primary for the beam photon

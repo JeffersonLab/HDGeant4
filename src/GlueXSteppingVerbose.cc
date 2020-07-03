@@ -5,9 +5,9 @@
 // version: may 12, 2012
 
 #include "GlueXSteppingVerbose.hh"
-#include "GlueXPathFinder.hh"
 
 #include "G4TransportationManager.hh"
+#include "G4ParallelWorldProcess.hh"
 #include "G4Navigator.hh"
 #include "G4UnitsTable.hh"
 
@@ -39,10 +39,10 @@ void GlueXSteppingVerbose::StepInfo()
               << G4endl;
      }
  
-     G4TouchableHandle touch = GlueXPathFinder::CreateTouchableHandle();
-     G4VPhysicalVolume *pvol = (touch)? touch->GetVolume() : 0;
+     const G4Step *step = G4ParallelWorldProcess::GetHyperStep();
+     G4VPhysicalVolume *pvol = step->GetPostStepPoint()->GetPhysicalVolume();
      G4String volname = (pvol)? pvol->GetName() : "NULL";
-     int copyno = (touch)? touch->GetCopyNumber() : 0;
+     int copyno = (pvol)? pvol->GetCopyNo() : 0;
      G4cout << G4setw(5) << fTrack->GetCurrentStepNumber() << " "
             << G4setw(8) << G4BestUnit(fTrack->GetPosition().x(),"Length")
             << G4setw(8) << G4BestUnit(fTrack->GetPosition().y(),"Length")
@@ -132,7 +132,7 @@ void GlueXSteppingVerbose::TrackingStarted()
             << G4setw(12) << "Status"
             << G4endl;
  
-     // PathFinder is not yet initialized for this track, so drill down
+     // Navigation is not yet initialized for this track, so drill down
      // into the list of navigators and find the layer where this point lies.
  
      G4TouchableHistory *touch = 0;

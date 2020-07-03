@@ -52,6 +52,7 @@ std::list<GlueXPrimaryGeneratorAction*> GlueXPrimaryGeneratorAction::fInstance;
 //--------------------------------------------
 
 GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
+ : fBeamvertex_activated(0)
 {
    G4AutoLock barrier(&fMutex);
    fInstance.push_back(this);
@@ -608,6 +609,8 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction(const
                              GlueXPrimaryGeneratorAction &src)
  : G4VUserPrimaryGeneratorAction(src)
 {
+   fBeamvertex = src.fBeamvertex;
+   fBeamvertex_activated = src.fBeamvertex_activated;
    G4AutoLock barrier(&fMutex);
    fInstance.push_back(this);
    ++instanceCount;
@@ -617,6 +620,8 @@ GlueXPrimaryGeneratorAction &GlueXPrimaryGeneratorAction::operator=(const
                              GlueXPrimaryGeneratorAction &src)
 {
    *(G4VUserPrimaryGeneratorAction*)this = src;
+   fBeamvertex = src.fBeamvertex;
+   fBeamvertex_activated = src.fBeamvertex_activated;
    return *this;
 }
 
@@ -655,6 +660,11 @@ const GlueXPrimaryGeneratorAction *GlueXPrimaryGeneratorAction::GetInstance()
    return 0;
 }
 
+const CobremsGeneration *GlueXPrimaryGeneratorAction::GetCobremsGeneration()
+{
+   return fCobremsGeneration;
+}
+
 //--------------------------------------------
 // GeneratePrimaries
 //--------------------------------------------
@@ -685,6 +695,12 @@ void GlueXPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 
 void GlueXPrimaryGeneratorAction::GeneratePrimariesParticleGun(G4Event* anEvent)
 {
+   // GlueXUserEventInformation constructor can seed the random number
+   // generator for this event, so this must happen here at the top.
+   GlueXUserEventInformation *event_info = new GlueXUserEventInformation();
+   anEvent->SetUserInformation(event_info);
+   GlueXUserEventInformation::fWriteNoHitEvents = 1;
+
    // Unbelievably, GEANT4's G4ParticleGun class insists on printing
    // a message whenever the momentum or energy is changed, unless
    // the other is 0. Here, we reset the particle gun energy using 
@@ -992,9 +1008,7 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesParticleGun(G4Event* anEvent)
    fParticleGun->GeneratePrimaryVertex(anEvent);
 
    // Store generated particle info so it can be written to output file
-   GlueXUserEventInformation *event_info = new GlueXUserEventInformation();
    event_info->AddPrimaryVertex(*anEvent->GetPrimaryVertex());
-   anEvent->SetUserInformation(event_info);
 }
 
 //--------------------------------------------
@@ -1006,17 +1020,41 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesHDDM(G4Event* anEvent)
    if (fPrimaryGenerator != 0) {
       double beamDiameter = GlueXPhotonBeamGenerator::getBeamDiameter();
       double beamVelocity = GlueXPhotonBeamGenerator::getBeamVelocity();
-      double x, y;
-      while (true) {
-         x = G4UniformRand() - 0.5;
-         y = G4UniformRand() - 0.5;
-         if (x*x + y*y <= 0.25) {
-            x *= beamDiameter;
-            y *= beamDiameter;
-            break;
-         }
+      double x, y, z;
+      if (fBeamvertex_activated == 0)
+         configure_beam_vertex();
+      if (fBeamvertex_activated == 1) {
+ 
+         // generate a random beam spot according to a gaussian model
+ 
+         double ur = sqrt(-2 * log(G4UniformRand()));
+         double phi = G4UniformRand() * 2*M_PI;
+         double uz = G4UniformRand() - 0.5;
+         double u[2] = {ur * cos(phi), ur * sin(phi)};
+         u[0] *= fBeamvertex.sigma[0];
+         u[1] *= fBeamvertex.sigma[1];
+         x = u[0] * cos(fBeamvertex.alpha) + u[1] * sin(fBeamvertex.alpha);
+         y =-u[0] * sin(fBeamvertex.alpha) + u[1] * cos(fBeamvertex.alpha);
+         z = uz * fBeamvertex.length;
+         x += fBeamvertex.x + fBeamvertex.dxdz * z;
+         y += fBeamvertex.y + fBeamvertex.dydz * z;
+         z += fBeamvertex.z;
       }
-      double z = fTargetCenterZ + (G4UniformRand() - 0.5) * fTargetLength;
+      else {
+
+         // fall back on the old hard-coded cylindrical beam spot
+  
+         while (true) {
+            x = G4UniformRand() - 0.5;
+            y = G4UniformRand() - 0.5;
+            if (x*x + y*y <= 0.25) {
+               x *= beamDiameter;
+               y *= beamDiameter;
+               break;
+            }
+         }
+         z = fTargetCenterZ + (G4UniformRand() - 0.5) * fTargetLength;
+      }
       double ttag = GlueXPhotonBeamGenerator::GenerateTriggerTime(anEvent);
       double trel = (z - fRFreferencePlaneZ) / beamVelocity;
       fPrimaryGenerator->SetParticlePosition(G4ThreeVector(x,y,z));
@@ -1394,4 +1432,114 @@ G4ParticleDefinition *GlueXPrimaryGeneratorAction::GetParticle(const G4String &n
       p = fParticleTable->FindParticle("geantino");
    }
    return p;
+}
+
+void GlueXPrimaryGeneratorAction::configure_beam_vertex()
+{
+   GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
+   if (user_opts == 0) {
+      G4cerr << "Error in GlueXPrimaryGeneratorAction::configure_beam_vertex"
+             << " - GlueXUserOptions::GetInstance() returns null, "
+             << "cannot continue." << G4endl;
+      exit(-1);
+   }
+   std::map<int, std::string> vertex_spec;
+   if (user_opts->Find("VERTEX", vertex_spec)) {
+      if (vertex_spec.find(1) == vertex_spec.end()) {
+         G4cerr << "Error in GlueXPrimaryGeneratorAction::configure_beam_vertex"
+                << " - VERTEX card found but no specification was given."
+                << G4endl;
+      }
+   }
+   else {
+      fBeamvertex_activated = -1;
+      return;
+   }
+   const char *spec = vertex_spec[1].c_str();
+   if (sscanf(spec, "beam_spot(ccdb) * %lf", &fBeamvertex.length)) {
+      extern int run_number;
+      extern jana::JApplication *japp;
+      if (japp == 0) {
+         G4cerr << "Error in GlueXPrimaryGeneratorAction::configure_beam_vertex"
+                << " - jana global DApplication object not set, "
+                << "cannot continue." << G4endl;
+         exit(-1);
+      }
+      jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
+      std::map<string, float> beam_spot_params;
+      jcalib->Get("/PHOTON_BEAM/beam_spot", beam_spot_params);
+      fBeamvertex.x = beam_spot_params.at("x") * cm;
+      fBeamvertex.y = beam_spot_params.at("y") * cm;
+      fBeamvertex.z = beam_spot_params.at("z") * cm;
+      fBeamvertex.var_xx = beam_spot_params.at("var_xx") * cm*cm;
+      fBeamvertex.var_xy = beam_spot_params.at("var_xy") * cm*cm;
+      fBeamvertex.var_yy = beam_spot_params.at("var_yy") * cm*cm;
+      fBeamvertex.dxdz = beam_spot_params.at("dxdz");
+      fBeamvertex.dydz = beam_spot_params.at("dydz");
+      fBeamvertex.length *= cm;
+   }
+   else if (sscanf(spec, "beam_spot(%*[-+0-9.,]) * %lf", &fBeamvertex.length)) {
+      sscanf(spec, "beam_spot(%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf)",
+                   &fBeamvertex.x, &fBeamvertex.y, &fBeamvertex.z,
+                   &fBeamvertex.var_xx, &fBeamvertex.var_xy,
+                   &fBeamvertex.var_yy, &fBeamvertex.dxdz,
+                   &fBeamvertex.dydz);
+      fBeamvertex.x *= cm;
+      fBeamvertex.y *= cm;
+      fBeamvertex.z *= cm;
+      fBeamvertex.var_xx *= cm*cm;
+      fBeamvertex.var_xy *= cm*cm;
+      fBeamvertex.var_yy *= cm*cm;
+      fBeamvertex.length *= cm;
+   }
+   else {
+      G4cerr << "Error in GlueXPrimaryGeneratorAction::configure_beam_vertex"
+             << " - unrecognized VERTEX specification on control.in line"
+             << G4endl << spec << G4endl;
+      exit(-1);
+   }
+   double D = fBeamvertex.var_xx * fBeamvertex.var_yy -
+              fBeamvertex.var_xy * fBeamvertex.var_xy;
+   double A = (fBeamvertex.var_xx + fBeamvertex.var_yy)/2;
+   double B = (fBeamvertex.var_xx - fBeamvertex.var_yy)/2;
+   double C = fBeamvertex.var_xy;
+   double evalue1 = (A + sqrt(B*B + C*C) + 1e-20) / (D + 1e-40);
+   double evalue2 = (A - sqrt(B*B + C*C) + 1e-20) / (D + 1e-40);
+   if (evalue1 < 0 || evalue2 < 0) {
+      G4cerr << "Error in GlueXPrimaryGeneratorAction::configure_beam_vertex"
+             << " - unphysical values given for the beam spot ellipse:"
+             << " var_xx=" << fBeamvertex.var_xx
+             << ", var_xy=" << fBeamvertex.var_xy
+             << ", var_yy=" << fBeamvertex.var_yy
+             << G4endl;
+      exit(1);
+   }
+   double alpha = 0;
+   if (C == 0)
+      alpha = (B < 0)? 0 : M_PI/2;
+   else if (B == 0)
+      alpha = (C < 0)? -M_PI/4 : M_PI/4;
+   else
+      alpha = atan2(C,B) / 2;
+   fBeamvertex.sigma[0] = sqrt(1 / evalue1);
+   fBeamvertex.sigma[1] = sqrt(1 / evalue2);
+   fBeamvertex.alpha = alpha;
+   fBeamvertex_activated = 1;
+
+#ifndef QUIET_CONFIGURE_BEAM_VERTEX
+   G4cout << "Configured beam vertex parameters: (units of cm)" << G4endl
+          << "   center x=" << fBeamvertex.x/cm
+          << "   y=" << fBeamvertex.y/cm
+          << "   z=" << fBeamvertex.z/cm << G4endl
+          << "   sigma_x=" << sqrt(fBeamvertex.var_xx)/cm
+          << "   sigma_y=" << sqrt(fBeamvertex.var_yy)/cm
+          << "   sigma_xy=" << fBeamvertex.var_xy/(cm*cm) << G4endl
+          << "   dxdz=" << fBeamvertex.dxdz
+          << "   dydz=" << fBeamvertex.dydz
+          << "   dz=" << fBeamvertex.length/cm << G4endl;
+#endif
+}
+
+void GlueXPrimaryGeneratorAction::generate_beam_vertex(double v[3])
+{
 }

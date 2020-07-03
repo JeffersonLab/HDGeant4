@@ -93,7 +93,7 @@ GlueXSpecialCuts::PostStepDoIt( const G4Track& aTrack,
                                  const G4Step&  )
 {
 
-   // Kill the current particle, if requested by G4UserLimits
+   // Stop (but do not kill) the current particle, if requested by G4UserLimits
 
    if (verboseLevel > 1) {
       G4cout << "    " << aTrack.GetParticleDefinition()->GetParticleName()
@@ -107,7 +107,7 @@ GlueXSpecialCuts::PostStepDoIt( const G4Track& aTrack,
    aParticleChange.Initialize(aTrack);
    aParticleChange.ProposeEnergy(0.) ;
    aParticleChange.ProposeLocalEnergyDeposit(aTrack.GetKineticEnergy()) ;
-   aParticleChange.ProposeTrackStatus(fStopAndKill);
+   //aParticleChange.ProposeTrackStatus(fStopAndKill);
    return &aParticleChange;
 }
 

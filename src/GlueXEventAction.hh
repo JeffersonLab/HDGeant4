@@ -24,7 +24,7 @@ class GlueXEventAction : public G4UserEventAction
    void EndOfEventAction(const G4Event*);
 
  protected:
-   int fDebugPrint[3]; 
+   int fProgressStep; 
 };
 
 #endif
