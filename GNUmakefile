@@ -97,7 +97,6 @@ INTYLIBS += -l$(BOOST_PYTHON_LIB) -L$(shell python-config --prefix)/lib $(shell 
 INTYLIBS += -L$(G4ROOT)/lib64 $(patsubst $(G4ROOT)/lib64/lib%.so, -l%, $(G4shared_libs))
 INTYLIBS += -lgfortran
 INTYLIBS += -L/usr/lib64
-INTYLIBS += -ltirpc
 
 EXTRALIBS += -lG4fixes
 
