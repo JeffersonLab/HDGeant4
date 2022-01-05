@@ -5,9 +5,10 @@
 // version: february 4, 2017
 //
 // In the context of the Geant4 event-level multithreading model,
-// this class is "shared", ie. has no thread-local state. It is
-// invoked from the GlueXGeneratorAction class, which is
-// responsible for managing the interlocks to ensure thread safety.
+// this class is "thread-local", ie. has thread-local state.
+// Separate object instances are created for each worker thread.
+// Resources are created once when the first object is instantiated,
+// and destroyed once when the last object is destroyed.
 //
 // Notes:
 // This is an auxilliary class that is not used in the main production
@@ -28,10 +29,11 @@
 #ifndef GlueXBremsstrahlungGenerator_H
 #define GlueXBremsstrahlungGenerator_H
 
-#include <TRandom3.h>
+#include <G4TRandom.hh>
 #include <TFile.h>
 #include <TTree.h>
 #include <TH1D.h>
+#include <G4AutoLock.hh>
 
 class GlueXBremsstrahlungGenerator
 {
@@ -41,12 +43,14 @@ class GlueXBremsstrahlungGenerator
 
    void GenerateBeamPhotons(int nevents);
    double AtomicFormFactor(double q2);
-   void SetRandomSeed(long int seed);
+
+   // simply change this to TRandom to use
+   // this class outside of the Geant4 context
+   G4TRandom fRandom;
 
  protected:
    double fBeamEnergy;
    double fMinEnergy;
-   TRandom3 fRandom;
 
  private:
    double Ebeam;
@@ -69,8 +73,10 @@ class GlueXBremsstrahlungGenerator
    void normalize(TH1D *hist);
 
    TH1D *fImportSample[5];
+
    static TTree *fTree;
    static TFile *fTreeFile;
+   static G4Mutex fMutex;
 };
 
 #endif

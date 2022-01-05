@@ -12,8 +12,6 @@
 
 #include "G4UserStackingAction.hh"
 #include "G4ClassificationOfNewTrack.hh"
-#include "TGraph.h"
-#include "TRandom.h"
 
 class G4StackManager;
 class G4Track;

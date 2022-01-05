@@ -42,11 +42,7 @@ class GlueXUserActionInitialization : public G4VUserActionInitialization
    }
 
    virtual G4VSteppingVerbose* InitializeSteppingVerbose() const {
-      G4VSteppingVerbose *verb = G4VSteppingVerbose::GetInstance();
-      if (verb)
-         return verb;
-      else
-         return new GlueXSteppingVerbose();
+      return new GlueXSteppingVerbose();
    }
 
  protected:

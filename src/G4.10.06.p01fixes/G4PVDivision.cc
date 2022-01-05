@@ -50,6 +50,7 @@ G4PVDivision::G4PVDivision(const G4String& pName,
                            const G4double offset )
   : G4PVReplica(pName, pLogical, pMotherLogical, pAxis, nDivs, width, offset)
 {
+  pMotherLogical->ChangeDaughtersType(kParameterised);
   SetParameterisation(pMotherLogical, pAxis, nDivs,
                       width, offset, DivNDIVandWIDTH);
   CheckAndSetParameters (pAxis, nDivs, width, offset,
@@ -65,6 +66,7 @@ G4PVDivision::G4PVDivision(const G4String& pName,
                            const G4double offset )
   : G4PVReplica(pName, pLogical, pMotherLogical, pAxis, nDivs, 0, offset)
 {
+  pMotherLogical->ChangeDaughtersType(kParameterised);
   SetParameterisation(pMotherLogical, pAxis, nDivs, 0., offset, DivNDIV);
   CheckAndSetParameters (pAxis, nDivs, 0., offset, DivNDIV, pMotherLogical);
 }
@@ -78,6 +80,7 @@ G4PVDivision::G4PVDivision(const G4String& pName,
                            const G4double offset )
   : G4PVReplica(pName, pLogical, pMotherLogical, pAxis, 0, width, offset)
 {
+  pMotherLogical->ChangeDaughtersType(kParameterised);
   SetParameterisation(pMotherLogical, pAxis, 0, width, offset, DivWIDTH);
   CheckAndSetParameters (pAxis, 0, width, offset, DivWIDTH, pMotherLogical);
 }
@@ -90,12 +93,14 @@ G4PVDivision::G4PVDivision(const G4String& pName,
                            const G4int nDivs,
                            const G4double width,
                            const G4double offset )
-  : G4PVReplica(pName, pLogical, pMotherPhysical->GetLogicalVolume(), pAxis, nDivs, width, offset)
+  : G4PVReplica(pName, pLogical, pMotherPhysical, pAxis, nDivs, width, offset)
 {
-  SetParameterisation(pMotherPhysical->GetLogicalVolume(), pAxis, nDivs,
+  G4LogicalVolume* pMotherLogical = pMotherPhysical->GetLogicalVolume();
+  pMotherLogical->ChangeDaughtersType(kParameterised);
+  SetParameterisation(pMotherLogical, pAxis, nDivs,
                       width, offset, DivNDIVandWIDTH);
   CheckAndSetParameters (pAxis, nDivs, width, offset,
-                         DivNDIVandWIDTH, pMotherPhysical->GetLogicalVolume());
+                         DivNDIVandWIDTH, pMotherLogical);
 }
 
 //--------------------------------------------------------------------------

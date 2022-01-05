@@ -13,6 +13,8 @@
 #include "GlueXPrimaryGenerator.hh"
 #include "GlueXPrimaryGeneratorAction.hh"
 #include "GlueXUserEventInformation.hh"
+#include "HddmOutput.hh"
+
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
 #include "G4RunManager.hh"
@@ -37,6 +39,11 @@ void GlueXPrimaryGenerator::GeneratePrimaryVertex(G4Event *event)
          return;
       }
    }
+
+   // Override the run number on the input record
+   hddm_s::PhysicsEventList pe = hddmevent->getPhysicsEvents();
+   HddmOutput::setRunNo(pe(0).getRunNo());
+   pe(0).setRunNo(HddmOutput::getRunNo());
 
    // Store generated event info so it can be written to output file
    GlueXUserEventInformation *event_info;

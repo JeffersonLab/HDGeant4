@@ -5,9 +5,10 @@
 // version: december 24, 2016
 //
 // In the context of the Geant4 event-level multithreading model,
-// this class is "shared", ie. has no thread-local state. It is
-// invoked from the GlueXPhotonBeamGeneratorAction class, which is
-// responsible for managing the interlocks to ensure thread safety.
+// this class is "thread-local", ie. has thread-local state.
+// Separate object instances are created for each worker thread.
+// Resources are created once when the first object is instantiated,
+// and destroyed once when the last object is destroyed.
 
 #ifndef GlueXPhotonBeamGenerator_H
 #define GlueXPhotonBeamGenerator_H
@@ -28,14 +29,15 @@ class GlueXPhotonBeamGenerator: public G4VPrimaryGenerator
    virtual void GeneratePrimaryVertex(G4Event *event);
    virtual void GenerateBeamPhoton(G4Event *event, double t0);
 
-   static double GenerateTriggerTime(const G4Event *event);
-   static int GenerateTaggerHit(const G4Event *event, 
-                                double energy, double time, int bg=0);
-   static void GenerateRFsync(const G4Event *event);
+   double GenerateTriggerTime(const G4Event *event);
+   int GenerateTaggerHit(const G4Event *event, 
+                         double energy, double time, int bg=0);
+   void GenerateRFsync(const G4Event *event);
 
  protected:
    CobremsGeneration *fCobrems;
-   static GlueXPseudoDetectorTAG *fTagger;
+   GlueXPseudoDetectorTAG *fTagger;
+
    static int fGenerateNotSimulate;
    static int fBeamBackgroundTagOnly;
 
@@ -45,10 +47,10 @@ class GlueXPhotonBeamGenerator: public G4VPrimaryGenerator
    static double fBeamVelocity;
    static double fBeamOffset[2];
 
-   static ImportanceSampler fCoherentPDFx; 
-   static ImportanceSampler fIncoherentPDFlogx;
-   static ImportanceSampler fIncoherentPDFy;
-   static double fIncoherentPDFtheta02;
+   ImportanceSampler fCoherentPDFx; 
+   ImportanceSampler fIncoherentPDFlogx;
+   ImportanceSampler fIncoherentPDFy;
+   double fIncoherentPDFtheta02;
 
    void prepareImportanceSamplingPDFs();
 
@@ -96,6 +98,7 @@ class GlueXPhotonBeamGenerator: public G4VPrimaryGenerator
    }
 
  private:
+   GlueXPhotonBeamGenerator();
    GlueXPhotonBeamGenerator(const GlueXPhotonBeamGenerator &src) {}
    GlueXPhotonBeamGenerator &operator=(const GlueXPhotonBeamGenerator &src) {
       return *this;

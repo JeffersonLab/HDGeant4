@@ -9,6 +9,7 @@
 #include "GlueXPrimaryGeneratorAction.hh"
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserTrackInformation.hh"
+#include "HddmOutput.hh"
 
 #include "G4VPhysicalVolume.hh"
 #include "G4PVPlacement.hh"
@@ -58,7 +59,7 @@ GlueXSensitiveDetectorFTOF::GlueXSensitiveDetectorFTOF(const G4String& name)
 
    G4AutoLock barrier(&fMutex);
    if (instanceCount++ == 0) {
-      extern int run_number;
+      int runno = HddmOutput::getRunNo();
       extern jana::JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
@@ -66,7 +67,7 @@ GlueXSensitiveDetectorFTOF::GlueXSensitiveDetectorFTOF(const G4String& name)
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
+      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
       std::map<string, float> tof_parms;
       jcalib->Get("TOF/tof_parms", tof_parms);
       ATTENUATION_LENGTH = tof_parms.at("TOF_ATTEN_LENGTH")*cm;

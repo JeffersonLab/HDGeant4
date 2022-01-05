@@ -25,6 +25,8 @@
 #include "GlueXSensitiveDetectorPSC.hh"
 #include "GlueXSensitiveDetectorPS.hh"
 #include "GlueXSensitiveDetectorTPOL.hh"
+#include "GlueXSensitiveDetectorCTOF.hh"
+
 
 #include "G4Version.hh"
 #include "G4LogicalVolume.hh"
@@ -100,7 +102,7 @@ GlueXDetectorConstruction::GlueXDetectorConstruction(G4String hddsFile)
       XString message(toCatch.getMessage());
       G4cerr << APP_NAME << " - error during xercesc initialization!"
              << G4endl << S(message) << G4endl;
-      return;
+      exit(1);
    }
 
    DOMDocument* document;
@@ -147,14 +149,14 @@ GlueXDetectorConstruction::GlueXDetectorConstruction(G4String hddsFile)
    }
    else {
       G4cerr << APP_NAME << " - no hdds geometry file specified!"
-             << G4endl;
-      return;
+             << " Cannot continue" << G4endl;
+      exit(9);
    }
    if (document == 0)
    {
       G4cerr << APP_NAME << " - error parsing HDDS document, "
              << "cannot continue" << G4endl;
-      return;
+      exit(9);
    }
 
    DOMNode* docEl;
@@ -163,15 +165,16 @@ GlueXDetectorConstruction::GlueXDetectorConstruction(G4String hddsFile)
    }
    catch (DOMException& e) {
       G4cerr << APP_NAME << " - Woops " << e.msg << G4endl;
-      return;
+      exit(9);
    }
 
    DOMElement* rootEl = document->getElementById(X("everything"));
    if (rootEl == 0)
    {
       G4cerr << APP_NAME << " - error scanning HDDS document, " << G4endl
-             << "  no element named \"everything\" found" << G4endl;
-      return;
+             << "  no element named \"everything\" found, "
+             << "cannot continue" << G4endl;
+      exit(9);
    }
 
    try {
@@ -212,6 +215,7 @@ const GlueXDetectorConstruction *GlueXDetectorConstruction::GetInstance()
    // application obtain the primary instance, if any. If none has
    // yet been constructed, it returns zero.
 
+   G4AutoLock barrier(&fMutex);
    if (fInstance.size() > 0)
       return *fInstance.begin();
    return 0;
@@ -221,6 +225,7 @@ const HddsG4Builder *GlueXDetectorConstruction::GetBuilder()
 {
    // Return a const pointer to the internal HddsG4Builder object.
 
+   G4AutoLock barrier(&fMutex);
    if (fInstance.size() > 0)
       return &(*fInstance.begin())->fHddsBuilder;
    return 0;
@@ -283,6 +288,7 @@ void GlueXDetectorConstruction::ConstructSDandField()
    GlueXSensitiveDetectorPSC* pscHandler = 0;
    GlueXSensitiveDetectorPS* psHandler = 0;
    GlueXSensitiveDetectorTPOL* tpolHandler = 0;
+   GlueXSensitiveDetectorCTOF* ctofHandler = 0;
 
    // During geometry building, certain logical volumes were marked as
    // sensitive by adding them to a list. Now we need to go down that
@@ -380,6 +386,14 @@ void GlueXDetectorConstruction::ConstructSDandField()
             SDman->AddNewDetector(ftofHandler);
          }
          iter->second->SetSensitiveDetector(ftofHandler);
+      }
+      else if (volname == "CTOF")
+      {
+         if (ctofHandler == 0) {
+            ctofHandler = new GlueXSensitiveDetectorCTOF("ctof");
+            SDman->AddNewDetector(ctofHandler);
+         }
+         iter->second->SetSensitiveDetector(ctofHandler);
       }
       // radiator volume: BNNM (NN = bar number 0-47 and M is sub-bar character A-D)
       else if (volname == "PIXV" || 

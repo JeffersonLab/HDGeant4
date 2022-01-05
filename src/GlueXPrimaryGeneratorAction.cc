@@ -9,6 +9,7 @@
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserOptions.hh"
 #include "G4OpticalPhoton.hh"
+#include "HddmOutput.hh"
 
 #include "G4Event.hh"
 #include "G4ParticleTable.hh"
@@ -20,19 +21,14 @@
 typedef GlueXPrimaryGeneratorAction::source_type_t source_type_t;
 typedef GlueXPrimaryGeneratorAction::single_particle_gun_t particle_gun_t;
 
-int GlueXPrimaryGeneratorAction::instanceCount = 0;
 source_type_t GlueXPrimaryGeneratorAction::fSourceType = SOURCE_TYPE_NONE;
 
 std::ifstream *GlueXPrimaryGeneratorAction::fHDDMinfile = 0;
 hddm_s::istream *GlueXPrimaryGeneratorAction::fHDDMistream = 0;
 
-CobremsGeneration *GlueXPrimaryGeneratorAction::fCobremsGeneration = 0;
-GlueXPhotonBeamGenerator *GlueXPrimaryGeneratorAction::fPhotonBeamGenerator = 0;
 G4ParticleTable *GlueXPrimaryGeneratorAction::fParticleTable = 0;
-particle_gun_t GlueXPrimaryGeneratorAction::fGunParticle;
 
-GlueXParticleGun *GlueXPrimaryGeneratorAction::fParticleGun = 0;
-GlueXPrimaryGenerator *GlueXPrimaryGeneratorAction::fPrimaryGenerator = 0;
+particle_gun_t GlueXPrimaryGeneratorAction::fGunParticle;
 
 double GlueXPrimaryGeneratorAction::fBeamBackgroundRate = 0;
 double GlueXPrimaryGeneratorAction::fBeamBackgroundGateStart = 0;
@@ -41,31 +37,62 @@ double GlueXPrimaryGeneratorAction::fL1triggerTimeSigma = 10 * ns;
 double GlueXPrimaryGeneratorAction::fRFreferencePlaneZ = 65 * cm;
 double GlueXPrimaryGeneratorAction::fTargetCenterZ = 65 * cm;
 double GlueXPrimaryGeneratorAction::fTargetLength = 29.9746 * cm;
-
-int GlueXPrimaryGeneratorAction::fEventCount = 0;
+double GlueXPrimaryGeneratorAction::fBeamEndpointEnergy = 12 * GeV;
+double GlueXPrimaryGeneratorAction::fBeamPeakEnergy = 9 * GeV;
 
 G4Mutex GlueXPrimaryGeneratorAction::fMutex = G4MUTEX_INITIALIZER;
 std::list<GlueXPrimaryGeneratorAction*> GlueXPrimaryGeneratorAction::fInstance;
+
+double GlueXPrimaryGeneratorAction::DIRC_LUT_X[48] = {0};
+double GlueXPrimaryGeneratorAction::DIRC_BAR_Y[48] = {0};
+double GlueXPrimaryGeneratorAction::DIRC_LUT_Z = 0;
+double GlueXPrimaryGeneratorAction::DIRC_QZBL_DY = 0;
+double GlueXPrimaryGeneratorAction::DIRC_QZBL_DZ = 0;
+double GlueXPrimaryGeneratorAction::DIRC_OWDG_DZ = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCS_FDTH_X = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCS_FDTH_Z = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCN_FDTH_X = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCN_FDTH_Z = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCN_FDTH1_Y = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCN_FDTH2_Y = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCN_FDTH3_Y = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCS_FDTH4_Y = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCS_FDTH5_Y = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LED_OBCS_FDTH6_Y = 0;
 
 //--------------------------------------------
 // GlueXPrimaryGeneratorAction (constructor)
 //--------------------------------------------
 
 GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
- : fBeamvertex_activated(0)
+ : fParticleGun(0),
+   fCobremsGeneration(0),
+   fPhotonBeamGenerator(0),
+   fPrimaryGenerator(0),
+   fBeamvertex_activated(0)
 {
    G4AutoLock barrier(&fMutex);
    fInstance.push_back(this);
-   ++instanceCount;
 
    // Initializaton is driven by the control.in file, which
    // gets read and parsed only once, by the first constructor.
 
-   if (fSourceType != SOURCE_TYPE_NONE) {
+   fParticleGun = new GlueXParticleGun();
+
+   if (fSourceType == SOURCE_TYPE_HDDM) {
+      clone_photon_beam_generator();
+      fPrimaryGenerator = new GlueXPrimaryGenerator(fHDDMistream);
+      return;
+   }
+   else if (fSourceType == SOURCE_TYPE_COBREMS_GEN) {
+      clone_photon_beam_generator();
+      return;
+   }
+   else if (fSourceType == SOURCE_TYPE_PARTICLE_GUN) {
+      fParticleGun->SetParticleDefinition(fGunParticle.partDef);
       return;
    }
 
-   fParticleGun = new GlueXParticleGun();
    fParticleTable = G4ParticleTable::GetParticleTable();
    
    GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
@@ -79,23 +106,71 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
    // get positions for LUT from XML geometry
    std::map<int, int> dirclutpars;
    std::map<int, int> dircledpars;
-   if (instanceCount == 1) {
+
+   if (user_opts->Find("DIRCLUT", dirclutpars)) {
       
-      if (user_opts->Find("DIRCLUT", dirclutpars)) {
-         
-         extern int run_number;
-         extern jana::JApplication *japp;
-         if (japp == 0) {
-            G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
-              << "jana global DApplication object not set, "
-              << "cannot continue." << G4endl;
-            exit(-1);
+      int runno = HddmOutput::getRunNo();
+      extern jana::JApplication *japp;
+      if (japp == 0) {
+         G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
+           << "jana global DApplication object not set, "
+           << "cannot continue." << G4endl;
+         exit(-1);
+      }
+      jana::JGeometry *jgeom = japp->GetJGeometry(runno);
+      if (japp == 0) {   // dummy
+         jgeom = 0;
+         G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
+      }
+      
+      std::vector<double> DIRC;
+      std::vector<double> DRCC;
+      std::vector<double> DCML00_XYZ;
+      std::vector<double> DCML01_XYZ;
+      std::vector<double> DCML10_XYZ;
+      std::vector<double> DCML11_XYZ;
+      std::vector<double> WNGL00_XYZ;
+      std::vector<double> WNGL01_XYZ;
+      std::vector<double> WNGL10_XYZ;
+      std::vector<double> WNGL11_XYZ;
+      std::vector<double> OWDG_XYZ;
+      jgeom->Get("//section/composition/posXYZ[@volume='DIRC']/@X_Y_Z", DIRC);
+      jgeom->Get("//composition[@name='DIRC']/posXYZ[@volume='DRCC']/@X_Y_Z", DRCC);
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML00']/@X_Y_Z", DCML00_XYZ);
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML01']/@X_Y_Z", DCML01_XYZ);
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML10']/@X_Y_Z", DCML10_XYZ);
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML11']/@X_Y_Z", DCML11_XYZ);
+      jgeom->Get("//composition[@name='DCML00']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL00_XYZ);
+      jgeom->Get("//composition[@name='DCML01']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL01_XYZ);
+      jgeom->Get("//composition[@name='DCML10']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL10_XYZ);
+      jgeom->Get("//composition[@name='DCML11']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL11_XYZ);
+      jgeom->Get("//composition[@name='DCML11']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL11_XYZ);
+      jgeom->Get("//trd[@name='OWDG']/@Xmp_Ymp_Z", OWDG_XYZ);
+      DIRC_LUT_Z = (DIRC[2] + DRCC[2] + DCML01_XYZ[2] + 0.8625) * cm;
+      DIRC_QZBL_DY = 3.5 * cm;   // nominal width to generate LUT
+      DIRC_QZBL_DZ = 1.725 * cm; // nominal thickness to generate LUT
+      DIRC_OWDG_DZ = OWDG_XYZ[4];
+
+      // set array of bar positions
+      for (int i=0; i<48; i++) {
+         std::vector<double> DCBR_XYZ;
+         if (i<12) {
+            std::stringstream geomDCML10;
+            geomDCML10 << "//composition[@name='DCML10']/posXYZ[@volume='DCBR" 
+                  << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z"; 
+            jgeom->Get(geomDCML10.str(), DCBR_XYZ);
+            DIRC_BAR_Y[i] = (DCML10_XYZ[1] - DCBR_XYZ[1]) * cm;
+            DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML10_XYZ[0] - WNGL10_XYZ[0] + DIRC_OWDG_DZ) * cm;
          }
-         jana::JGeometry *jgeom = japp->GetJGeometry(run_number);
-         if (japp == 0) {   // dummy
-            jgeom = 0;
-            G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
+         else if (i<24) {
+            std::stringstream geomDCML11;
+            geomDCML11 << "//composition[@name='DCML11']/posXYZ[@volume='DCBR" 
+                  << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z"; 
+            jgeom->Get(geomDCML11.str(), DCBR_XYZ);
+            DIRC_BAR_Y[i] = (DCML11_XYZ[1] - DCBR_XYZ[1]) * cm;
+            DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML11_XYZ[0] - WNGL11_XYZ[0] + DIRC_OWDG_DZ) * cm;
          }
+<<<<<<< HEAD
          
          vector<double>DIRC;
          vector<double>DRCC;
@@ -235,9 +310,28 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
                DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML00_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
 
             }            
+=======
+         else if (i<36) {
+            std::stringstream geomDCML01;
+            geomDCML01 << "//composition[@name='DCML01']/posXYZ[@volume='DCBR" 
+                  << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z"; 
+            jgeom->Get(geomDCML01.str(), DCBR_XYZ);
+            DIRC_BAR_Y[i] = (DCML01_XYZ[1] + DCBR_XYZ[1]) * cm;
+            DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML01_XYZ[0] + WNGL01_XYZ[0] - DIRC_OWDG_DZ) * cm;
+>>>>>>> origin/master
          }
+         else if (i<48) {
+            std::stringstream geomDCML00;
+            geomDCML00 << "//composition[@name='DCML00']/posXYZ[@volume='DCBR" 
+                  << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z"; 
+            jgeom->Get(geomDCML00.str(), DCBR_XYZ);
+            DIRC_BAR_Y[i] = (DCML00_XYZ[1] + DCBR_XYZ[1]) * cm;
+            DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML00_XYZ[0] + WNGL00_XYZ[0] - DIRC_OWDG_DZ) * cm;
+         }            
       }
+   }
 
+<<<<<<< HEAD
       if (user_opts->Find("DIRCLED", dircledpars)) {
          extern int run_number;
          extern jana::JApplication *japp;
@@ -382,6 +476,66 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
 	 }
 
 	}//END OF DIRC LED generator
+=======
+   if (user_opts->Find("DIRCLED", dircledpars)) {
+      int runno = HddmOutput::getRunNo();
+      extern jana::JApplication *japp;
+      if (japp == 0) {
+         G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
+           << "jana global DApplication object not set, "
+           << "cannot continue." << G4endl;
+         exit(-1);
+      }
+      jana::JGeometry *jgeom = japp->GetJGeometry(runno);
+      if (japp == 0) {   // dummy
+         jgeom = 0;
+         G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
+      }
+      std::vector<double> DIRC;
+      std::vector<double> DRCC;
+      std::vector<double> OBCS_XYZ;
+      std::vector<double> OBCN_XYZ;
+      std::vector<double> MRAN_XYZ;
+      std::vector<double> MRAS_XYZ;
+      std::vector<double> WM1N_XYZ;
+      std::vector<double> WM1S_XYZ;
+      std::vector<double> WM1N_BOX_XYZ;
+      std::vector<double> WM1S_BOX_XYZ;
+
+      jgeom->Get("//section/composition/posXYZ[@volume='DIRC']/@X_Y_Z", DIRC);
+      jgeom->Get("//composition[@name='DIRC']/posXYZ[@volume='DRCC']/@X_Y_Z", DRCC);
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCN']/@X_Y_Z", OBCN_XYZ);
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCS']/@X_Y_Z", OBCS_XYZ);
+      jgeom->Get("//composition[@name='OBCN']/posXYZ[@volume='MRAN']/@X_Y_Z", MRAN_XYZ);
+      jgeom->Get("//composition[@name='OBCS']/posXYZ[@volume='MRAS']/@X_Y_Z", MRAS_XYZ);
+      jgeom->Get("//composition[@name='MRAN']/posXYZ[@volume='WM1N']/@X_Y_Z", WM1N_XYZ);
+      jgeom->Get("//composition[@name='MRAS']/posXYZ[@volume='WM1S']/@X_Y_Z", WM1S_XYZ);
+      jgeom->Get("//box[@name='WM1N']/@X_Y_Z", WM1N_BOX_XYZ);
+      jgeom->Get("//box[@name='WM1S']/@X_Y_Z", WM1S_BOX_XYZ);
+
+      DIRC_LED_OBCN_FDTH_X  = (DIRC[0] + DRCC[0] + OBCN_XYZ[0] + MRAN_XYZ[0] +
+                               WM1N_XYZ[0] + WM1N_BOX_XYZ[0]/2. + 1.27) * cm;
+      DIRC_LED_OBCS_FDTH_X  = (DIRC[0] + DRCC[0] + OBCS_XYZ[0] + MRAS_XYZ[0] +
+                               WM1S_XYZ[0] - WM1S_BOX_XYZ[0]/2. - 1.27) * cm;
+
+      DIRC_LED_OBCN_FDTH_Z  = (DIRC[2] + DRCC[2] + OBCN_XYZ[2] + MRAN_XYZ[2] +
+                               WM1N_XYZ[2] - WM1N_BOX_XYZ[2]/2. ) * cm;
+      DIRC_LED_OBCS_FDTH_Z  = (DIRC[2] + DRCC[2] + OBCS_XYZ[2] + MRAS_XYZ[2] +
+                               WM1S_XYZ[2] - WM1S_BOX_XYZ[2]/2. ) * cm;
+
+      DIRC_LED_OBCN_FDTH1_Y = (DIRC[1] + DRCC[1] + OBCN_XYZ[1] + MRAN_XYZ[1] +
+                               WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932) * cm;
+      DIRC_LED_OBCN_FDTH2_Y = (DIRC[1] + DRCC[1] + OBCN_XYZ[1] + MRAN_XYZ[1] +
+                               WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932 + 31.800038 ) * cm;
+      DIRC_LED_OBCN_FDTH3_Y = (DIRC[1] + DRCC[1] + OBCN_XYZ[1] + MRAN_XYZ[1] +
+                               WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932 + 31.800038 * 2. ) * cm;
+      DIRC_LED_OBCS_FDTH4_Y = (DIRC[1] + DRCC[1] + OBCS_XYZ[1] + MRAS_XYZ[1] +
+                               WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932) * cm;
+      DIRC_LED_OBCS_FDTH5_Y = (DIRC[1] + DRCC[1] + OBCS_XYZ[1] + MRAS_XYZ[1] +
+                               WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932 - 31.800038 ) * cm;
+      DIRC_LED_OBCS_FDTH6_Y = (DIRC[1] + DRCC[1] + OBCS_XYZ[1] + MRAS_XYZ[1] +
+                               WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932 - 31.800038 * 2. ) * cm;
+>>>>>>> origin/master
 
    }
 
@@ -462,7 +616,7 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
 
    else if (user_opts->Find("KINE", kinepars))
    {
-      if (kinepars[1] == 1000) {
+      if (kinepars[1] == 1000 || kinepars[1] == 148 || kinepars[1] == 48) {
          fGunParticle.geantType = 0;
          fGunParticle.pdgType = 999999;
          fGunParticle.partDef = fParticleTable->FindParticle("geantino");
@@ -559,6 +713,9 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
          exit(-1);
       }
 
+      fBeamEndpointEnergy = beamE0;
+      fBeamPeakEnergy = beamEpeak;
+
       // CobremsGeneration has its own standard units that it uses:
       //  length : m
       //  angles : radians
@@ -607,19 +764,29 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
 
 GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction(const
                              GlueXPrimaryGeneratorAction &src)
- : G4VUserPrimaryGeneratorAction(src)
+ : GlueXPrimaryGeneratorAction()
 {
    fBeamvertex = src.fBeamvertex;
    fBeamvertex_activated = src.fBeamvertex_activated;
-   G4AutoLock barrier(&fMutex);
-   fInstance.push_back(this);
-   ++instanceCount;
 }
 
 GlueXPrimaryGeneratorAction &GlueXPrimaryGeneratorAction::operator=(const
                              GlueXPrimaryGeneratorAction &src)
 {
-   *(G4VUserPrimaryGeneratorAction*)this = src;
+   fParticleGun = new GlueXParticleGun();
+   fCobremsGeneration = 0;
+   fPhotonBeamGenerator = 0;
+   fPrimaryGenerator = 0;
+
+   if (fSourceType == SOURCE_TYPE_HDDM) {
+      fPrimaryGenerator = new GlueXPrimaryGenerator(fHDDMistream);
+   }
+   else if (fSourceType == SOURCE_TYPE_PARTICLE_GUN) {
+      fParticleGun->SetParticleDefinition(fGunParticle.partDef);
+   }
+   if (src.fPhotonBeamGenerator) {
+      clone_photon_beam_generator();
+   }
    fBeamvertex = src.fBeamvertex;
    fBeamvertex_activated = src.fBeamvertex_activated;
    return *this;
@@ -633,14 +800,14 @@ GlueXPrimaryGeneratorAction::~GlueXPrimaryGeneratorAction()
 {
    G4AutoLock barrier(&fMutex);
    fInstance.remove(this);
-   if (--instanceCount == 0) {
-      if (fPrimaryGenerator)
-         delete fPrimaryGenerator;
-      if (fCobremsGeneration)
-         delete fCobremsGeneration;
-      if (fPhotonBeamGenerator)
-         delete fPhotonBeamGenerator;
-      delete fParticleGun;
+   if (fPrimaryGenerator)
+      delete fPrimaryGenerator;
+   if (fCobremsGeneration)
+      delete fCobremsGeneration;
+   if (fPhotonBeamGenerator)
+      delete fPhotonBeamGenerator;
+   delete fParticleGun;
+   if (fInstance.size() == 0) {
       if (fHDDMistream)
          delete fHDDMistream;
       if (fHDDMinfile)
@@ -648,19 +815,7 @@ GlueXPrimaryGeneratorAction::~GlueXPrimaryGeneratorAction()
    }
 }
 
-const GlueXPrimaryGeneratorAction *GlueXPrimaryGeneratorAction::GetInstance()
-{
-   // Generally one only needs a single instance of this object
-   // per process, and this static method lets any component in the
-   // application obtain the primary instance, if any. If none has
-   // yet been constructed, it returns zero.
-
-   if (fInstance.size() > 0)
-      return *fInstance.begin();
-   return 0;
-}
-
-const CobremsGeneration *GlueXPrimaryGeneratorAction::GetCobremsGeneration()
+const CobremsGeneration *GlueXPrimaryGeneratorAction::GetCobremsGeneration() const
 {
    return fCobremsGeneration;
 }
@@ -671,8 +826,6 @@ const CobremsGeneration *GlueXPrimaryGeneratorAction::GetCobremsGeneration()
 
 void GlueXPrimaryGeneratorAction::GeneratePrimaries(G4Event* anEvent)
 {
-   G4AutoLock barrier(&fMutex);
-
    switch (fSourceType) {
       case SOURCE_TYPE_HDDM:
          GeneratePrimariesHDDM(anEvent);
@@ -699,7 +852,7 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesParticleGun(G4Event* anEvent)
    // generator for this event, so this must happen here at the top.
    GlueXUserEventInformation *event_info = new GlueXUserEventInformation();
    anEvent->SetUserInformation(event_info);
-   GlueXUserEventInformation::fWriteNoHitEvents = 1;
+   GlueXUserEventInformation::setWriteNoHitEvents(1);
 
    // Unbelievably, GEANT4's G4ParticleGun class insists on printing
    // a message whenever the momentum or energy is changed, unless
@@ -1003,8 +1156,7 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesParticleGun(G4Event* anEvent)
    fParticleGun->SetParticleMomentum(mom);
    fParticleGun->SetParticleTime(0.+DeltaT);
 
-   // Set the event number and fire the gun
-   anEvent->SetEventID(++fEventCount);
+   // Fire the gun
    fParticleGun->GeneratePrimaryVertex(anEvent);
 
    // Store generated particle info so it can be written to output file
@@ -1055,7 +1207,9 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesHDDM(G4Event* anEvent)
          }
          z = fTargetCenterZ + (G4UniformRand() - 0.5) * fTargetLength;
       }
-      double ttag = GlueXPhotonBeamGenerator::GenerateTriggerTime(anEvent);
+      assert (fPrimaryGenerator != 0);
+      assert (fPhotonBeamGenerator != 0);
+      double ttag = fPhotonBeamGenerator->GenerateTriggerTime(anEvent);
       double trel = (z - fRFreferencePlaneZ) / beamVelocity;
       fPrimaryGenerator->SetParticlePosition(G4ThreeVector(x,y,z));
       fPrimaryGenerator->SetParticleTime(trel + ttag);
@@ -1070,13 +1224,12 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesHDDM(G4Event* anEvent)
          trel = (vertex->GetZ0() - fRFreferencePlaneZ) / beamVelocity;
          ttag = vertex->GetT0() - trel;
          double E = eventinfo->GetBeamPhotonEnergy();
-         GlueXPhotonBeamGenerator::GenerateTaggerHit(anEvent, E, ttag);
+         fPhotonBeamGenerator->GenerateTaggerHit(anEvent, E, ttag);
       }
       else {
          return;
       }
    }
-   ++fEventCount;
 
    // Superimpose any requested background minimum-bias beam interactions
 
@@ -1096,7 +1249,6 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesCobrems(G4Event* anEvent)
    if (fPhotonBeamGenerator != 0) {
       fPhotonBeamGenerator->GeneratePrimaryVertex(anEvent);
    }
-   ++fEventCount;
 }
 
 // Convert particle types from Geant3 types to PDG scheme
@@ -1457,7 +1609,7 @@ void GlueXPrimaryGeneratorAction::configure_beam_vertex()
    }
    const char *spec = vertex_spec[1].c_str();
    if (sscanf(spec, "beam_spot(ccdb) * %lf", &fBeamvertex.length)) {
-      extern int run_number;
+      int runno = HddmOutput::getRunNo();
       extern jana::JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXPrimaryGeneratorAction::configure_beam_vertex"
@@ -1465,7 +1617,7 @@ void GlueXPrimaryGeneratorAction::configure_beam_vertex()
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
+      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
       std::map<string, float> beam_spot_params;
       jcalib->Get("/PHOTON_BEAM/beam_spot", beam_spot_params);
       fBeamvertex.x = beam_spot_params.at("x") * cm;
@@ -1542,4 +1694,28 @@ void GlueXPrimaryGeneratorAction::configure_beam_vertex()
 
 void GlueXPrimaryGeneratorAction::generate_beam_vertex(double v[3])
 {
+}
+
+void GlueXPrimaryGeneratorAction::clone_photon_beam_generator()
+{
+   fCobremsGeneration = new CobremsGeneration(fBeamEndpointEnergy/GeV,
+                                              fBeamPeakEnergy/GeV);
+   CobremsGeneration *gen0 = (*fInstance.begin())->fCobremsGeneration;
+   double beamEmin = gen0->getPhotonEnergyMin()*GeV;
+   double radColDist = gen0->getCollimatorDistance()*m;
+   double colDiam = gen0->getCollimatorDiameter()*m;
+   double beamEmit = gen0->getBeamEmittance()*(m*radian);
+   double radThick = gen0->getTargetThickness()*m;
+   double spotRMS = gen0->getCollimatorSpotrms()*m;
+   GlueXPhotonBeamGenerator *gen1 = (*fInstance.begin())->fPhotonBeamGenerator;
+   double spotX = gen1->getBeamOffset(0);
+   double spotY = gen1->getBeamOffset(1);
+   fCobremsGeneration->setPhotonEnergyMin(beamEmin/GeV);
+   fCobremsGeneration->setCollimatorDistance(radColDist/m);
+   fCobremsGeneration->setCollimatorDiameter(colDiam/m);
+   fCobremsGeneration->setBeamEmittance(beamEmit/(m*radian));
+   fCobremsGeneration->setTargetThickness(radThick/m);
+   fCobremsGeneration->setCollimatorSpotrms(spotRMS/m);
+   fPhotonBeamGenerator = new GlueXPhotonBeamGenerator(fCobremsGeneration);
+   fPhotonBeamGenerator->setBeamOffset(spotX, spotY);
 }

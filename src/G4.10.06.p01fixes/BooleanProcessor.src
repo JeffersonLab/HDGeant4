@@ -1075,7 +1075,7 @@ void BooleanProcessor::assembleFace(int what, int iface)
 
 #define INSERT_EDGE_TO_THE_LIST(A) \
 *ilink = A; ilink = &edges[A].inext; *ilink = 0
- 
+
   ExtFace& face = faces[iface]; //G.Barrand : optimize.
   ilink = &ihead;
   for(;;) {
@@ -2663,4 +2663,3 @@ void BooleanProcessor::dump(FaceList &list)
    }
    G4cout << "." << std::endl;
 }
-

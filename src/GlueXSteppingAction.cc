@@ -29,6 +29,8 @@ std::map<int, TTree*> bgprofiles;
 #endif
 
 G4Mutex GlueXSteppingAction::fMutex = G4MUTEX_INITIALIZER;
+int GlueXSteppingAction::fStopTracksInCollimator = 0;
+int GlueXSteppingAction::fSaveTrajectories = 0;
 
 GlueXSteppingAction::GlueXSteppingAction()
 {
@@ -66,9 +68,7 @@ GlueXSteppingAction::GlueXSteppingAction()
 }
 
 GlueXSteppingAction::GlueXSteppingAction(const GlueXSteppingAction &src)
-{
-   fStopTracksInCollimator = src.fStopTracksInCollimator;
-}
+{}
 
 GlueXSteppingAction::~GlueXSteppingAction()
 {
@@ -125,7 +125,7 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       if (primeID > 0) {
          const G4VProcess* process;
          process = step->GetPostStepPoint()->GetProcessDefinedStep();
-         if (process->GetProcessType() == fDecay) {
+         if (process && process->GetProcessType() == fDecay) {
             G4TrackVector &secondary = *(G4TrackVector*)
                                         step->GetSecondaryInCurrentStep();
             G4TrackVector::iterator iter;
@@ -224,7 +224,7 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       try {
          proftree = bgprofiles.at(det);
       }
-      catch(std::out_of_range err) {
+      catch(std::out_of_range &err) {
          std::stringstream names;
          names << "det" << det;
          std::stringstream titles;

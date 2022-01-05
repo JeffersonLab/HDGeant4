@@ -42,6 +42,7 @@ class GlueXSensitiveDetectorDIRC : public G4VSensitiveDetector
    static double GetDetectionEfficiency(double energy_GeV);
   
  private:
+<<<<<<< HEAD
   std::vector<GlueXHitDIRCBar> fHitsBar;
   std::vector<GlueXHitDIRCWob> fHitsWob;
   std::vector<GlueXHitDIRCPmt> fHitsPmt;
@@ -62,6 +63,26 @@ class GlueXSensitiveDetectorDIRC : public G4VSensitiveDetector
   static TGraph *fDetEff;
   static void InitializeDetEff();
   static bool PixelSort(GlueXHitDIRCPmt hit1, GlueXHitDIRCPmt hit2);
+=======
+   std::vector<GlueXHitDIRCBar> fHitsBar;
+   std::vector<GlueXHitDIRCWob> fHitsWob;
+   std::vector<GlueXHitDIRCPmt> fHitsPmt;
+   int fLutId;
+   bool fLED;
+   
+   std::map<G4LogicalVolume*, int> fVolumeTable;
+   
+   static int MAX_HITS;
+   static int MAX_PIXELS;
+   // put all other detector response parameters here
+   static double TWO_HIT_TIME_RESOL;
+   
+   static int instanceCount;
+   static G4Mutex fMutex;
+ 
+   static TGraph *fDetEff;
+   static void InitializeDetEff();
+>>>>>>> origin/master
 };
 
 #endif

@@ -19,7 +19,7 @@ c process the following 100 input events and stop.  If the end of the file is
 c reached before the event count specified in card TRIG is exhausted then the
 c processing will stop at the end of file.
 cINFILE 'bggen.hddm'
-TRIG 10
+TRIG 10000
 
 c The RUNG card is one of the ways to set the run number that is written to
 c the output events. The simulation run number determines which geometry and
@@ -42,7 +42,7 @@ c     simulation;
 c  5) if none of the above conditions is met then the simulation run number
 c     is taken to be zero. Normally this is not considered valid, and a
 c     warning message is printed at startup.
-RUNG 51500
+RUNG 30300
 
 c Normally the position of the primary event vertex is read from the input
 c file that is produced by an external Monte Carlo generator. In the special
@@ -103,7 +103,7 @@ c      spotY - y offset of virtual spot from collimator axis (m)
 c Omitting the final parameter Emin results in the default value being used.
 c Setting Epeak to zero selects an amorphous radiator instead of diamond.
 cBEAM 12. 9.0 0.0012 76.00 0.005 10.e-9 20.e-6 1e-3 -0.0 +0.0
-BEAM 12. 9.0 3.0 76.00 0.005 10.e-9 20.e-6 1e-3 -0.0 +0.0
+cBEAM 11.68 8.82 3.0 76.00 0.005 4.e-9 50.e-6 1e-3 -0.0 +0.0
 
 c The GENBEAM card configures the simulation program to act purely as a
 c Monte Carlo event generator, and not to actually track any of the particles
@@ -142,7 +142,6 @@ c                 above the stated pair threshold.
 c The first two modes are supported by both HDGeant and HDGeant4, while
 c postconv and BHgen are only supported by HDGeant4.
 cGENBEAM 'postconv'
-GENBEAM 'BHgen' 1.0
 
 c Commenting out the following line will disable simulated hits output.
 OUTFILE 'test4.hddm'
@@ -178,8 +177,9 @@ c type insert the Geant particle type code plus 100 (eg. 101=gamma,
 c 103=electron, 107=pi0, 108=pi+, 109=pi-, 114=proton).  If you use
 c the particle code but do not add 100 then theta,phi are ignored
 c and the particle direction is generated randomly over 4pi sr.
-c For a listing of the Geant particle types, see the following URL.
-c http://wwwasdoc.web.cern.ch/wwwasdoc/geant_html3/node72.html
+c For a listing of the Geant particle types, see the CONS300 section of
+c the GEANT User's Guide at the following URL.
+c     http://cds.cern.ch/record/1082634
 c The meaning of the arguments to KINE are as follows.
 c  - particle = GEANT particle type of primary track + 100
 c  - momentum = initial track momentum, central value (GeV/c)
@@ -197,7 +197,7 @@ c PLOG 1
 c TLOG 1
 c
 c   particle  momentum  theta  phi  delta_momentum delta_theta delta_phi
-KINE   108      0.5       90.  180.      0.            0.        0.
+KINE   101      2.0       60.  180.      0.            0.        360.
 
 c The SCAP card determines the vertex position for the particle gun.  It
 c supports the following three arguments, all of which default to 0.
@@ -259,8 +259,8 @@ c     below, and remove any characters before the BGRATE keyword. You are
 c     now ready to go. If you ever change anything in the beamline geometry
 c     eg. the collimator diameter, the coherent edge position, or the value
 c     of beamEmin, do not forget to come back and change your BGRATE.
-cBGGATE -200. 200.
-cBGRATE 2.67
+BGGATE -200. 200.
+BGRATE 2.67
 
 c The above cards BGRATE, BGGATE normally cause the simulation to add
 c accidental tagger hits to the simulated output record, in addition to
@@ -276,7 +276,7 @@ c if you are only interested in the region of the coherent peak. This
 c minimum is the third field of the BEAM card above. Remember that if
 c you change beamEmin, you also need to change BGRATE to match, as 
 c described above.
-BGTAGONLY 1
+cBGTAGONLY 1
 
 c The following line controls the uncertainty of the event time reference
 c relative to the RF structure of the beam. The event time reference is

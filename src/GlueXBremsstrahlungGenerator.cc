@@ -45,16 +45,22 @@
 #include <Complex.h>
 #include <constants.h>
 
+#include <G4ios.hh>
+
 TTree *GlueXBremsstrahlungGenerator::fTree = 0;
 TFile *GlueXBremsstrahlungGenerator::fTreeFile = 0;
+G4Mutex GlueXBremsstrahlungGenerator::fMutex = G4MUTEX_INITIALIZER;
 
 GlueXBremsstrahlungGenerator::GlueXBremsstrahlungGenerator(TFile *rootfile)
- : fBeamEnergy(12.), fMinEnergy(3.), fRandom(0)
+ : fBeamEnergy(12.), fMinEnergy(3.)
 {
-   gRandom = &fRandom;
    for (int i=0; i < 5; i++) {
       fImportSample[i] = 0;
    }
+
+   G4AutoLock barrier(&fMutex);
+   if (fTree == 0)
+      return;
 
 #if defined IMPORTANCE_SAMPLING_HIST_FILE
    {
@@ -121,6 +127,7 @@ GlueXBremsstrahlungGenerator::GlueXBremsstrahlungGenerator(TFile *rootfile)
 
 GlueXBremsstrahlungGenerator::~GlueXBremsstrahlungGenerator()
 {
+   G4AutoLock barrier(&fMutex);
    if (fTree && fTreeFile) {
       fTree->Write();
       delete fTree;
@@ -267,10 +274,12 @@ void GlueXBremsstrahlungGenerator::GenerateBeamPhotons(int nevents)
       polar_45_135 = polar45 / diffXS;
       polar_90_0 = polar90 / diffXS;
       polar_135_45 = polar135 / diffXS;
-      fTree->Fill();
-      good_event = 1;
-      if (event % 1000 == 0) {
-         std::cout << fTree->GetEntries() << " events written\r"
+      {
+         G4AutoLock barrier(&fMutex);
+         fTree->Fill();
+         good_event = 1;
+         if (event % 1000 == 0)
+            G4cout << fTree->GetEntries() << " events written\r"
                    << std::flush;
       }
    }
@@ -288,11 +297,6 @@ double GlueXBremsstrahlungGenerator::AtomicFormFactor(double q2)
    double beta = 111 * pow(Z, -1/3.) / mElectron;	// ff cutoff in /GeV
    double Fff = 1 / (1 + sqr(beta) * q2);
    return Z * (1 - Fff);
-}
-
-void GlueXBremsstrahlungGenerator::SetRandomSeed(long int seed)
-{
-   fRandom.SetSeed(seed);
 }
 
 void GlueXBremsstrahlungGenerator::normalize(TH1D *hist)

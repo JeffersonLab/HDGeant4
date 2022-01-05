@@ -25,6 +25,9 @@
 #include <G4Timer.hh>
 #include <G4LogicalVolumeStore.hh>
 #include <G4HadronicProcessStore.hh>
+#if G4VERSION_NUMBER >= 1070
+#include "G4HadronicParameters.hh"
+#endif
 #include <G4StateManager.hh>
 
 #ifdef G4VIS_USE
@@ -106,7 +109,7 @@ int main(int argc,char** argv)
       }
       else if (opts.Find("INFILE", infile_opts) ||
                opts.Find("INFI", infile_opts))
-     {
+      {
          std::ifstream fin(infile_opts[1].c_str());
          if (!fin.is_open()) {
             G4cerr << "Input error: Unable to open HDDM input file: "
@@ -117,9 +120,11 @@ int main(int argc,char** argv)
          hddm_s::HDDM record;
          while (record.getPhysicsEvents().size() == 0) 
             ifs >> record;
-         run_number = record.getPhysicsEvents()(0).getRunNo();
+         HddmOutput::setRunNo(record.getPhysicsEvents()(0).getRunNo());
       }
    }
+   if (run_number > 0)
+      HddmOutput::setRunNo(run_number);
 
    G4Timer runtimer;
    G4Timer simtimer;
@@ -129,7 +134,6 @@ int main(int argc,char** argv)
    std::map<int, std::string> outfile_opts;
    if (opts.Find("OUTFILE", outfile_opts)) {
       hddmOut = new HddmOutput(outfile_opts[1]);
-      hddmOut->setRunNo(run_number);
    }
 
    G4Random::setTheEngine(new CLHEP::RanecuEngine);
@@ -201,6 +205,9 @@ int main(int argc,char** argv)
    GlueXUserActionInitialization *userinit;
    userinit = new GlueXUserActionInitialization(physicslist);
    runManager.SetUserInitialization(userinit);
+#if G4VERSION_NUMBER >= 1070
+   G4HadronicParameters::Instance()->SetVerboseLevel(0);
+#endif
 
    // Initialize G4 kernel
    std::cout << "Initializing the Geant4 kernel..." << std::endl;
@@ -254,7 +261,7 @@ int main(int argc,char** argv)
       }
    }
 
-   double nsim = GlueXPrimaryGeneratorAction::GetInstance()->getEventCount();
+   double nsim = HddmOutput::getEventNo();
    double norm = (nsim == 0)? 1e9 : nsim;
    runtimer.Stop();
    double realrun = runtimer.GetRealElapsed();

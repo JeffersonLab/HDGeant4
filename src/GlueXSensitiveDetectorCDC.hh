@@ -62,7 +62,7 @@ class GlueXSensitiveDetectorCDC : public G4VSensitiveDetector
    static int MAX_HITS;
 
    static int fDrift_clusters;
-#define CDC_DRIFT_TABLE_LEN 78
+   const static int CDC_DRIFT_TABLE_LEN = 78;
    static double fDrift_time[CDC_DRIFT_TABLE_LEN];
    static double fDrift_distance[CDC_DRIFT_TABLE_LEN];
    static double fBscale_par1;

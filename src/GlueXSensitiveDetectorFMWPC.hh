@@ -43,6 +43,8 @@ class GlueXSensitiveDetectorFMWPC : public G4VSensitiveDetector
    static int MAX_HITS;
    static double TWO_HIT_TIME_RESOL;
    static double THRESH_KEV;
+   static double WIRE_OFFSET;
+   static double WIRE_PITCH;
 
    static int instanceCount;
    static G4Mutex fMutex;

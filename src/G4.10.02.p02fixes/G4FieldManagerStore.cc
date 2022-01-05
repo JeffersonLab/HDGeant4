@@ -155,6 +155,7 @@ G4FieldManagerStore::ClearAllChordFindersState()
     if( pChordFnd )
     {
       pChordFnd->ResetStepEstimate();
+      pChordFnd->SetFractions_Last_Next(-1, -1);
       G4MagInt_Driver *driver =
         dynamic_cast<G4MagInt_Driver*>(pChordFnd->GetIntegrationDriver());
       if (driver) {

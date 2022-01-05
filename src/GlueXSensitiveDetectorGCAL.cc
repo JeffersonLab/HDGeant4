@@ -9,6 +9,7 @@
 #include "GlueXPrimaryGeneratorAction.hh"
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserTrackInformation.hh"
+#include "HddmOutput.hh"
 
 #include "G4VPhysicalVolume.hh"
 #include "G4PVPlacement.hh"
@@ -52,7 +53,7 @@ GlueXSensitiveDetectorGCAL::GlueXSensitiveDetectorGCAL(const G4String& name)
 
    G4AutoLock barrier(&fMutex);
    if (instanceCount++ == 0) {
-      extern int run_number;
+      int runno = HddmOutput::getRunNo();
       extern jana::JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
@@ -60,7 +61,7 @@ GlueXSensitiveDetectorGCAL::GlueXSensitiveDetectorGCAL(const G4String& name)
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
+      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
       if (japp == 0) {   // dummy
          jcalib = 0;
          G4cout << "GCAL: ALL parameters loaded from ccdb" << G4endl;
@@ -144,27 +145,32 @@ G4bool GlueXSensitiveDetectorGCAL::ProcessHits(G4Step* step,
       GlueXUserTrackInformation *trackinfo = (GlueXUserTrackInformation*)
                                              track->GetUserInformation();
    int itrack = trackinfo->GetGlueXTrackID();
+   if (track->GetCurrentStepNumber() == 1)
+      trackinfo->SetGlueXHistory(3);
    if (trackinfo->GetGlueXHistory() == 0 && itrack > 0 &&
        xin.dot(pin) > 0 && Ein/MeV > THRESH_MEV)
    {
-      int pdgtype = track->GetDynamicParticle()->GetPDGcode();
-      int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgtype);
-      GlueXHitGCALpoint newPoint;
-      newPoint.ptype_G3 = g3type;
-      newPoint.track_ = trackID;
-      newPoint.trackID_ = itrack;
-      newPoint.primary_ = (track->GetParentID() == 0);
-      newPoint.t_ns = t/ns;
-      newPoint.z_cm = x[2]/cm;
-      newPoint.r_cm = x.perp()/cm;
-      newPoint.phi_rad = x.phi();
-      newPoint.px_GeV = pin[0]/GeV;
-      newPoint.py_GeV = pin[1]/GeV;
-      newPoint.pz_GeV = pin[2]/GeV;
-      newPoint.E_GeV = Ein/GeV;
       G4int key = fPointsMap->entries();
-      fPointsMap->add(key, newPoint);
-      trackinfo->SetGlueXHistory(3);
+      GlueXHitGCALpoint* lastPoint = (*fPointsMap)[key - 1];
+      // Limit gcal truthPoints to one per track
+      if (lastPoint == 0 || lastPoint->track_ != trackID) {
+         int pdgtype = track->GetDynamicParticle()->GetPDGcode();
+         int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgtype);
+         GlueXHitGCALpoint newPoint;
+         newPoint.ptype_G3 = g3type;
+         newPoint.track_ = trackID;
+         newPoint.trackID_ = itrack;
+         newPoint.primary_ = (track->GetParentID() == 0);
+         newPoint.t_ns = t/ns;
+         newPoint.z_cm = x[2]/cm;
+         newPoint.r_cm = x.perp()/cm;
+         newPoint.phi_rad = x.phi();
+         newPoint.px_GeV = pin[0]/GeV;
+         newPoint.py_GeV = pin[1]/GeV;
+         newPoint.pz_GeV = pin[2]/GeV;
+         newPoint.E_GeV = Ein/GeV;
+         fPointsMap->add(key, newPoint);
+      }
    }
 
    // Post the hit to the hits map, ordered by module index

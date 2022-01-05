@@ -57,6 +57,7 @@ inline int HddmOutput::getEventNo()
 
 inline void HddmOutput::setEventNo(int eventno)
 {
+   G4AutoLock barrier(&fMutex);
    fEventNo = eventno;
 }
 

@@ -33,13 +33,17 @@
 #include "TPhoton.h"
 #include "TLepton.h"
 
+#include <vector>
+
 #if BOOST_PYTHON_WRAPPING
 #include <boost/python.hpp>
 #endif
 
 class PairConversionGeneration {
  public:
-   PairConversionGeneration();
+   PairConversionGeneration(std::vector<double> Z,
+                            std::vector<double> A,
+                            std::vector<double> w);
    ~PairConversionGeneration();
 
    LDouble_t FFatomic(LDouble_t qRecoil);

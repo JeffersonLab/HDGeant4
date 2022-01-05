@@ -67,6 +67,7 @@ GlueXUserOptions *GlueXUserOptions::GetInstance()
    // application obtain the primary instance, if any. If none has
    // yet been constructed, it returns zero.
 
+   G4AutoLock barrier(&fMutex);
    if (fInstance.size() > 0)
       return *fInstance.begin();
    else

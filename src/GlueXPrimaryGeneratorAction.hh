@@ -59,19 +59,18 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    static double GetMassPDG(int PDGtype);
    static double GetMass(int Geant3Type);
  
-   static const GlueXPrimaryGeneratorAction* GetInstance();
-   static const CobremsGeneration* GetCobremsGeneration();
+   const CobremsGeneration* GetCobremsGeneration() const;
 
  private:
-   static int instanceCount;
-   static source_type_t fSourceType;
    static std::ifstream *fHDDMinfile;
    static hddm_s::istream *fHDDMistream;
-   static CobremsGeneration *fCobremsGeneration;
-   static GlueXPhotonBeamGenerator *fPhotonBeamGenerator;
    static G4ParticleTable *fParticleTable;
-   static GlueXParticleGun *fParticleGun;
-   static GlueXPrimaryGenerator *fPrimaryGenerator;
+   static source_type_t fSourceType;
+
+   GlueXParticleGun *fParticleGun;
+   CobremsGeneration *fCobremsGeneration;
+   GlueXPhotonBeamGenerator *fPhotonBeamGenerator;
+   GlueXPrimaryGenerator *fPrimaryGenerator;
 
  public:
    struct single_particle_gun_t {
@@ -99,8 +98,8 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    static double fBeamBackgroundGateStop;
    static double fL1triggerTimeSigma;
    static double fRFreferencePlaneZ;
-
-   static int fEventCount;
+   static double fBeamEndpointEnergy;
+   static double fBeamPeakEnergy;
 
    // The following parameters describe the dimensions of the target
    // that are used when generating the primary interaction vertex for
@@ -143,6 +142,8 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    struct beam_spot_t fBeamvertex;
    int fBeamvertex_activated;  // uninitialized=0, active=1, disabled=-1
 
+   void clone_photon_beam_generator();
+
  public:
    static void setTargetCenterZ(double Z) {
       fTargetCenterZ = Z;
@@ -168,8 +169,29 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    static double getRFreferencePlaneZ() {
       return fRFreferencePlaneZ;
    }
-   int getEventCount() const {
-      return fEventCount;
+   static void setBeamBackgroundRate(double rate_GHz) {
+      fBeamBackgroundRate = rate_GHz;
+   }
+   static double getBeamBackgroundRate() {
+      return fBeamBackgroundRate;
+   }
+   static void setBeamBackgroundGateStart(double t) {
+      fBeamBackgroundGateStart = t;
+   }
+   static double getBeamBackgroundGateStart() {
+      return fBeamBackgroundGateStart;
+   }
+   static void setBeamEndpointEnergy(double E0) {
+      fBeamEndpointEnergy = E0;
+   }
+   static double getBeamEndpointEnergy() {
+      return fBeamEndpointEnergy;
+   }
+   static void setBeamPeakEnergy(double Epeak) {
+      fBeamPeakEnergy = Epeak;
+   }
+   static double getBeamPeakEnergy() {
+      return fBeamPeakEnergy;
    }
    void configure_beam_vertex();
    void generate_beam_vertex(double v[3]);
@@ -177,6 +199,7 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
  private:
    static G4Mutex fMutex;
    static std::list<GlueXPrimaryGeneratorAction*> fInstance;
+<<<<<<< HEAD
 
    double DIRC_LUT_X[48], DIRC_LUT_Y[48], DIRC_LUT_Z[48]; //Pre-Rotated Positions
    double BXXA_boxX[48], BXXA_boxY[48], BXXA_boxZ[48];
@@ -187,7 +210,25 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    vector<double> MRAS_rot, MRAN_rot;
    vector<double> OBCS_rot, OBCN_rot;
    vector<G4ThreeVector> FDTHs_InHall;
+=======
+>>>>>>> origin/master
 
+   static double DIRC_LUT_X[48];
+   static double DIRC_BAR_Y[48];
+   static double DIRC_LUT_Z;
+   static double DIRC_QZBL_DY;
+   static double DIRC_QZBL_DZ;
+   static double DIRC_OWDG_DZ;
+   static double DIRC_LED_OBCS_FDTH_X;
+   static double DIRC_LED_OBCS_FDTH_Z;
+   static double DIRC_LED_OBCN_FDTH_X;
+   static double DIRC_LED_OBCN_FDTH_Z;
+   static double DIRC_LED_OBCN_FDTH1_Y;
+   static double DIRC_LED_OBCN_FDTH2_Y;
+   static double DIRC_LED_OBCN_FDTH3_Y;
+   static double DIRC_LED_OBCS_FDTH4_Y;
+   static double DIRC_LED_OBCS_FDTH5_Y;
+   static double DIRC_LED_OBCS_FDTH6_Y;
 };
 
 #endif

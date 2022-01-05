@@ -35,16 +35,9 @@ double GlueXPhotonBeamGenerator::fBeamDiameter = 0.5 * cm;
 double GlueXPhotonBeamGenerator::fBeamVelocity = 2.99792e8 * m/s;
 double GlueXPhotonBeamGenerator::fBeamOffset[2] = {0,0};
 
-ImportanceSampler GlueXPhotonBeamGenerator::fCoherentPDFx; 
-ImportanceSampler GlueXPhotonBeamGenerator::fIncoherentPDFlogx;
-ImportanceSampler GlueXPhotonBeamGenerator::fIncoherentPDFy;
-double GlueXPhotonBeamGenerator::fIncoherentPDFtheta02;
-
 int GlueXPhotonBeamGenerator::fForceFixedPolarization = false;
 double GlueXPhotonBeamGenerator::fFixedPolarization = 0;
 double GlueXPhotonBeamGenerator::fFixedPolarization_phi = 0;
-
-GlueXPseudoDetectorTAG *GlueXPhotonBeamGenerator::fTagger = 0;
 
 // This utility function is useful in the debugger,
 // but do not use it for actual simulation operatons.
@@ -61,7 +54,8 @@ int g4random_seeds(CLHEP::HepRandomEngine *eng=0) {
 }
 
 GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
- : fCobrems(gen)
+ : fCobrems(gen),
+   fTagger(0)
 {
    GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
    if (user_opts == 0) {
@@ -89,7 +83,7 @@ GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
       else {
          fGenerateNotSimulate = -1;
       }
-      GlueXUserEventInformation::fWriteNoHitEvents = 1;
+      GlueXUserEventInformation::setWriteNoHitEvents(1);
    }
    std::map<int, int> bgratepars;
    std::map<int, int> bggatepars;
@@ -105,14 +99,6 @@ GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
          fBeamBackgroundTagOnly = 0;
       }
    }
-
-   // These cutoffs should be set empirically, as low as possible
-   // for good efficiency, but not too low so as to avoid excessive
-   // warnings about Pcut violations.
-
-   double raddz = fCobrems->getTargetThickness() * m;
-   fCoherentPDFx.Pcut = .003 * (raddz / (20e-6 * m));
-   fIncoherentPDFlogx.Pcut = .003 * (raddz / (20e-6 * m));
 
    prepareImportanceSamplingPDFs();
 
@@ -131,7 +117,6 @@ GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
                              &GlueXPhotonBeamGenerator::disableFixedPolarization,
        "Tell the photon beam generator not to force a fixed polarization\n"
        " on beam photons created by the simulation.");
-   G4cout << "GlueXPhotonBeamGenerator initialization complete." << G4endl;
 }
 
 GlueXPhotonBeamGenerator::~GlueXPhotonBeamGenerator()
@@ -147,78 +132,77 @@ void GlueXPhotonBeamGenerator::prepareImportanceSamplingPDFs()
    const int Ndim = 500;
    double Emin = fCobrems->getPhotonEnergyMin() * GeV;
    double Emax = fCobrems->getBeamEnergy() * GeV;
-   double sum;
 
    // Compute approximate PDF for dNc/dx
    double xmin = Emin / Emax;
    double dx = (1 - xmin) / Ndim;
    double xarr[Ndim], yarr[Ndim];
+   double ymax = 0;
    for (int i=0; i < Ndim; ++i) {
       xarr[i] = xmin + (i + 0.5) * dx;
-      yarr[i] = fCobrems->Rate_dNcdxdp(xarr[i], M_PI/4);
+      yarr[i] = fCobrems->Rate_dNcdx(xarr[i]);
       yarr[i] = (yarr[i] > 0)? yarr[i] : 0;
-      for (int j=1; j < 10; ++j) {
-         double mfactor = 1 - j / 10.;
-         if (i > j && yarr[i] < yarr[i-j] * mfactor)
-            yarr[i] = yarr[i-j] * mfactor;
-      }
+      ymax = (yarr[i] > ymax)? yarr[i] : ymax;
    }
    fCobrems->applyBeamCrystalConvolution(Ndim, xarr, yarr);
-   sum = 0;
+   double pcut = 5;
+   double psum = 0;
    for (int i=0; i < Ndim; ++i) {
-      sum += yarr[i];
+      double yplusbl = yarr[i] + ymax / pcut;
+      psum += yplusbl;
       fCoherentPDFx.randvar.push_back(xarr[i]);
-      fCoherentPDFx.density.push_back(yarr[i]);
-      fCoherentPDFx.integral.push_back(sum);
+      fCoherentPDFx.density.push_back(yplusbl);
+      fCoherentPDFx.integral.push_back(psum);
    }
    for (int i=0; i < Ndim; ++i) {
-      fCoherentPDFx.density[i] /= sum * dx;
-      fCoherentPDFx.integral[i] /= sum;
+      fCoherentPDFx.density[i] /= psum * dx;
+      fCoherentPDFx.integral[i] /= psum;
    }
-   fCoherentPDFx.Pcut = 4*M_PI * sum * dx;
+   fCoherentPDFx.Pcut = 3 * psum / Ndim;
 
    // Compute approximate PDF for dNi/dlogx
    double logxmin = log(xmin);
    double dlogx = -logxmin / Ndim;
    double dNidlogx;
-   sum = 0;
+   double qsum = 0;
    for (int i=0; i < Ndim; ++i) {
       double logx = logxmin + (i + 0.5) * dlogx;
       double x = exp(logx);
       dNidlogx = fCobrems->Rate_dNidxdt2(x, 0) * x;
       dNidlogx = (dNidlogx > 0)? dNidlogx : 0;
-      sum += dNidlogx;
+      qsum += dNidlogx;
       fIncoherentPDFlogx.randvar.push_back(logx);
       fIncoherentPDFlogx.density.push_back(dNidlogx);
-      fIncoherentPDFlogx.integral.push_back(sum);
+      fIncoherentPDFlogx.integral.push_back(qsum);
    }
    for (int i=0; i < Ndim; ++i) {
-      fIncoherentPDFlogx.density[i] /= sum * dlogx;
-      fIncoherentPDFlogx.integral[i] /= sum;
+      fIncoherentPDFlogx.density[i] /= qsum * dlogx;
+      fIncoherentPDFlogx.integral[i] /= qsum;
    }
-   fIncoherentPDFlogx.Pcut = 2 * sum * dlogx;
+   fIncoherentPDFlogx.Pcut = qsum / Ndim;
  
    // Compute approximate PDF for dNi/dy
    fIncoherentPDFtheta02 = 1.8;
    double ymin = 1e-3;
    double dy = (1 - ymin) / Ndim;
    double dNidxdy;
-   sum = 0;
+   double tsum = 0;
    for (int i=0; i < Ndim; ++i) {
       double y = ymin + (i + 0.5) * dy;
       double theta2 = fIncoherentPDFtheta02 * (1 / y - 1);
       dNidxdy = fCobrems->Rate_dNidxdt2(0.5, theta2) *
                 fIncoherentPDFtheta02 / (y*y);
       dNidxdy = (dNidxdy > 0)? dNidxdy : 0;
-      sum += dNidxdy;
+      tsum += dNidxdy;
       fIncoherentPDFy.randvar.push_back(y);
       fIncoherentPDFy.density.push_back(dNidxdy);
-      fIncoherentPDFy.integral.push_back(sum);
+      fIncoherentPDFy.integral.push_back(tsum);
    }
    for (int i=0; i < Ndim; ++i) {
-      fIncoherentPDFy.density[i] /= sum * dy;
-      fIncoherentPDFy.integral[i] /= sum;
+      fIncoherentPDFy.density[i] /= tsum * dy;
+      fIncoherentPDFy.integral[i] /= tsum;
    }
+   fIncoherentPDFy.Pcut = 1.5 * tsum / Ndim;
    fCoherentPDFx.Pmax = 0;
    fCoherentPDFx.Psum = 0;
    fIncoherentPDFlogx.Pmax = 0;
@@ -299,9 +283,7 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
    // with that applied to dNi/(dx dy) and then replace the fake variable y'
    // with the true y that was sampled as described above.
 
-   if (fCoherentPDFx.density.size() == 0) {
-      prepareImportanceSamplingPDFs();
-   }
+   assert (fCoherentPDFx.integral.size() != 0);
 
    // The GlueXUserEventInformation constructor can set the random number
    // seeds for this event, so this must happen at here at the top.
@@ -351,25 +333,24 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
    double theta2 = 0;
    double polarization = 0;
    double polarization_phi = 0;
-   double Scoherent = fCoherentPDFx.Npassed * 
-                     (fCoherentPDFx.Ntested / (fCoherentPDFx.Psum + 1e-99));
-   double Sincoherent = fIncoherentPDFlogx.Npassed *
-                       (fIncoherentPDFlogx.Ntested /
-                       (fIncoherentPDFlogx.Psum + 1e-99));
-   if (targetThetax != 0 && Scoherent < Sincoherent) {
-      while (true) {                             // try coherent generation
+   double coherent_fraction = fCoherentPDFx.Pcut;
+   coherent_fraction /= fCoherentPDFx.Pcut + fIncoherentPDFy.Pcut;
+   while (true) {
+      double splitrand = G4UniformRand();
+      if (splitrand < coherent_fraction) { // try coherent generation
          ++fCoherentPDFx.Ntested;
 
          double u = G4UniformRand();
          int i = fCoherentPDFx.search(u);
-         double fi = fCoherentPDFx.density[i];
          double ui = fCoherentPDFx.integral[i];
+         double u_i = (i > 0)? fCoherentPDFx.integral[i-1] : 0;
          double xi = fCoherentPDFx.randvar[i];
          double dx = (i > 0)? xi - fCoherentPDFx.randvar[i-1]:
                               fCoherentPDFx.randvar[i+1] - xi;
-         x = xi + dx / 2 - (ui - u) / fi;
-         double dNcdxPDF = fi;
-         double dNcdx = 2*M_PI * fCobrems->Rate_dNcdxdp(x, M_PI / 4);
+         x = xi + dx * (0.5 - (ui - u) / (ui - u_i));
+         assert (x > 0);
+         double dNcdxPDF = (ui - u_i) / dx;
+         double dNcdx = fCobrems->Rate_dNcdx(x);
          double Pfactor = dNcdx / dNcdxPDF;
          if (Pfactor > fCoherentPDFx.Pmax)
             fCoherentPDFx.Pmax = Pfactor;
@@ -385,7 +366,7 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
                       (fCoherentPDFx.Ntested + 1e-99)
                    << G4endl;
          }
-         fCoherentPDFx.Psum += Pfactor;
+         ++fCoherentPDFx.Psum += Pfactor;
          if (G4UniformRand() * fCoherentPDFx.Pcut > Pfactor) {
             continue;
          }
@@ -396,6 +377,7 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
          while (true) {
             phi = 2*M_PI * G4UniformRand();
             freq = fCobrems->Rate_dNcdxdp(x, phi);
+            assert (freq < fmax);
             if (G4UniformRand() * fmax < freq)
                break;
          }
@@ -406,40 +388,40 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
          polarization_phi = M_PI / 2;
          break;
       }
-   }
-   else {
-      while (true) {                           // try incoherent generation
+      else {                                     // try incoherent generation
          ++fIncoherentPDFlogx.Ntested;
 
          double ux = G4UniformRand();
          int i = fIncoherentPDFlogx.search(ux);
-         double fi = fIncoherentPDFlogx.density[i];
          double ui = fIncoherentPDFlogx.integral[i];
+         double u_i = (i > 0)? fIncoherentPDFlogx.integral[i-1] : 0;
          double logxi = fIncoherentPDFlogx.randvar[i];
          double dlogx = (i > 0)? logxi - fIncoherentPDFlogx.randvar[i-1]:
                                  fIncoherentPDFlogx.randvar[i+1] - logxi;
-         double logx = logxi + dlogx / 2 - (ui - ux) / fi;
+         double logx = logxi + dlogx * (0.5 - (ui - ux) / (ui - u_i));
+         assert (logx < 0);
          x = exp(logx);
-         double dNidxdyPDF = fi / x;
+         double dNidxdyPDF = (ui - u_i) / x / dlogx;
          double uy = G4UniformRand();
          int j = fIncoherentPDFy.search(uy);
-         double fj = fIncoherentPDFy.density[j];
          double uj = fIncoherentPDFy.integral[j];
+         double u_j = (j > 0)? fIncoherentPDFy.integral[j-1] : 0;
          double yj = fIncoherentPDFy.randvar[j];
          double dy = (j > 0)? yj - fIncoherentPDFy.randvar[j-1]:
                              fIncoherentPDFy.randvar[j+1] - yj;
-         double y = yj + dy / 2 - (uj - uy) / fj;
-         dNidxdyPDF *= fj;
+         double y = yj + dy * (0.5 - (uj - uy) / (uj - u_j));
+         assert (y > 0);
+         dNidxdyPDF *= (uj - u_j) / dy;
          theta2 = fIncoherentPDFtheta02 * (1 / (y + 1e-99) - 1);
          double dNidxdy = fCobrems->Rate_dNidxdt2(x, theta2) *
                           fIncoherentPDFtheta02 / (y*y + 1e-99);
          double Pfactor = dNidxdy / dNidxdyPDF;
          if (Pfactor > fIncoherentPDFlogx.Pmax)
             fIncoherentPDFlogx.Pmax = Pfactor;
-         if (Pfactor > fIncoherentPDFlogx.Pcut) {
+         if (Pfactor > fIncoherentPDFy.Pcut) {
             G4cout << "Warning in GenerateBeamPhoton - Pfactor " << Pfactor
-                   << " exceeds fIncoherentPDFlogx.Pcut = " 
-                   << fIncoherentPDFlogx.Pcut
+                   << " exceeds fIncoherentPDFy.Pcut = " 
+                   << fIncoherentPDFy.Pcut
                    << G4endl
                    << "  present x = " << x << G4endl
                    << "  present y = " << y << G4endl
@@ -451,7 +433,7 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
                    << G4endl;
          }
          fIncoherentPDFlogx.Psum += Pfactor;
-         if (G4UniformRand() * fIncoherentPDFlogx.Pcut > Pfactor) {
+         if (G4UniformRand() * fIncoherentPDFy.Pcut > Pfactor) {
             continue;
          }
          ++fIncoherentPDFlogx.Npassed;
@@ -545,7 +527,7 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
       tvtx += (vtx[2] - targetCenterZ) / fBeamVelocity;
       if (fBeamBackgroundTagOnly) {
          double ttag = tvtx + (targetCenterZ - vtx[2]) / fBeamVelocity;
-         fTagger->addTaggerPhoton(anEvent, pabs, ttag, bg);
+         GenerateTaggerHit(anEvent, pabs, ttag, bg);
          return;
       }
    }
@@ -591,16 +573,8 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
 
       // Register a tagger hit for each beam photon
 
-      int runNo = HddmOutput::getRunNo();
-      if (fTagger == 0) {
-         fTagger = new GlueXPseudoDetectorTAG(runNo);
-      }
-      else if (fTagger->getRunNo() != runNo) {
-         delete fTagger;
-         fTagger = new GlueXPseudoDetectorTAG(runNo);
-      }
       double ttag = tvtx + (targetCenterZ - vtx[2]) / fBeamVelocity;
-      fTagger->addTaggerPhoton(anEvent, pabs, ttag, bg);
+      GenerateTaggerHit(anEvent, pabs, ttag, bg);
    }
 }
 
@@ -614,8 +588,8 @@ double GlueXPhotonBeamGenerator::GenerateTriggerTime(const G4Event *event)
    // of the L1 trigger signal. The spread in the L1 relative to the
    // interacting bunch time is parameterized as a Gaussian.
 
-   extern int run_number;
    static int last_run_number = 0;
+   int run_number = HddmOutput::getRunNo();
    if (run_number != last_run_number) {
       fBeamBucketPeriod = getBeamBucketPeriod(run_number);
       double refZ = getRFreferencePlaneZ(run_number);
@@ -650,6 +624,14 @@ void GlueXPhotonBeamGenerator::GenerateRFsync(const G4Event *event)
    // Append a RF sync element to the output record, assuming that
    // GenerateTriggerTime has already been called for this event.
 
+   int runNo = HddmOutput::getRunNo();
+   if (fTagger == 0) {
+      fTagger = new GlueXPseudoDetectorTAG(runNo);
+   }
+   else if (fTagger->getRunNo() != runNo) {
+      delete fTagger;
+      fTagger = new GlueXPseudoDetectorTAG(runNo);
+   }
    double tsync = 512*ns * G4UniformRand();
    tsync = fBeamBucketPeriod * floor(tsync / fBeamBucketPeriod + 0.5);
    fTagger->addRFsync(event, tsync);

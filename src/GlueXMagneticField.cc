@@ -13,6 +13,7 @@
 #include "GlueXMagneticField.hh"
 #include "GlueXUserOptions.hh"
 #include "GlueXDetectorConstruction.hh"
+#include "HddmOutput.hh"
 
 #include <JANA/JApplication.h>
 #include <JANA/JCalibration.h>
@@ -535,7 +536,7 @@ void GlueXComputedMagField::SetFunction(std::string function)
       exit(-1);
    }
 
-   extern int run_number;
+   int run_number = HddmOutput::getRunNo();
    jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
 
    if (function == "gufld_db(r,B)") {

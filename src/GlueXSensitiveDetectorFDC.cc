@@ -10,6 +10,7 @@
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserTrackInformation.hh"
 #include "GlueXUserOptions.hh"
+#include "HddmOutput.hh"
 
 #include <CLHEP/Random/RandPoisson.h>
 #include <Randomize.hh>
@@ -115,7 +116,7 @@ GlueXSensitiveDetectorFDC::GlueXSensitiveDetectorFDC(const G4String& name)
 
    G4AutoLock barrier(&fMutex);
    if (instanceCount++ == 0) {
-      extern int run_number;
+      int runno = HddmOutput::getRunNo();
       extern jana::JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
@@ -123,7 +124,7 @@ GlueXSensitiveDetectorFDC::GlueXSensitiveDetectorFDC(const G4String& name)
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
+      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
       std::map<string, float> fdc_parms;
       jcalib->Get("FDC/fdc_parms", fdc_parms);
       DRIFT_SPEED = fdc_parms.at("FDC_DRIFT_SPEED")*cm/ns;
@@ -270,19 +271,117 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
    if (dEsum == 0)
       return false;
 
-   const G4ThreeVector &pin = step->GetPreStepPoint()->GetMomentum();
-   const G4ThreeVector &xin = step->GetPreStepPoint()->GetPosition();
-   const G4ThreeVector &xout = step->GetPostStepPoint()->GetPosition();
+   G4ThreeVector pin = step->GetPreStepPoint()->GetMomentum();
+   G4ThreeVector xin = step->GetPreStepPoint()->GetPosition();
+   G4ThreeVector xout = step->GetPostStepPoint()->GetPosition();
    double Ein = step->GetPreStepPoint()->GetTotalEnergy();
    double tin = step->GetPreStepPoint()->GetGlobalTime();
    double tout = step->GetPostStepPoint()->GetGlobalTime();
+
+   G4Track *track = step->GetTrack();
+   int trackID = track->GetTrackID();
+   const G4VTouchable* touch = step->GetPreStepPoint()->GetTouchable();
+   int package = GetIdent("package", touch);
+   int layer = GetIdent("layer", touch);
+   if (layer == 0) {
+      fprintf(stderr, "hitFDC error: FDC layer number evaluates to zero! "
+              "THIS SHOULD NEVER HAPPEN! drop this particle.\n");
+      return false;
+   }
+   else if (package == 0) {
+      fprintf(stderr, "hitFDC error: FDC package number evaluates to zero! "
+              "THIS SHOULD NEVER HAPPEN! drop this particle.\n");
+      return false;
+   }
+   // Normally numeric identifiers start at 1, eg. layer, package, module
+   // but if it is an index counting from zero, add the "No" suffix.
+   int packNo = package - 1;
+   int module = 2 * packNo + ((layer - 1) / 3) + 1;
+   int chamber = (module * 10) + ((layer - 1) % 3) + 1;
+
+#ifdef MERGE_STEPS_BEFORE_HITS_GENERATION
+
+   // This section forces hdgeant4 to conform to the behavior of hdgeant
+   // in merging together all of the steps taken by a single track as it
+   // moves through a single fdc chamber (plane) before generating hits.
+   // For this purpose, it borrows existing class GlueXHitFDCpoint to
+   // save the information from previous tracking steps by this track
+   // inside the current fdc active volume, and merging the saved info
+   // into the current step when the track either stops inside the fdc
+   // active volume or when it exits through an exterior boundary.
+   //
+   // NOTE
+   // This algorithm has a blind spot for tracks that stop inside the 
+   // wire layer because the track disappears without ever crossing
+   // through an exterior boundary. This condition produces a warning
+   // message if verboseLevel > 0, but it is an inherent inefficiency
+   // in this model, and should not be considered to be a bug.
+
+   G4int rkey = 1 << 24; // reserved key for this thread
+   std::map<int,GlueXHitFDCpoint*>::iterator saved_segment =
+                                    fPointsMap->GetMap()->find(rkey);
+   G4String invol = step->GetPostStepPoint()->GetTouchable()
+                                            ->GetVolume()->GetName();
+   if (track->GetTrackStatus() == fAlive &&
+       (invol.index("FDA") == 0 || invol.index("FDX") == 0))
+   {
+      if (saved_segment == fPointsMap->GetMap()->end()) {
+         GlueXHitFDCpoint segment(chamber);
+         segment.track_ = trackID;
+         segment.x_cm = xin[0];     // this is borrowed storage for
+         segment.y_cm = xin[1];     // local track step information,
+         segment.z_cm = xin[2];     // don't worry about the units!
+         segment.t_ns = tin;
+         segment.px_GeV = pin[0];
+         segment.py_GeV = pin[1];
+         segment.pz_GeV = pin[2];
+         segment.E_GeV = Ein;
+         segment.dEdx_GeV_cm = dEsum;
+         fPointsMap->add(rkey, segment);
+         return true;
+      }
+      else if (saved_segment->second->track_ == trackID) {
+         saved_segment->second->dEdx_GeV_cm += dEsum;
+         return true;
+      }
+      else {
+         if (verboseLevel > 0)
+            fprintf(stderr, "hitFDC warning: FDC saved track segment "
+                            "was lost, drop this step.\n");
+         fPointsMap->GetMap()->erase(saved_segment);
+         return ProcessHits(step, ROhist);
+      }
+   }
+   else if (saved_segment != fPointsMap->GetMap()->end()) {
+      if (saved_segment->second->track_ == trackID) {
+         xin.setX(saved_segment->second->x_cm);
+         xin.setY(saved_segment->second->y_cm);
+         xin.setZ(saved_segment->second->z_cm);
+         tin = saved_segment->second->t_ns;
+         pin.setX(saved_segment->second->px_GeV);
+         pin.setY(saved_segment->second->py_GeV);
+         pin.setZ(saved_segment->second->pz_GeV);
+         Ein = saved_segment->second->E_GeV;
+         dEsum += saved_segment->second->dEdx_GeV_cm;
+         fPointsMap->GetMap()->erase(saved_segment);
+      }
+      else {
+         if (verboseLevel > 0)
+            fprintf(stderr, "hitFDC warning: FDC saved track segment "
+                            "was orphaned, drop this step.\n");
+         fPointsMap->GetMap()->erase(saved_segment);
+         return ProcessHits(step, ROhist);
+      }
+   }
+   
+#endif
+
    G4ThreeVector x = (xin + xout) / 2;
    G4ThreeVector dx = xout - xin;
    double t = (tin + tout) / 2;
    double dr = dx.mag();
    double dEdx = (dr > 1e-3*cm)? dEsum/dr : 0;
 
-   const G4VTouchable* touch = step->GetPreStepPoint()->GetTouchable();
    const G4AffineTransform &local_from_global = touch->GetHistory()
                                                      ->GetTopTransform();
    G4ThreeVector xinlocal = local_from_global.TransformPoint(xin);
@@ -296,24 +395,6 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
 
    if (tout > 1.0*s)
       t = tin;
-
-   int package = GetIdent("package", touch);
-   int layer = GetIdent("layer", touch);
-   if (layer == 0) {
-      printf("hitFDC: FDC layer number evaluates to zero! "
-             "THIS SHOULD NEVER HAPPEN! drop this particle.\n");
-      return false;
-   }
-   else if (package == 0) {
-      printf("hitFDC: FDC package number evaluates to zero! "
-             "THIS SHOULD NEVER HAPPEN! drop this particle.\n");
-      return false;
-   }
-   // Normally numeric identifiers start at 1, eg. layer, package, module
-   // but if it is an index counting from zero, add the "No" suffix.
-   int packNo = package - 1;
-   int module = 2 * packNo + ((layer - 1) / 3) + 1;
-   int chamber = (module * 10) + ((layer - 1) % 3) + 1;
 
    double alpha = atan2(xoutlocal[0] - xinlocal[0], xoutlocal[2] - xinlocal[2]);
    double sinalpha = sin(alpha);
@@ -331,10 +412,17 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
    double uwire = xinlocal[2];
    double vwire = xinlocal[0] - xwire;
    double dradius = fabs(vwire * cosalpha - uwire * sinalpha);
-   G4Track *track = step->GetTrack();
-   int trackID = track->GetTrackID();
    int pdgtype = track->GetDynamicParticle()->GetPDGcode();
    int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgtype);
+
+#if VERBOSE_PRINT_POINTS
+   std::cout << "fdc in u,v=" << uwire << "," << vwire
+             << " out u,v=" << xoutlocal[2] << "," << xoutlocal[0] - xwire
+             << " dradius=" << dradius
+             << " in=" << step->GetPreStepPoint()->GetTouchable()->GetVolume()->GetName()
+             << " out=" << step->GetPostStepPoint()->GetTouchable()->GetVolume()->GetName()
+             << std::endl;
+#endif
 
    // Post the hit to the points list in the
    // order of appearance in the event simulation.
@@ -447,7 +535,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             }
          }
          if (merge_hits) {
-            hiter->dE_keV += dEsum/keV;
+            hiter->dE_keV += dE/keV;
             hiter->t1_ns = tout/ns;
             hiter->x1_g = xout;
             hiter->x1_l = x1;
@@ -455,7 +543,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
          else if ((int)anode->hits.size() < MAX_HITS) {
             // create new hit
             hiter = anode->hits.insert(hiter, GlueXHitFDCwire::hitinfo_t());
-            hiter->dE_keV = dEsum/keV;
+            hiter->dE_keV = dE/keV;
             hiter->itrack_ = itrack;
             hiter->ptype_G3 = g3type;
             hiter->t0_ns = tin/ns;
@@ -566,7 +654,7 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
     
          double xwire = U_OF_WIRE_ONE + (wire - 1) * WIRE_SPACING;
          double dE = splits[0].dE_keV*keV;
-         if (dE > THRESH_KEV*keV*0) {
+         if (dE > THRESH_KEV*keV) {
             // Average number of primary ion pairs
             double n_p_mean = dE / W_EFF_PER_ION / (1 + N_SECOND_PER_PRIMARY);
             // number of primary ion pairs

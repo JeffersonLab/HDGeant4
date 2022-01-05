@@ -10,6 +10,7 @@
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserTrackInformation.hh"
 #include "GlueXUserOptions.hh"
+#include "HddmOutput.hh"
 
 #include "G4VPhysicalVolume.hh"
 #include "G4PVPlacement.hh"
@@ -50,7 +51,7 @@ GlueXSensitiveDetectorDIRC::GlueXSensitiveDetectorDIRC(const G4String& name)
 
   G4AutoLock barrier(&fMutex);
   if (instanceCount++ == 0) {
-    extern int run_number;
+    int runno = HddmOutput::getRunNo();
     extern jana::JApplication *japp;
     if (japp == 0) {
       G4cerr << "Error in GlueXSensitiveDetector constructor - "
@@ -58,12 +59,20 @@ GlueXSensitiveDetectorDIRC::GlueXSensitiveDetectorDIRC(const G4String& name)
          << "cannot continue." << G4endl;
       exit(-1);
     }
+<<<<<<< HEAD
     jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
     std::map<string, float> mc_parms;
     jcalib->Get("DIRC/mc_parms", mc_parms);
     fEFFIC_SCALE = mc_parms.at("PAR0");
 
     G4cout << "DIRC: ALL parameters loaded from ccdb" << " effic = " << fEFFIC_SCALE << G4endl;
+=======
+    jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+    if (japp == 0) {   // dummy
+      jcalib = 0;
+      G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
+    }
+>>>>>>> origin/master
   }
 
   GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
@@ -84,8 +93,8 @@ GlueXSensitiveDetectorDIRC::GlueXSensitiveDetectorDIRC(const G4String& name)
 
 }
 
-    GlueXSensitiveDetectorDIRC::GlueXSensitiveDetectorDIRC(const GlueXSensitiveDetectorDIRC &src)
-      : G4VSensitiveDetector(src)
+GlueXSensitiveDetectorDIRC::GlueXSensitiveDetectorDIRC(const GlueXSensitiveDetectorDIRC &src)
+ : G4VSensitiveDetector(src)
 {
   G4AutoLock barrier(&fMutex);
   ++instanceCount;
@@ -447,7 +456,10 @@ double GlueXSensitiveDetectorDIRC::GetDetectionEfficiency(double energy)
 
 void GlueXSensitiveDetectorDIRC::InitializeDetEff()
 {
-  G4AutoLock barrier(&fMutex);
+   G4AutoLock barrier(&fMutex);
+   if (fDetEff != 0)
+      return;
+
    // quantum efficiency for H12700
    // defined for wavelength in the range [0, 1000] nm
    double fEfficiency[1000] = {0.000000, 0.000000, 0.000000, 0.000000, 0.000000,

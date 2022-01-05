@@ -55,9 +55,21 @@ const TThreeVectorReal negYhat(0,-1,0);
 const TThreeVectorReal posZhat(0,0,1);
 const TThreeVectorReal negZhat(0,0,-1);
 
-PairConversionGeneration::PairConversionGeneration()
- : fConverterZ(4)
-{}
+PairConversionGeneration::PairConversionGeneration(std::vector<double> Z,
+                                                   std::vector<double> A,
+                                                   std::vector<double> w)
+{
+   if (Z.size() == 1) {
+       fConverterZ = Z[0];
+   }
+   else {
+      std::cerr << "PairConversionGeneration constructor error: "
+                << "converter material is a compound or mixture, " << std::endl
+                << "only pure elements are supported by the "
+                << "present algorithm, cannot continue." << std::endl;
+      exit(13);
+   }
+}
 
 PairConversionGeneration::~PairConversionGeneration()
 {}
@@ -68,32 +80,37 @@ LDouble_t PairConversionGeneration::FFatomic(LDouble_t qRecoil)
    // normalized to unity at zero momentum transfer qRecoil (GeV/c).
    // Lengths are in Angstroms in this function.
 
-#if H_DIPOLE_FORM_FACTOR
-
-   LDouble_t a0Bohr = 0.529177 / 1.97327e-6;
-   LDouble_t ff = 1 / pow(1 + pow(a0Bohr * qRecoil, 2), 2);
-
-#else
-
-   // parameterization for 4Be given by online database at
-   // http://lampx.tugraz.at/~hadley/ss1/crystaldiffraction
-   //                    /atomicformfactors/formfactors.php
-
-   int Z=4;
-
-   LDouble_t acoeff[] = {1.5919, 1.1278, 0.5391, 0.7029};
-   LDouble_t bcoeff[] = {43.6427, 1.8623, 103.483, 0.5420};
-   LDouble_t ccoeff[] = {0.0385};
-
-   LDouble_t q_invA = qRecoil / 1.97327e-6;
-   LDouble_t ff = ccoeff[0];
-   for (int i=0; i < 4; ++i) {
-      ff += acoeff[i] * exp(-bcoeff[i] * pow(q_invA / (4 * M_PI), 2));
+   LDouble_t ff(0);
+   if (fConverterZ == 1) {
+      LDouble_t a0Bohr = 0.529177 / 1.97327e-6;
+      ff = 1 / pow(1 + pow(a0Bohr * qRecoil / 2, 2), 2);
    }
-   ff /= Z;
-
-#endif
-
+   else if (fConverterZ == 4) {
+      // parameterization for 4Be given by online database at
+      // http://lampx.tugraz.at/~hadley/ss1/crystaldiffraction
+      //                    /atomicformfactors/formfactors.php
+      LDouble_t acoeff[] = {1.5919, 1.1278, 0.5391, 0.7029};
+      LDouble_t bcoeff[] = {43.6427, 1.8623, 103.483, 0.5420};
+      LDouble_t ccoeff[] = {0.0385};
+      LDouble_t q_invA = qRecoil / 1.97327e-6;
+      LDouble_t ff = ccoeff[0];
+      for (int i=0; i < 4; ++i) {
+         ff += acoeff[i] * exp(-bcoeff[i] * pow(q_invA / (4 * M_PI), 2));
+      }
+      ff /= fConverterZ;
+   }
+   else if (fConverterZ > 1 && fConverterZ < 93) {
+      // parameterization implemented by Bernard et al
+      // in Geant4 class G4BetheHeitler5DModel.
+      const LDouble_t beta = 2.17e5 / pow(fConverterZ, 1/3.);
+	  ff = 1 / (1 + sqr(beta * qRecoil));
+   }
+   else {
+      std::cerr << "PairConversionGeneration::FFatomic error: "
+                << "no model currently implemented for element "
+                << "Z=" << fConverterZ << std::endl;
+      exit(13);
+   }
    return ff;
 }
 
@@ -101,10 +118,10 @@ LDouble_t PairConversionGeneration::DiffXS_pair(const TPhoton &gIn,
                                                 const TLepton &pOut,
                                                 const TLepton &eOut)
 {
-   // Calculates the e+e- pair production cross section for a
+   // Calculates the lepton pair production cross section for a
    // gamma ray off an atom at a particular recoil momentum vector q.
    // The cross section is returned as d(sigma)/(dE dphi d^3q) where E is
-   // the energy of the final-state electron and phi is its azimuthal angle.
+   // the energy of the final-state lepton and phi is its azimuthal angle.
    // The polar angles of the pair are fixed by momentum conservation.
    // It is assumed that gIn.Mom()[0] = eOut.Mom()[0]+pOut.Mom()[0], that
    // the energy carried away by the recoil is zero in the laboratory frame,
@@ -131,9 +148,10 @@ LDouble_t PairConversionGeneration::DiffXS_pair(const TPhoton &gIn,
    // The unpolarized Bethe-Heitler cross section is given here for comparison
    LDouble_t kin = gIn.Mom()[0];
    LDouble_t Epos = pOut.Mom()[0];
-   LDouble_t Eele = eOut.Mom()[0];
-   LDouble_t delta = 136 * mElectron / pow(fConverterZ, 0.33333) *
-                     kin / (Eele * Epos);
+   LDouble_t Eneg = eOut.Mom()[0];
+   LDouble_t mLepton = eOut.Mass();
+   LDouble_t delta = 136 * mLepton / pow(fConverterZ, 0.33333) *
+                     kin / (Eneg * Epos);
    LDouble_t aCoul = sqr(alphaQED * fConverterZ);
    LDouble_t fCoul = aCoul * (1 / (1 + aCoul) + 0.20206 - 0.0369 * aCoul +
                               0.0083 * pow(aCoul, 2) - 0.002 * pow(aCoul, 3));
@@ -146,11 +164,11 @@ LDouble_t PairConversionGeneration::DiffXS_pair(const TPhoton &gIn,
    if (delta > 1) {
       Phi1 = Phi2 = Phi0;
    }
-   result = hbarcSqr / sqr(mElectron) * pow(alphaQED, 3) / kin
+   result = hbarcSqr / sqr(mLepton) * pow(alphaQED, 3) / kin
             * fConverterZ * (fConverterZ + xsi)
             * (
-                 (sqr(Eele) + sqr(Epos)) / sqr(kin) * (Phi1 - FofZ/2) +
-                 (2./3.) * (Eele * Epos) / sqr(kin) * (Phi2 - FofZ/2)
+                 (sqr(Eneg) + sqr(Epos)) / sqr(kin) * (Phi1 - FofZ/2) +
+                 (2./3.) * (Eneg * Epos) / sqr(kin) * (Phi2 - FofZ/2)
               );
    return result * 1e-6;
 }
@@ -178,7 +196,7 @@ LDouble_t PairConversionGeneration::DiffXS_triplet(const TPhoton &gIn,
 
    // Avoid double-counting due to identical fs electrons by requiring
    // that e3 (recoil e-) have a lower momentum magnitude than e2.
-   if (e3.Mom().Length() > e2.Mom().Length()) 
+   if (e2.Mass() == e3.Mass() && e3.Mom().Length() > e2.Mom().Length())
       return 0;
 
    // Set the initial,final polarizations

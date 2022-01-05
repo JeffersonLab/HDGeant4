@@ -16,6 +16,7 @@
 #include "G4ios.hh"
 #include "G4VProcess.hh"
 #include "G4UserLimits.hh"
+#include "G4AutoLock.hh"
 
 class G4LossTableManager;
 
@@ -63,16 +64,17 @@ class GlueXSpecialCuts : public G4VProcess
                              const G4Step& 
                             ) {return 0;};
 
-   G4UserLimits *GetUserLimits();
-   void SetUserLimits(G4UserLimits *userlimits);
+   const G4UserLimits *GetUserLimits() const;
+   void SetUserLimits(const G4UserLimits *userlimits);
 
  private:
    // hide assignment operator as private 
    GlueXSpecialCuts(GlueXSpecialCuts&);
    GlueXSpecialCuts& operator=(const GlueXSpecialCuts& right);
 
-   static G4ThreadLocal G4UserLimits *fUserLimits;
    G4LossTableManager* theLossTableManager;
+   static G4UserLimits *fUserLimits;
+   static G4Mutex fMutex;
 };
 
 #endif

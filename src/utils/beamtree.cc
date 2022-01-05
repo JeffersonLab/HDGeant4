@@ -46,7 +46,7 @@ int main(int argc,char** argv)
    }
 
    GlueXBremsstrahlungGenerator gen(outfile);
-   gen.SetRandomSeed(seed);
+   gen.fRandom.SetSeed(seed);
    gen.GenerateBeamPhotons(nevents);
    return 0;
 }

@@ -14,7 +14,6 @@
 #define GlueXPhysicsList_h 1
 
 #include <GlueXDetectorConstruction.hh>
-#include <GlueXBeamConversionProcess.hh>
 #include <GlueXUserOptions.hh>
 #include <GlueXSpecialCuts.hh>
 #include <CLHEP/Units/SystemOfUnits.h>
@@ -22,6 +21,7 @@
 #include "globals.hh"
 #include "G4Version.hh"
 #include "G4VModularPhysicsList.hh"
+#include "G4VEmProcess.hh"
 #include "G4OpticalPhysics.hh"
 #include "CompileTimeConstraints.hh"
 
@@ -37,7 +37,7 @@ class GlueXPhysicsList: public G4VModularPhysicsList
    virtual void SetCuts();
 
    virtual void ListActiveProcesses();
-   virtual void SelectActiveProcesses(G4int verbosity=1);
+   virtual void SelectActiveProcesses(G4int verbosity=0);
 
    virtual void DoMultipleScattering(G4int flag);
    virtual void DoBremsstrahlung(G4int flag);
@@ -56,9 +56,8 @@ class GlueXPhysicsList: public G4VModularPhysicsList
  protected:
    GlueXUserOptions *fOptions;
 
-#if USING_DIRACXX
-   static G4ThreadLocal GlueXBeamConversionProcess *fBeamConversion;
-#endif
+   G4VEmProcess *fBeamConversion;
+   G4VEmProcess *fBernardConversion;
    G4OpticalPhysics *fOpticalPhysics;
 
 #if G4VERSION_NUMBER < 1030

@@ -184,6 +184,9 @@ class AdaptiveSampler {
    void display_tree(bool optimized=false);
    int check_subsets(bool optimized=false);
 
+ private:
+   AdaptiveSampler() = delete;
+
  protected:
    int fNdim;
    int fNfixed;
@@ -223,7 +226,7 @@ class AdaptiveSampler {
       double *sum_wI4d;
       double subset;
       // optimized transforms of the above statistics
-      long int opt_nhit;
+      double opt_nhit;
       // sum_wI is an invariant;
       double opt_wI2;
       double opt_wI4;
@@ -233,6 +236,7 @@ class AdaptiveSampler {
       double opt_subset;
 
       Cell *subcell[3];
+      Cell *super;
 
       Cell(int dim, int fixed=0)
        : ndim(dim),
@@ -256,6 +260,7 @@ class AdaptiveSampler {
          subcell[0] = 0;
          subcell[1] = 0;
          subcell[2] = 0;
+         super = 0;
       }
       Cell(const Cell &src) {
          ndim = src.ndim;
@@ -287,6 +292,7 @@ class AdaptiveSampler {
             subcell[1] = 0;
             subcell[2] = 0;
          }
+         super = 0;
       }
       ~Cell() {
          if (subcell[0] != 0) {
@@ -330,6 +336,7 @@ class AdaptiveSampler {
                sum_wI2 += subcell[n]->sum_wI2;
                sum_wI4 += subcell[n]->sum_wI4;
                sum_wI2s += subcell[n]->sum_wI2s;
+               subcell[n]->super = this;
             }
          }
          if (divAxis < nfixed) {
@@ -337,261 +344,10 @@ class AdaptiveSampler {
          }
          return count;
       }
-      void optimize() {
-         // Assume opt_nhit and opt_subset already set upon entry,
-         // task is to assign opt_wI2, opt_wI4 for this cell, and
-         // all opt_* parameters for child nodes in the tree.
-         if (divAxis > -1) {
-            if (divAxis < nfixed) {
-               opt_wI2 = 0;
-               opt_wI4 = 0;
-               for (int n=0; n < 3; ++n) {
-                  subcell[n]->opt_nhit = subcell[n]->nhit;
-                  subcell[n]->opt_subset = opt_subset;
-                  subcell[n]->optimize();
-                  opt_wI2 += subcell[n]->opt_wI2;
-                  opt_wI4 += subcell[n]->opt_wI4;
-               }
-            }
-            else {
-               opt_wI2 = 0;
-               opt_wI4 = 0;
-               for (int n=0; n < 3; ++n) {
-                  double f0 = 5e-3;  // minimum subset fraction
-                  double r = (subcell[n]->sum_wI2s / sum_wI2s + f0)
-                                                   / (1 + 3*f0);
-                  r = (nhit > 100)? r : 1;
-                  subcell[n]->opt_nhit = nhit * r;
-                  subcell[n]->opt_subset = opt_subset * r;
-                  subcell[n]->optimize();
-                  opt_wI2 += subcell[n]->opt_wI2;
-                  opt_wI4 += subcell[n]->opt_wI4;
-               }
-            }
-         }
-         else if (nhit > 0) {
-            double r = (opt_nhit + 1e-99) / nhit;
-            opt_wI2 = sum_wI2 / r;
-            opt_wI4 = sum_wI4 / pow(r,3);
-         }
-      }
-      int serialize(std::ofstream &ofs, bool optimized=false) {
-         ofs << "divAxis=" << divAxis << std::endl;
-         if (nhit != 0)
-            ofs << "nhit=" << nhit << std::endl;
-         if (sum_wI != 0)
-            ofs << "sum_wI=" << sum_wI << std::endl;
-         if (sum_wI2 != 0)
-            ofs << "sum_wI2=" << sum_wI2 << std::endl;
-         if (sum_wI4 != 0)
-            ofs << "sum_wI4=" << sum_wI4 << std::endl;
-         for (int i=0; i < 3*ndim; ++i) {
-            if (sum_wI2d[i] != 0)
-               ofs << "sum_wI2d[" << i << "]=" << sum_wI2d[i] << std::endl;
-         }
-         for (int i=0; i < 3*ndim; ++i) {
-            if (sum_wI4d[i] != 0)
-               ofs << "sum_wI4d[" << i << "]=" << sum_wI4d[i] << std::endl;
-         }
-         if (optimized)
-            ofs << "subset=" << std::setprecision(20) << opt_subset << std::endl;
-         else
-            ofs << "subset=" << std::setprecision(20) << subset << std::endl;
-         ofs << "=" << std::endl;
-         int count = 1;
-         if (divAxis > -1) {
-            count += subcell[0]->serialize(ofs, optimized);
-            count += subcell[1]->serialize(ofs, optimized);
-            count += subcell[2]->serialize(ofs, optimized);
-         }
-         return count;
-      }
-      int deserialize(std::ifstream &ifs, double subset_multiplier=1)
-      {
-         std::map<std::string,double> keyval;
-         while (true) {
-            std::string key;
-            std::getline(ifs, key, '=');
-            if (key.size() == 0) {
-               std::getline(ifs, key);
-               break;
-            }
-            ifs >> keyval[key];
-            std::getline(ifs, key);
-         }
-         divAxis = keyval.at("divAxis");
-         nhit += keyval["nhit"];
-         sum_wI += keyval["sum_wI"];
-         sum_wI2 += keyval["sum_wI2"];
-         sum_wI4 += keyval["sum_wI4"];
-         subset = keyval.at("subset") * subset_multiplier;
-         std::map<std::string,double>::iterator it;
-         for (it = keyval.begin(); it != keyval.end(); ++it) {
-            if (it->first.substr(0,8) == "sum_wI2u") {
-               int n3dim=1;
-               for (int n=0; n < ndim; ++n)
-                  n3dim *= 3;
-               int j;
-               if (sscanf(it->first.c_str(), "sum_wI2u[%d]=", &j) == 1) {
-                  assert (j < n3dim);
-                  for (int n=0; n < ndim; ++n) {
-                     double wI2 = it->second;
-                     sum_wI2d[n*3+(j%3)] += wI2;
-                     sum_wI4d[n*3+(j%3)] += wI2*wI2 * n3dim/nhit;
-                     j /= 3;
-                  }
-               }
-            }
-            else if (it->first.substr(0,8) == "sum_wI2d") {
-               int j;
-               if (sscanf(it->first.c_str(), "sum_wI2d[%d]=", &j) == 1) {
-                  assert (j < 3*ndim);
-                  sum_wI2d[j] += it->second;
-               }
-            }
-            else if (it->first.substr(0,8) == "sum_wI4d") {
-               int j;
-               if (sscanf(it->first.c_str(), "sum_wI4d[%d]=", &j) == 1) {
-                  assert (j < 3*ndim);
-                  sum_wI4d[j] += it->second;
-               }
-            }
-         }
-         int count = 1;
-         if (divAxis > -1) {
-            //subset_multiplier *= (divAxis < 1)? 3 : 1;
-            for (int i=0; i < 3; ++i) {
-               if (subcell[i] == 0) {
-                  subcell[i] = new Cell(ndim, nfixed);
-               }
-               count += subcell[i]->deserialize(ifs, subset_multiplier);
-            }
-         }
-         return count;
-      }
-      int check_subsets(bool optimized=false, std::string id="0") {
-         if (divAxis < 0) {
-            return 0;
-         }
-
-         // test trinomial statistics at each node
-         int warnings = 0;
-         long int Ntot = subcell[0]->nhit + subcell[1]->nhit + subcell[2]->nhit;
-         if (Ntot != nhit) {
-            std::cerr << "Error in Cell::check_subsets - "
-                      << "nhit consistency check #1 failed for cell " << id
-                      << std::endl
-                      << "  split cell nhit=" << nhit
-                      << ", sum of subcell nhit=" << Ntot
-                      << std::endl;
-            return 999;
-         }
-         if (divAxis < nfixed) {
-            if (subcell[0]->subset != subset ||
-                subcell[1]->subset != subset ||
-                subcell[2]->subset != subset)
-            {
-               std::cerr << "Error in Cell::check_subsets - "
-                         << "subset consistency check #1 failed for cell " << id
-                         << std::endl
-                         << "  split fixed cell subset=" << subset
-                         << ", subcell subsets="
-                         << subcell[0]->subset << ","
-                         << subcell[1]->subset << ","
-                         << subcell[2]->subset
-                         << std::endl;
-               return 999;
-            }
-         }
-         else {
-            double subsetsum = subcell[0]->subset + 
-                               subcell[1]->subset +
-                               subcell[2]->subset;
-            if (fabs(subsetsum - subset) > subset * 1e-12) {
-               std::cerr << "Error in Cell::check_subsets - "
-                         << "subset consistency check #2 failed for cell " << id
-                         << std::endl
-                         << "  split cell subset=" << subset
-                         << ", sum of subcell subsets=" << subsetsum
-                         << std::endl;
-               return 999;
-            }
-            for (int i=0; i < 3; ++i) {
-               double p = subcell[i]->subset / (subset + 1e-99);
-               double mu = nhit * p;
-               double sigma = sqrt(nhit * p * (1-p));
-               double p1 = subcell[(i+1)%3]->subset / (subset + 1e-99);
-               double mu1 = nhit * p1;
-               double sigma1 = sqrt(nhit * p1 * (1-p1));
-               double p2 = subcell[(i+2)%3]->subset / (subset + 1e-99);
-               double mu2 = nhit * p2;
-               double sigma2 = sqrt(nhit * p2 * (1-p2));
-               if (subcell[i]->nhit < 30) {
-                  double prob = 1;
-                  for (int k=1; k <= nhit; ++k) {
-                     if (k <=subcell[i]->nhit)
-                        prob *= p * double(nhit - k + 1) / k;
-                     else
-                        prob *= 1 - p;
-                  }
-                  if (prob < 1e-6) {
-                     std::cerr << "Warning in Cell::check_subsets - "
-                               << "nhit - subset probability < 1e-6, cell "
-                               << id << ", subcell " << i 
-                               << " has nhit=" << subcell[i]->nhit
-                               << ", expected " << mu << " +/- " << sigma
-                               << ", P-value " << prob
-                               << std::endl;
-                     std::cerr << "  This cell is splits " << nhit
-                               << " events along axis " << divAxis
-                               << std::endl;
-                     std::cerr << "  Other branch of this cell:"
-                               << "  subcell " << (i+1)%3
-                               << " with nhit=" << subcell[(i+1)%3]->nhit
-                               << ", expected " << mu1 << " +/- " << sigma1
-                               << ", " << (subcell[(i+1)%3]->nhit - mu1) / sigma1
-                               << " sigma." << std::endl;
-                     std::cerr << "  Other branch of this cell:"
-                               << "  subcell " << (i+2)%3
-                               << " with nhit=" << subcell[(i+2)%3]->nhit
-                               << ", expected " << mu2 << " +/- " << sigma2
-                               << ", " << (subcell[(i+2)%3]->nhit - mu2) / sigma2
-                               << " sigma." << std::endl;
-                     warnings++;
-                  }
-               }
-               else if (fabs(subcell[i]->nhit - mu) > 5 * sigma) {
-                  std::cerr << "Warning in Cell::check_subsets - "
-                            << "nhit - subset mismatch > 5 sigma, cell "
-                            << id << ", subcell " << i 
-                            << " has nhit=" << subcell[i]->nhit
-                            << ", expected " << mu << " +/- " << sigma
-                            << ", " << (subcell[i]->nhit - mu) / sigma
-                            << " sigma!" << std::endl;
-                  std::cerr << "  This cell is splits " << nhit
-                            << " events along axis " << divAxis
-                            << std::endl;
-                  std::cerr << "  Other branch of this cell:"
-                            << "  subcell " << (i+1)%3
-                            << " with nhit=" << subcell[(i+1)%3]->nhit
-                            << ", expected " << mu1 << " +/- " << sigma1
-                            << ", " << (subcell[(i+1)%3]->nhit - mu1) / sigma1
-                            << " sigma." << std::endl;
-                  std::cerr << "  Other branch of this cell:"
-                            << "  subcell " << (i+2)%3
-                            << " with nhit=" << subcell[(i+2)%3]->nhit
-                            << ", expected " << mu2 << " +/- " << sigma2
-                            << ", " << (subcell[(i+2)%3]->nhit - mu2) / sigma2
-                            << " sigma." << std::endl;
-                  warnings++;
-               }
-            }
-         }
-         for (int i=0; i < 3; ++i) {
-            warnings += subcell[i]->check_subsets(optimized,
-                                                  id + std::to_string(i));
-         }
-         return warnings;
-      }
+      void optimize();
+      int serialize(std::ofstream &ofs, bool optimized=false);
+      int deserialize(std::ifstream &ifs, double subset_multiplier=1);
+      int check_subsets(bool optimized=false, std::string id="0");
+      std::string address();
    };
 };

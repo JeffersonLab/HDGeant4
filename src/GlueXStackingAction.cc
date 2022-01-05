@@ -12,7 +12,6 @@
 #include "G4Track.hh"
 #include "G4ios.hh"
 #include "G4ParticleTable.hh"
-#include "TMath.h"
 #include "G4TransportationManager.hh"
 #include "G4PhysicalVolumeStore.hh"
 

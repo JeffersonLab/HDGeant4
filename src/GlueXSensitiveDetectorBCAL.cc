@@ -9,6 +9,7 @@
 #include "GlueXPrimaryGeneratorAction.hh"
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserTrackInformation.hh"
+#include "HddmOutput.hh"
 
 #include "G4VPhysicalVolume.hh"
 #include "G4PVPlacement.hh"
@@ -23,7 +24,7 @@
 #define USE_ENERGY_WEIGHTED_TIMES 1
 
 // Energy rescale factor to match reconstructed to generated
-double GlueXSensitiveDetectorBCAL::SHOWER_ENERGY_SCALE_FACTOR = 1.04;
+double GlueXSensitiveDetectorBCAL::SHOWER_ENERGY_SCALE_FACTOR = 1.008;
 
 // Cutoff on the total number of allowed hits
 int GlueXSensitiveDetectorBCAL::MAX_HITS = 100;
@@ -64,7 +65,7 @@ GlueXSensitiveDetectorBCAL::GlueXSensitiveDetectorBCAL(const G4String& name)
 
    G4AutoLock barrier(&fMutex);
    if (instanceCount++ == 0) {
-      extern int run_number;
+      int runno = HddmOutput::getRunNo();
       extern jana::JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
@@ -72,7 +73,7 @@ GlueXSensitiveDetectorBCAL::GlueXSensitiveDetectorBCAL(const G4String& name)
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
+      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
       std::map<string, float> bcal_parms;
       jcalib->Get("BCAL/bcal_parms", bcal_parms);
       THRESH_MEV = bcal_parms.at("BCAL_THRESH_MEV");
@@ -165,26 +166,31 @@ G4bool GlueXSensitiveDetectorBCAL::ProcessHits(G4Step* step,
                                           track->GetUserInformation();
    int itrack = trackinfo->GetGlueXTrackID();
    if (touch->GetVolume()->GetName() == "BCL0") {
+      if (track->GetCurrentStepNumber() == 1)
+         trackinfo->SetGlueXHistory(1);
       if (trackinfo->GetGlueXHistory() == 0 &&
           xin[0] * pin[0] + xin[1] * pin[1] > 0 &&
           Ein > THRESH_MEV*MeV)
       {
-         GlueXHitBCALpoint newPoint;
-         newPoint.ptype_G3 = g3type;
-         newPoint.track_ = trackID;
-         newPoint.trackID_ = itrack;
-         newPoint.primary_ = (track->GetParentID() == 0);
-         newPoint.t_ns = t/ns;
-         newPoint.z_cm = xin[2]/cm;
-         newPoint.r_cm = xin.perp()/cm;
-         newPoint.phi_rad = xin.phi();
-         newPoint.px_GeV = pin[0]/GeV;
-         newPoint.py_GeV = pin[1]/GeV;
-         newPoint.pz_GeV = pin[2]/GeV;
-         newPoint.E_GeV = Ein/GeV;
          G4int key = fPointsMap->entries();
-         fPointsMap->add(key, newPoint);
-         trackinfo->SetGlueXHistory(1);
+         GlueXHitBCALpoint* lastPoint = (*fPointsMap)[key - 1];
+         // Limit bcal truthPoints to one per track
+         if (lastPoint == 0 || lastPoint->track_ != trackID) {
+            GlueXHitBCALpoint newPoint;
+            newPoint.ptype_G3 = g3type;
+            newPoint.track_ = trackID;
+            newPoint.trackID_ = itrack;
+            newPoint.primary_ = (track->GetParentID() == 0);
+            newPoint.t_ns = t/ns;
+            newPoint.z_cm = xin[2]/cm;
+            newPoint.r_cm = xin.perp()/cm;
+            newPoint.phi_rad = xin.phi();
+            newPoint.px_GeV = pin[0]/GeV;
+            newPoint.py_GeV = pin[1]/GeV;
+            newPoint.pz_GeV = pin[2]/GeV;
+            newPoint.E_GeV = Ein/GeV;
+            fPointsMap->add(key, newPoint);
+         }
  
          // The original HDGeant hits code for the BCal had a heavy-weight
          // recording system implemented to assign every hit to a particular

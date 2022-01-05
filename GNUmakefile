@@ -18,15 +18,22 @@ ifndef G4SYSTEM
 endif
 
 ifdef DIRACXX_HOME
-    CPPFLAGS += -I$(DIRACXX_HOME) -DUSING_DIRACXX -L$(DIRACXX_HOME) -lDirac
+    DIRACXX_CMAKE := $(shell if [ -f $(DIRACXX_HOME)/CMakeLists.txt ]; then echo true; else echo false; fi)
+    ifeq ($(DIRACXX_CMAKE), true)
+        CPPFLAGS += -I$(DIRACXX_HOME)/include -DUSING_DIRACXX -L$(DIRACXX_HOME)/lib -lDirac
+    else
+        CPPFLAGS += -I$(DIRACXX_HOME) -DUSING_DIRACXX -L$(DIRACXX_HOME) -lDirac
+    endif
 endif
+
+PYTHON_CONFIG = python-config
 
 CPPFLAGS += -I$(HDDS_HOME) -I./src -I./src/G4fixes
 CPPFLAGS += -I./src/G4debug
 CPPFLAGS += -I$(HALLD_RECON_HOME)/$(BMS_OSNAME)/include
 CPPFLAGS += -I$(JANA_HOME)/include
 CPPFLAGS += -I$(shell root-config --incdir)
-CPPFLAGS += $(shell python-config --includes)
+CPPFLAGS += $(shell $(PYTHON_CONFIG) --includes)
 CPPFLAGS += -Wno-unused-parameter -Wno-unused-but-set-variable
 CPPFLAGS += -DUSE_SSE2 -std=c++11
 #CPPFLAGS += -I/usr/include/Qt
@@ -39,7 +46,9 @@ CPPFLAGS += -DREDUCE_OPTIMIZATION_OF_CDC=1
 CPPFLAGS += -DG4VIS_BUILD_OPENGL_DRIVER
 CPPFLAGS += -DG4VIS_BUILD_OPENGLX_DRIVER
 CPPFLAGS += -DG4MULTITHREADED
-CPPFLAGS += -DVERBOSE_RANDOMS=1
+#CPPFLAGS += -DUSING_BERNARD
+#CPPFLAGS += -DMERGE_STEPS_BEFORE_HITS_GENERATION
+#CPPFLAGS += -DVERBOSE_RANDOMS=1
 #CPPFLAGS += -DFORCE_PARTICLE_TYPE_CHARGED_GEANTINO
 #CPPFLAGS += -DBP_DEBUG
 #CPPFLAGS += -DMOD_SPONCE
@@ -62,12 +71,20 @@ HDDS_sources := $(HDDS_HOME)/XString.cpp $(HDDS_HOME)/XParsers.cpp $(HDDS_HOME)/
 
 ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer -ltbb
 
+ifdef SQLITECPP_VERSION
+    SQLITECPP_MAJOR_VERSION := $(shell echo $(SQLITECPP_VERSION) | awk -F. '{print $$1}')
+    SQLITECPP_MINOR_VERSION := $(shell echo $(SQLITECPP_VERSION) | awk -F. '{print $$2}')
+    SQLITECPP_LIBDIR := $(shell if [[ $(SQLITECPP_MAJOR_VERSION) -ge 3 || $(SQLITECPP_MAJOR_VERSION) -eq 2 && $(SQLITECPP_MINOR_VERSION) -ge 5 ]]; then echo lib64; else echo lib; fi)
+else
+    SQLITECPP_LIBDIR = lib64
+endif
+
 DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -lANALYSIS -lBCAL -lCCAL -lCDC -lCERE -lTRD -lDIRC -lFCAL \
            -lFDC -lFMWPC -lHDDM -lPAIR_SPECTROMETER -lPID -lRF \
            -lSTART_COUNTER -lTAGGER -lTOF -lTPOL -lTRACKING \
            -lTRIGGER -lDAQ -lTTAB -lEVENTSTORE -lKINFITTER -lTAC \
-           -L$(SQLITECPP_HOME)/lib -lSQLiteCpp -L$(SQLITE_HOME)/lib -Wl,-rpath=$(SQLITE_HOME)/lib -lsqlite3 \
+           -L$(SQLITECPP_HOME)/$(SQLITECPP_LIBDIR) -lSQLiteCpp -L$(SQLITE_HOME)/lib -Wl,-rpath=$(SQLITE_HOME)/lib -lsqlite3 \
            -lxstream -lbz2 -lz \
            -L/usr/lib64/mysql -lmysqlclient\
            -L$(JANA_HOME)/lib -lJANA \
@@ -81,17 +98,30 @@ DANALIBS += -L$(ETROOT)/lib -let -let_remote
 endif
 
 G4shared_libs := $(wildcard $(G4ROOT)/lib64/*.so)
+#BOOST_PYTHON_LIB = boost_python
+#PYTHON_LIB_OPTION = ""
+ifeq ($(PYTHON_GE_3), true)
+  BOOST_PYTHON_LIB = boost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+else
+  BOOST_PYTHON_LIB = boost_python
+endif
+
+ifdef HDF5ROOT
+CPPFLAGS += -DHDF5_SUPPORT -I ${HDF5ROOT}/include
+DANALIBS +=	-L $(HDF5ROOT)/lib -lhdf5_cpp -lhdf5_hl -lhdf5 -lsz -lz -lbz2 -ldl 
+endif
 
 INTYLIBS += -Wl,--whole-archive $(DANALIBS) -Wl,--no-whole-archive
 INTYLIBS += -fPIC -I$(HDDS_HOME) -I$(XERCESCROOT)/include
 INTYLIBS += -L${XERCESCROOT}/lib -lxerces-c
 INTYLIBS += -L$(G4TMPDIR) -lhdds
-INTYLIBS += -lboost_python -L$(shell python-config --prefix)/lib $(shell python-config --ldflags)
+INTYLIBS += -l$(BOOST_PYTHON_LIB) -L$(shell $(PYTHON_CONFIG) --prefix)/lib $(shell $(PYTHON_CONFIG) --ldflags) $(PYTHON_LIB_OPTION)
 INTYLIBS += -L$(G4ROOT)/lib64 $(patsubst $(G4ROOT)/lib64/lib%.so, -l%, $(G4shared_libs))
 INTYLIBS += -lgfortran
 INTYLIBS += -L/usr/lib64
+INTYLIBS += -ltirpc
 
-EXTRALIBS += -lG4fixes
+EXTRALIBS += -lG4fixes -lGLU
 
 .PHONY: all
 all: hdds cobrems G4fixes_symlink g4fixes sharedlib exe lib bin g4py
@@ -115,7 +145,7 @@ G4fixes_symlink:
 
 $(G4TMPDIR)/libcobrems.so: $(Cobrems_sources)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Wl,--export-dynamic -Wl,-soname,libcobrems.so \
-	-shared -o $@ $^ $(G4shared_libs) -lboost_python
+	-shared -o $@ $^ $(G4shared_libs) -l$(BOOST_PYTHON_LIB)
 
 hdgeant4_objects := $(patsubst src/%.cc, $(G4TMPDIR)/%.o, $(hdgeant4_sources))
 G4fixes_objects := $(patsubst src/G4fixes/%.cc, $(G4FIXESDIR)/%.o, $(G4fixes_sources))
@@ -126,7 +156,7 @@ $(G4TMPDIR)/libhdgeant4.so: $(hdgeant4_objects)
 
 $(G4TMPDIR)/libG4fixes.so: $(G4FIXESDIR)/G4fixes.o $(G4fixes_objects) $(G4debug_objects)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Wl,--export-dynamic -Wl,-soname,libG4fixes.so \
-	-shared -o $@ $^ $(G4shared_libs) -lboost_python
+	-shared -o $@ $^ $(G4shared_libs) -l$(BOOST_PYTHON_LIB)
 
 $(G4FIXESDIR)/G4fixes.o: src/G4fixes.cc
 	@mkdir -p $(G4FIXESDIR)
@@ -186,13 +216,29 @@ $(G4LIBDIR)/../../../g4py/G4fixes/libG4fixes.so: $(G4LIBDIR)/libG4fixes.so
 	@rm -f $@
 	@cd g4py/G4fixes && ln -s ../../tmp/*/hdgeant4/libG4fixes.so .
 
-utils: $(G4BINDIR)/beamtree $(G4BINDIR)/genBH $(G4BINDIR)/adapt
+utils: $(G4BINDIR)/beamtree $(G4BINDIR)/genBH $(G4BINDIR)/adapt $(G4BINDIR)/geneBH $(G4BINDIR)/samplesep
 
 $(G4BINDIR)/beamtree: src/utils/beamtree.cc
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR) $(G4shared_libs) -l$(BOOST_PYTHON_LIB)
 
 $(G4BINDIR)/genBH: src/utils/genBH.cc
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(DANALIBS) $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
 
+$(G4BINDIR)/geneBH: src/utils/geneBH.cc
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(DANALIBS) $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
+
 $(G4BINDIR)/adapt: src/utils/adapt.cc
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(DANALIBS) $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
+
+$(G4BINDIR)/samplesep: src/utils/samplesep.cc
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -O4 -fopenmp -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(DANALIBS) $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
+
+show_env:
+	@echo PYTHON_VERSION = $(PYTHON_VERSION)
+	@echo PYTHON_MAJOR_VERSION = $(PYTHON_MAJOR_VERSION)
+	@echo PYTHON_MINOR_VERSION = $(PYTHON_MINOR_VERSION)
+	@echo PYTHON_SUBMINOR_VERSION = $(PYTHON_SUBMINOR_VERSION)
+	@echo PYTHON_GE_3 = $(PYTHON_GE_3)
+
+diff:
+	diff -q -r ../jlab . -x ".[a-z]*" -x tmp -x bin -x "*.pyc" -x "*.so" -x test -x "*-orig"

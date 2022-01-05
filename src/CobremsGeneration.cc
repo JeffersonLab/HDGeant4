@@ -48,7 +48,7 @@
 // Should the user wish to try other values for this angle, a public
 // method is provided for this purpose.
 
-#define COBREMS_GENERATOR_VERBOSITY 1
+#define COBREMS_GENERATOR_VERBOSITY 0
 #define BOOST_PYTHON_WRAPPING 1
 
 #include <iostream>
@@ -72,8 +72,8 @@ CobremsGeneration::CobremsGeneration(double Emax_GeV, double Epeak_GeV)
    fBeamEmittance = 2.5e-9; // m r
    fCollimatorSpotrms = 0.0005; // m
    fCollimatorDistance = 76.0; // m
-   fCollimatorDiameter = 0.0034; // m
-   fTargetThickness = 20e-6; // m
+   fCollimatorDiameter = 0.005; // m
+   fTargetThickness = 50e-6; // m
    fTargetThetay = 0.050; // radians
    fTargetThetaz = 0; // radians
    setTargetCrystal("diamond");
@@ -656,11 +656,13 @@ double CobremsGeneration::Rate_dNcdxdp(double x, double phi)
 
 #if COBREMS_GENERATOR_VERBOSITY > 1
    if (qzmin < 99) {
+#else
+   if (false) {
+#endif
       std::cout << hmin << "," << kmin << "," << lmin
                 << " is the best plane at x=" << x
                 << std::endl;
    }
-#endif
 
    return sum;
 }

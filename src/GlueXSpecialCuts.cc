@@ -13,7 +13,8 @@
 #include "G4VParticleChange.hh"
 #include "G4LossTableManager.hh"
 
-G4ThreadLocal G4UserLimits *GlueXSpecialCuts::fUserLimits = 0;
+G4UserLimits *GlueXSpecialCuts::fUserLimits = 0;
+G4Mutex GlueXSpecialCuts::fMutex = G4MUTEX_INITIALIZER;
 
 GlueXSpecialCuts::GlueXSpecialCuts(const G4String& aName)
   : G4VProcess(aName, fUserDefined)
@@ -111,12 +112,15 @@ GlueXSpecialCuts::PostStepDoIt( const G4Track& aTrack,
    return &aParticleChange;
 }
 
-G4UserLimits *GlueXSpecialCuts::GetUserLimits()
+const G4UserLimits *GlueXSpecialCuts::GetUserLimits() const
 {
    return fUserLimits;
 }
 
-void GlueXSpecialCuts::SetUserLimits(G4UserLimits *userlimits)
+void GlueXSpecialCuts::SetUserLimits(const G4UserLimits *userlimits)
 {
-   fUserLimits = userlimits;
+   G4AutoLock barrier(&fMutex);
+   if (fUserLimits)
+      delete fUserLimits;
+   fUserLimits = new G4UserLimits(*userlimits);
 }

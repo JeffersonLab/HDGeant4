@@ -9,6 +9,7 @@
 #include "GlueXPrimaryGeneratorAction.hh"
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserTrackInformation.hh"
+#include "HddmOutput.hh"
 
 #include "G4VPhysicalVolume.hh"
 #include "G4PVPlacement.hh"
@@ -29,6 +30,12 @@ double GlueXSensitiveDetectorFMWPC::TWO_HIT_TIME_RESOL = 400*ns;
 // Minimum photoelectron count for a hit
 double GlueXSensitiveDetectorFMWPC::THRESH_KEV = 0.;
 
+// Coordinate of wire 0, transverse to wire direction
+double GlueXSensitiveDetectorFMWPC::WIRE_OFFSET = -(73.000*1.016)*cm;
+
+// Minimum photoelectron count for a hit
+double GlueXSensitiveDetectorFMWPC::WIRE_PITCH = 1.016*cm;
+
 int GlueXSensitiveDetectorFMWPC::instanceCount = 0;
 G4Mutex GlueXSensitiveDetectorFMWPC::fMutex = G4MUTEX_INITIALIZER;
 
@@ -47,7 +54,7 @@ GlueXSensitiveDetectorFMWPC::GlueXSensitiveDetectorFMWPC(const G4String& name)
 
    G4AutoLock wirerier(&fMutex);
    if (instanceCount++ == 0) {
-      extern int run_number;
+      int runno = HddmOutput::getRunNo();
       extern jana::JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
@@ -55,7 +62,7 @@ GlueXSensitiveDetectorFMWPC::GlueXSensitiveDetectorFMWPC(const G4String& name)
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
+      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
       if (japp == 0) {   // dummy
          jcalib = 0;
          G4cout << "FMWPC: ALL parameters loaded from ccdb" << G4endl;
@@ -183,13 +190,14 @@ G4bool GlueXSensitiveDetectorFMWPC::ProcessHits(G4Step* step,
       int wire = 0;
       if (layer % 2 != 0) {
          // Vertical wires
-         wire = floor(x[0] + 73.0);
+	wire = floor((x[0] - WIRE_OFFSET)/WIRE_PITCH);
       }
       else {
          // Horizontal wires
-         wire = floor(x[1] + 73.0);
+	wire = floor((x[1] - WIRE_OFFSET)/WIRE_PITCH);
       }
-      
+      //cout<<"MWPC: layer/wire = "<<layer<<" / "<<wire<<endl;
+
       if (wire < 1 || wire > 144)
          return false;
       
@@ -213,27 +221,27 @@ G4bool GlueXSensitiveDetectorFMWPC::ProcessHits(G4Step* step,
          else if (hiter->t_ns*ns > t) {
             break;
          }
-         if (merge_hit) {
-            // Use the time from the earlier hit but add the charge
-            hiter->dE_keV += dEsum/keV;
-            hiter->dx_cm += dx.mag()/cm;
-            if (hiter->t_ns*ns > t) {
-               hiter->t_ns = t/ns;
-            }
-         }
-         else if ((int)counter->hits.size() < MAX_HITS)	{
-            // create new hit 
-            hiter = counter->hits.insert(hiter, GlueXHitFMWPCwire::hitinfo_t());
-            hiter->dE_keV = dEsum/keV;
-            hiter->dx_cm = dx.mag()/cm;
+      }
+      if (merge_hit) {
+         // Use the time from the earlier hit but add the charge
+         hiter->dE_keV += dEsum/keV;
+         hiter->dx_cm += dx.mag()/cm;
+         if (hiter->t_ns*ns > t) {
             hiter->t_ns = t/ns;
          }
-         else {
-            G4cerr << "GlueXSensitiveDetectorFMWPC::ProcessHits error: "
+      }
+      else if ((int)counter->hits.size() < MAX_HITS) {
+         // create new hit 
+         hiter = counter->hits.insert(hiter, GlueXHitFMWPCwire::hitinfo_t());
+         hiter->dE_keV = dEsum/keV;
+         hiter->dx_cm = dx.mag()/cm;
+         hiter->t_ns = t/ns;
+      }
+      else {
+         G4cerr << "GlueXSensitiveDetectorFMWPC::ProcessHits error: "
                 << "max hit count " << MAX_HITS
                 << " exceeded, truncating!"
                 << G4endl;
-         }
       }
    }
    return true;

@@ -33,6 +33,9 @@
 #include "G4SystemOfUnits.hh"
 #include "G4LineSection.hh"
 #include "G4Mag_EqRhs.hh"
+#include "G4ChordFinder.hh"
+#include "G4PropagatorInField.hh"
+#include "G4TransportationManager.hh"
 
 // given a purely magnetic field a better approach than adding a straight line
 // (as in the normal runge-kutta-methods) is to add helix segments to the
@@ -181,6 +184,14 @@ G4MagHelicalStepper::AdvanceHelix( const G4double  yIn[],
     SetCurve(std::abs(R));
     SetRadHelix(R_Helix);
   }
+
+  G4ChordFinder *cf = G4TransportationManager::GetTransportationManager()->
+                                               GetPropagatorInField()->
+                                               GetChordFinder();
+  if (GetAngCurve() > M_PI && 2*GetRadHelix() > cf->GetDeltaChord())
+    cf->SetFractions_Last_Next(-1, M_PI / GetAngCurve());
+  else
+    cf->SetFractions_Last_Next(-1, -1);
 }
 
 //

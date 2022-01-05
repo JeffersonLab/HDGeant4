@@ -134,6 +134,7 @@
 //    of AdaptiveSampler.
 
 #include <assert.h>
+#include <cmath>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -295,6 +296,7 @@ void AdaptiveSampler::feedback(const double *u, double wI)
 int AdaptiveSampler::adapt()
 {
    int ncells = fTopCell->sum_stats();
+   std::cout << "starting sum_wI2 is " << fTopCell->sum_wI2 << std::endl;
    double sum_wI2_target = pow(fTopCell->sum_wI, 2) / 
                               (fTopCell->nhit * fEfficiency_target);
    double sum_wI2_error = sqrt(fTopCell->sum_wI4) + 1e-99;
@@ -344,6 +346,7 @@ int AdaptiveSampler::adapt()
                 << ", new value predicted to be " << getEfficiency(true)
                 << std::endl;
    }
+   std::cout << "optimized sum_wI2 is " << fTopCell->opt_wI2 << std::endl;
    return newcells;
 }
 
@@ -712,9 +715,11 @@ int AdaptiveSampler::mergeState(const std::string filename)
 {
    std::ifstream fin(filename);
    if (!fin.is_open()) {
+#ifdef EXTRA_ADAPTIVE_SAMPLER_WARNINGS
       std::cerr << "AdaptiveSampler::mergeState error - "
                 << "unable to open " << filename << " for input."
                 << std::endl;
+#endif
       return 0;
    }
    std::map<std::string,double> keyval;
@@ -731,7 +736,8 @@ int AdaptiveSampler::mergeState(const std::string filename)
    if (fNdim != keyval["fNdim"]) {
       std::cerr << "AdaptiveSampler::mergeState error - "
                 << "cannot merge with state saved in " << filename
-                << " because they have different dimensions."
+                << " because they have different dimensions,"
+                << " this Ndim=" << fNdim << ", file Ndim=" << keyval["fNdim"]
                 << std::endl;
       return 0;
    }
@@ -742,7 +748,7 @@ int AdaptiveSampler::mergeState(const std::string filename)
       fMaximum_cells = keyval.at("fMaximum_cells");
       fEfficiency_target = keyval.at("fEfficiency_target");
    }
-   catch (std::exception e) {
+   catch (std::exception &e) {
       std::cerr << "AdaptiveSampler::mergeState warning - "
                 << "required keyword missing in " << filename
                 << std::endl;
@@ -777,4 +783,296 @@ void AdaptiveSampler::setVerbosity(int verbose)
 int AdaptiveSampler::check_subsets(bool optimized)
 {
    return fTopCell->check_subsets(optimized);
+}
+
+void AdaptiveSampler::Cell::optimize()
+{
+   // Assume opt_nhit and opt_subset already set upon entry,
+   // task is to assign opt_wI2, opt_wI4 for this cell, and
+   // all opt_* parameters for child nodes in the tree.
+   if (divAxis > -1) {
+      if (divAxis < nfixed) {
+         opt_wI2 = 0;
+         opt_wI4 = 0;
+         double r = (opt_nhit + 1e-99) / nhit;
+         for (int n=0; n < 3; ++n) {
+            subcell[n]->opt_nhit = subcell[n]->nhit * r;
+            subcell[n]->opt_subset = opt_subset;
+            subcell[n]->optimize();
+            opt_wI2 += subcell[n]->opt_wI2;
+            opt_wI4 += subcell[n]->opt_wI4;
+         }
+      }
+      else {
+         opt_wI2 = 0;
+         opt_wI4 = 0;
+         for (int n=0; n < 3; ++n) {
+            double r = subcell[n]->sum_wI2s / sum_wI2s;
+            // double r0 = 5e-3;  // minimum subset fraction
+            // r = (r + r0) / (1 + 3*r0);
+            // r = (nhit > 100)? r : 1;
+            subcell[n]->opt_nhit = opt_nhit * r;
+            if (n == 2) {
+               double opt_ntot = subcell[0]->opt_nhit +
+                                 subcell[1]->opt_nhit +
+                                 subcell[2]->opt_nhit;
+               assert (abs(opt_ntot - opt_nhit) < 2);
+            }
+            subcell[n]->opt_subset = opt_subset * r;
+            subcell[n]->optimize();
+            opt_wI2 += subcell[n]->opt_wI2;
+            opt_wI4 += subcell[n]->opt_wI4;
+         }
+      }
+   }
+   else if (nhit > 0) {
+      double r = (opt_nhit + 1e-99) / nhit;
+      opt_wI2 = sum_wI2 / r;
+      opt_wI4 = sum_wI4 / pow(r,3);
+   }
+}
+
+int AdaptiveSampler::Cell::serialize(std::ofstream &ofs, bool optimized)
+{
+   ofs << "divAxis=" << divAxis << std::endl;
+   if (nhit != 0)
+      ofs << "nhit=" << nhit << std::endl;
+   if (sum_wI != 0)
+      ofs << "sum_wI=" << (std::isfinite(sum_wI)? sum_wI : 0) << std::endl;
+   if (sum_wI2 != 0)
+      ofs << "sum_wI2=" << (std::isfinite(sum_wI2)? sum_wI2 : 0) << std::endl;
+   if (sum_wI4 != 0)
+      ofs << "sum_wI4=" << (std::isfinite(sum_wI4)? sum_wI4 : 0) << std::endl;
+   for (int i=0; i < 3*ndim; ++i) {
+      if (sum_wI2d[i] != 0)
+         ofs << "sum_wI2d[" << i << "]=" 
+             << (std::isfinite(sum_wI2d[i])? sum_wI2d[i] : 0) << std::endl;
+   }
+   for (int i=0; i < 3*ndim; ++i) {
+      if (sum_wI4d[i] != 0)
+         ofs << "sum_wI4d[" << i << "]=" 
+             << (std::isfinite(sum_wI4d[i])? sum_wI4d[i] : 0) << std::endl;
+   }
+   if (optimized)
+      ofs << "subset=" << std::setprecision(20) << opt_subset << std::endl;
+   else
+      ofs << "subset=" << std::setprecision(20) << subset << std::endl;
+   ofs << "=" << std::endl;
+   int count = 1;
+   if (divAxis > -1) {
+      count += subcell[0]->serialize(ofs, optimized);
+      count += subcell[1]->serialize(ofs, optimized);
+      count += subcell[2]->serialize(ofs, optimized);
+   }
+   return count;
+}
+
+int AdaptiveSampler::Cell::deserialize(std::ifstream &ifs, double subset_multiplier)
+{
+   std::map<std::string,double> keyval;
+   while (true) {
+      std::string key;
+      std::getline(ifs, key, '=');
+      if (key.size() == 0) {
+         std::getline(ifs, key);
+         break;
+      }
+      ifs >> keyval[key];
+      std::getline(ifs, key);
+   }
+   divAxis = keyval.at("divAxis");
+   nhit += keyval["nhit"];
+   sum_wI += keyval["sum_wI"];
+   sum_wI2 += keyval["sum_wI2"];
+   sum_wI4 += keyval["sum_wI4"];
+   subset = keyval.at("subset") * subset_multiplier;
+   std::map<std::string,double>::iterator it;
+   for (it = keyval.begin(); it != keyval.end(); ++it) {
+      if (it->first.substr(0,8) == "sum_wI2u") {
+         int n3dim=1;
+         for (int n=0; n < ndim; ++n)
+            n3dim *= 3;
+         int j;
+         if (sscanf(it->first.c_str(), "sum_wI2u[%d]=", &j) == 1) {
+            assert (j < n3dim);
+            for (int n=0; n < ndim; ++n) {
+               double wI2 = it->second;
+               sum_wI2d[n*3+(j%3)] += wI2;
+               sum_wI4d[n*3+(j%3)] += wI2*wI2 * n3dim/nhit;
+               j /= 3;
+            }
+         }
+      }
+      else if (it->first.substr(0,8) == "sum_wI2d") {
+         int j;
+         if (sscanf(it->first.c_str(), "sum_wI2d[%d]=", &j) == 1) {
+            assert (j < 3*ndim);
+            sum_wI2d[j] += it->second;
+         }
+      }
+      else if (it->first.substr(0,8) == "sum_wI4d") {
+         int j;
+         if (sscanf(it->first.c_str(), "sum_wI4d[%d]=", &j) == 1) {
+            assert (j < 3*ndim);
+            sum_wI4d[j] += it->second;
+         }
+      }
+   }
+   int count = 1;
+   if (divAxis > -1) {
+      //subset_multiplier *= (divAxis < 1)? 3 : 1;
+      for (int i=0; i < 3; ++i) {
+         if (subcell[i] == 0) {
+            subcell[i] = new Cell(ndim, nfixed);
+         }
+         count += subcell[i]->deserialize(ifs, subset_multiplier);
+      }
+   }
+   return count;
+}
+
+int AdaptiveSampler::Cell::check_subsets(bool optimized, std::string id)
+{
+   if (divAxis < 0) {
+      return 0;
+   }
+
+   // test trinomial statistics at each node
+   int warnings = 0;
+   long int Ntot = subcell[0]->nhit + subcell[1]->nhit + subcell[2]->nhit;
+   if (Ntot != nhit) {
+      std::cerr << "Error in AdaptiveSampler::Cell::check_subsets - "
+                << "nhit consistency check #1 failed for cell " << id
+                << std::endl
+                << "  split cell nhit=" << nhit
+                << ", sum of subcell nhit=" << Ntot
+                << std::endl;
+      return 999;
+   }
+   if (divAxis < nfixed) {
+      if (subcell[0]->subset != subset ||
+          subcell[1]->subset != subset ||
+          subcell[2]->subset != subset)
+      {
+         std::cerr << "Error in AdaptiveSampler::Cell::check_subsets - "
+                   << "subset consistency check #1 failed for cell " << id
+                   << std::endl
+                   << "  split fixed cell subset=" << subset
+                   << ", subcell subsets="
+                   << subcell[0]->subset << ","
+                   << subcell[1]->subset << ","
+                   << subcell[2]->subset
+                   << std::endl;
+         return 999;
+      }
+   }
+   else {
+      double subsetsum = subcell[0]->subset + 
+                         subcell[1]->subset +
+                         subcell[2]->subset;
+      if (fabs(subsetsum - subset) > subset * 1e-12) {
+         std::cerr << "Error in AdaptiveSampler::Cell::check_subsets - "
+                   << "subset consistency check #2 failed for cell " << id
+                   << std::endl
+                   << "  split cell subset=" << subset
+                   << ", sum of subcell subsets=" << subsetsum
+                   << std::endl;
+         return 999;
+      }
+      for (int i=0; i < 3; ++i) {
+         double p = subcell[i]->subset / (subset + 1e-99);
+         double mu = nhit * p;
+         double sigma = sqrt(nhit * p * (1-p));
+         double p1 = subcell[(i+1)%3]->subset / (subset + 1e-99);
+         double mu1 = nhit * p1;
+         double sigma1 = sqrt(nhit * p1 * (1-p1));
+         double p2 = subcell[(i+2)%3]->subset / (subset + 1e-99);
+         double mu2 = nhit * p2;
+         double sigma2 = sqrt(nhit * p2 * (1-p2));
+         if (subcell[i]->nhit < 30) {
+            double prob = 1;
+            for (int k=1; k <= nhit; ++k) {
+               if (k <=subcell[i]->nhit)
+                  prob *= p * double(nhit - k + 1) / k;
+               else
+                  prob *= 1 - p;
+            }
+            if (prob < 1e-6) {
+               std::cerr << "Warning in AdaptiveSampler::Cell::check_subsets - "
+                         << "nhit - subset probability < 1e-6, cell "
+                         << id << ", subcell " << i 
+                         << " has nhit=" << subcell[i]->nhit
+                         << ", expected " << mu << " +/- " << sigma
+                         << ", P-value " << prob
+                         << std::endl;
+               std::cerr << "  This cell is splits " << nhit
+                         << " events along axis " << divAxis
+                         << std::endl;
+               std::cerr << "  Other branch of this cell:"
+                         << "  subcell " << (i+1)%3
+                         << " with nhit=" << subcell[(i+1)%3]->nhit
+                         << ", expected " << mu1 << " +/- " << sigma1
+                         << ", " << (subcell[(i+1)%3]->nhit - mu1) / sigma1
+                         << " sigma." << std::endl;
+               std::cerr << "  Other branch of this cell:"
+                         << "  subcell " << (i+2)%3
+                         << " with nhit=" << subcell[(i+2)%3]->nhit
+                         << ", expected " << mu2 << " +/- " << sigma2
+                         << ", " << (subcell[(i+2)%3]->nhit - mu2) / sigma2
+                         << " sigma." << std::endl;
+               warnings++;
+            }
+         }
+         else if (fabs(subcell[i]->nhit - mu) > 5 * sigma) {
+            std::cerr << "Warning in AdaptiveSampler::Cell::check_subsets - "
+                      << "nhit - subset mismatch > 5 sigma, cell "
+                      << id << ", subcell " << i 
+                      << " has nhit=" << subcell[i]->nhit
+                      << ", expected " << mu << " +/- " << sigma
+                      << ", " << (subcell[i]->nhit - mu) / sigma
+                      << " sigma!" << std::endl;
+            std::cerr << "  This cell is splits " << nhit
+                      << " events along axis " << divAxis
+                      << std::endl;
+            std::cerr << "  Other branch of this cell:"
+                      << "  subcell " << (i+1)%3
+                      << " with nhit=" << subcell[(i+1)%3]->nhit
+                      << ", expected " << mu1 << " +/- " << sigma1
+                      << ", " << (subcell[(i+1)%3]->nhit - mu1) / sigma1
+                      << " sigma." << std::endl;
+            std::cerr << "  Other branch of this cell:"
+                      << "  subcell " << (i+2)%3
+                      << " with nhit=" << subcell[(i+2)%3]->nhit
+                      << ", expected " << mu2 << " +/- " << sigma2
+                      << ", " << (subcell[(i+2)%3]->nhit - mu2) / sigma2
+                      << " sigma." << std::endl;
+            warnings++;
+         }
+      }
+   }
+   for (int i=0; i < 3; ++i) {
+      warnings += subcell[i]->check_subsets(optimized,
+                                            id + std::to_string(i));
+   }
+   return warnings;
+}
+
+std::string AdaptiveSampler::Cell::address()
+{
+   // assumes sum_stats has been called, so super is filled in
+   std::string a;
+   Cell *here = this;
+   while (here != 0 && here->super != 0) {
+      std::string sn = "?";
+      for (int n=0; n < 3; ++n) {
+         if (here->super->subcell[n] == here) {
+            sn = std::to_string(n);
+            here = here->super;
+            break;
+         }
+      }
+      a.insert(0, sn);
+   }
+		 a.insert(0, "o");
+   return a;
 }
