@@ -3,6 +3,8 @@
 # GNUmakefile for examples module.  Gabriele Cosmo, 06/04/98.
 # --------------------------------------------------------------
 
+SHELL = /bin/bash
+
 name := hdgeant4
 G4TARGET := $(name)
 G4EXLIB := true
@@ -72,9 +74,14 @@ HDDS_sources := $(HDDS_HOME)/XString.cpp $(HDDS_HOME)/XParsers.cpp $(HDDS_HOME)/
 ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer -ltbb
 
 ifdef SQLITECPP_VERSION
-    SQLITECPP_MAJOR_VERSION := $(shell echo $(SQLITECPP_VERSION) | awk -F. '{print $$1}')
-    SQLITECPP_MINOR_VERSION := $(shell echo $(SQLITECPP_VERSION) | awk -F. '{print $$2}')
-    SQLITECPP_LIBDIR := $(shell if [[ $(SQLITECPP_MAJOR_VERSION) -ge 3 || $(SQLITECPP_MAJOR_VERSION) -eq 2 && $(SQLITECPP_MINOR_VERSION) -ge 5 ]]; then echo lib64; else echo lib; fi)
+    ON_UBUNTU := $(shell if [ -f /etc/lsb-release ] ; then . /etc/lsb-release; fi; if [ x$$DISTRIB_ID == "xUbuntu" ] ; then echo yes ; else echo no; fi)
+    ifeq ($(ON_UBUNTU), yes)
+        SQLITECPP_LIBDIR = lib
+    else
+        SQLITECPP_MAJOR_VERSION := $(shell echo $(SQLITECPP_VERSION) | awk -F. '{print $$1}')
+        SQLITECPP_MINOR_VERSION := $(shell echo $(SQLITECPP_VERSION) | awk -F. '{print $$2}')
+        SQLITECPP_LIBDIR := $(shell if [[ $(SQLITECPP_MAJOR_VERSION) -ge 3 || $(SQLITECPP_MAJOR_VERSION) -eq 2 && $(SQLITECPP_MINOR_VERSION) -ge 5 ]]; then echo lib64; else echo lib; fi)
+    endif
 else
     SQLITECPP_LIBDIR = lib64
 endif
