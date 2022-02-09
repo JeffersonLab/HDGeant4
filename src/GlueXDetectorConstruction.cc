@@ -26,6 +26,7 @@
 #include "GlueXSensitiveDetectorPS.hh"
 #include "GlueXSensitiveDetectorTPOL.hh"
 #include "GlueXSensitiveDetectorCTOF.hh"
+#include "GlueXSensitiveDetectorGEMTRD.hh"
 
 
 #include "G4Version.hh"
@@ -289,6 +290,7 @@ void GlueXDetectorConstruction::ConstructSDandField()
    GlueXSensitiveDetectorPS* psHandler = 0;
    GlueXSensitiveDetectorTPOL* tpolHandler = 0;
    GlueXSensitiveDetectorCTOF* ctofHandler = 0;
+   GlueXSensitiveDetectorGEMTRD* gemtrdHandler = 0;
 
    // During geometry building, certain logical volumes were marked as
    // sensitive by adding them to a list. Now we need to go down that
@@ -433,6 +435,13 @@ void GlueXDetectorConstruction::ConstructSDandField()
             SDman->AddNewDetector(fmwpcHandler);
          }
          iter->second->SetSensitiveDetector(fmwpcHandler);
+      }
+      else if (volname == "GTSV") {
+         if (gemtrdHandler == 0) {
+            gemtrdHandler = new GlueXSensitiveDetectorGEMTRD("gemtrd");
+            SDman->AddNewDetector(gemtrdHandler);
+         }
+         iter->second->SetSensitiveDetector(gemtrdHandler);
       }
       else if (volname == "UPVP" || volname == "UPVC") {
          if (upvHandler == 0) {
