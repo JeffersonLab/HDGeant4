@@ -55,6 +55,8 @@
 // pairs inside, otherwise the standard pair conversion
 // probabilities apply.
 #define FORCED_LIH2_PAIR_CONVERSION 0
+#define FORCED_LIHE_PAIR_CONVERSION 0
+#define FORCED_BETG_PAIR_CONVERSION 0
 #define FORCED_TGT0_PAIR_CONVERSION 0
 
 // If the pair conversion target is a nucleus, the generator
@@ -151,7 +153,6 @@ GlueXBeamConversionProcess::GlueXBeamConversionProcess(const G4String &name,
    std::map<int,double> beampars;
    std::map<int,std::string> genbeampars;
    if (!user_opts->Find("INFI", infile) &&
-       user_opts->Find("BEAM", beampars) &&
        user_opts->Find("GENBEAM", genbeampars))
    {
       if (genbeampars.find(1) != genbeampars.end() &&
@@ -478,7 +479,7 @@ G4double GlueXBeamConversionProcess::PostStepGetPhysicalInteractionLength(
    {
       fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
                              track, previousStepSize, condition);
-      setConverterMaterial(4, 8);
+      setConverterMaterial(4, 9);
       *condition = Forced;
       return 100*cm;
    }
@@ -499,6 +500,26 @@ G4double GlueXBeamConversionProcess::PostStepGetPhysicalInteractionLength(
       fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
                              track, previousStepSize, condition);
       setConverterMaterial(82, 208);
+      *condition = Forced;
+      return 100*cm;
+   }
+   else if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "BETG" &&
+       (FORCED_BETG_PAIR_CONVERSION || 
+        fStopBeamAfterTarget ))
+   {
+      fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
+                             track, previousStepSize, condition);
+      setConverterMaterial(4, 9);
+      *condition = Forced;
+      return 100*cm;
+   }
+   else if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "LIHE" &&
+       (FORCED_LIHE_PAIR_CONVERSION || 
+        fStopBeamAfterTarget ))
+   {
+      fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
+                             track, previousStepSize, condition);
+      setConverterMaterial(2, 4);
       *condition = Forced;
       return 100*cm;
    }
@@ -1989,24 +2010,43 @@ double GlueXBeamConversionProcess::nuclearFormFactor(double Q2_GeV)
                         exp(-sqr(q) / 4 * sqr(gamma/hbarc));
       }
    }
-#if 0 // this part of the code is missing some unknowns
-   else {
-      double adent = a_den(fTargetZ);
+   else if (fTargetZ > 1) {
+
+      // Take the Fourier transform of the Saxon-Woods charge distribution
+      // with the mean charge radius parameterized as a function of Z.
+      // This parameterization is taken from the paper by Maximon and Schrack,
+      // "The Form Factor of the Fermi Model Spatial Distribution",
+      // JOURNAL OF RESEARCH of the Notional Bureau of Standards - 
+      // B. Mathematics and Mathematical Physics Vol. 70B, No. 1,
+      // January-March 1966. The approximate parameterization for the
+      // Saxon-Woods parameters a and c are taken from "Electron Scattering:
+      // Form Factors and Nuclear Shapes, Kyle Foster, Nov. 16, 2011.
+   
+      double adent = 0.55; // fm, corresponds to t = 2.4 fm
+      if (fTargetA == 4)   // special case for 4He nucleus
+         adent = 0.29; 
       double adent2 = adent * adent;
       double adent3 = adent2 * adent;
-      double cdent = c_den(fTargetZ);
-      FF = 4 * sqr(M_PI) * rho0 * adent3
-           / sqr(q * adent * sinh(M_PI * q * adent2))
-           * (M_PI * q * adent * cosh(M_PI * q * adent)
-                               * sin(q * cdent)
-                   - q * cdent * sinh(M_PI * q * adent)
-                                  * cos(q * cdent));
-      for (int i=0; i < 10; ++i) {
-         FF += 8. * M_PI * rho0 * adent3 * pow(-1., i-1)
-                  * i * exp(-i * cdent / adent)
-                  / sqr(i*i + sqr(q * adent));
+      double cdent = 1.07 * pow(fTargetA, 1/3.);  // fm
+      double q__fm = q / hbarc; // fm^-1
+      double FF0 = 4 * M_PI * cdent / 3 * (sqr(M_PI * adent) + sqr(cdent));
+      FF = 4 * sqr(M_PI) * adent3
+           / sqr(q__fm * adent * sinh(M_PI * q__fm * adent))
+           * (M_PI * q__fm * adent * cosh(M_PI * q__fm * adent)
+                               * sin(q__fm * cdent)
+                   - q__fm * cdent * sinh(M_PI * q__fm * adent)
+                                  * cos(q__fm * cdent));
+      int sgn = 1;
+      for (int n=1; n < 10; ++n) {
+         FF0 += 8. * M_PI * adent3 * sgn *
+                 exp(-n * cdent / adent) / pow(n, 3);
+         FF += 8. * M_PI * adent3 * sgn *
+                  n * exp(-n * cdent / adent) /
+                  sqr(n*n + sqr(q__fm * adent));
+         sgn *= -1;
+      }
+      FF /= FF0; // normalize to FF(0) = 1
    }
-#else
    else {
       std::cerr << "GlueXBeamConversionProcess::nuclearFormFactor error - "
                 << "cannot currently handle target with Z=" << fTargetZ
@@ -2014,7 +2054,6 @@ double GlueXBeamConversionProcess::nuclearFormFactor(double Q2_GeV)
                 << std::endl;
       exit(92);
    }
-#endif
    return FF;
 }
 

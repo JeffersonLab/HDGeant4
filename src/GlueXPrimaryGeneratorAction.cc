@@ -252,6 +252,7 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
 
    std::map<int,std::string> infile;
    std::map<int,double> beampars;
+   std::map<int,double> genbeampars;
    std::map<int,double> kinepars;
 
    // Three event source options are supported:
@@ -284,7 +285,8 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
       fSourceType = SOURCE_TYPE_HDDM;
    }
 
-   else if (user_opts->Find("BEAM", beampars))
+   else if (user_opts->Find("BEAM", beampars) ||
+            user_opts->Find("GENBEAM", genbeampars))
    {
       fSourceType = SOURCE_TYPE_COBREMS_GEN;
    }
@@ -322,8 +324,6 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
 
       fSourceType = SOURCE_TYPE_PARTICLE_GUN;
    }
-
-
 
    else if (user_opts->Find("KINE", kinepars))
    {
@@ -443,24 +443,67 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
       fCobremsGeneration->setCollimatorSpotrms(spotRMS/m);
       fPhotonBeamGenerator = new GlueXPhotonBeamGenerator(fCobremsGeneration);
       fPhotonBeamGenerator->setBeamOffset(spotX, spotY);
+   }
+   else {  // look up beam properties in the ccdb based on run number
+      int runno = HddmOutput::getRunNo();
+      extern jana::JApplication *japp;
+      if (japp == 0) {
+         G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
+                << "jana global DApplication object not set, "
+                << "cannot continue." << G4endl;
+         exit(-1);
+      }
+      std::map<string, float> beam_parms;
+      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      jcalib->Get("PHOTON_BEAM/endpoint_energy", beam_parms);
+      fBeamEndpointEnergy = beam_parms.at("PHOTON_BEAM_ENDPOINT_ENERGY")*GeV;
+      std::map<string, float> coherent_parms;
+      jcalib->Get("PHOTON_BEAM/coherent_energy", coherent_parms);
+      fBeamPeakEnergy = coherent_parms.at("cohedge_energy")*GeV;
 
-      std::map<int, double> bgratepars;
-      std::map<int, double> bggatepars;
-      if (user_opts->Find("BGRATE", bgratepars) &&
-          user_opts->Find("BGGATE", bggatepars))
+      // CobremsGeneration has its own standard units that it uses:
+      //  length : m
+      //  angles : radians
+      //  energy : GeV
+      //  time   : s
+      //  current: microAmps
+ 
+      fCobremsGeneration = new CobremsGeneration(fBeamEndpointEnergy/GeV,
+                                                 fBeamPeakEnergy/GeV);
+      fCobremsGeneration->setPhotonEnergyMin(fBeamEndpointEnergy/GeV * 0.25);
+      fCobremsGeneration->setCollimatorDistance(76.);
+      fCobremsGeneration->setCollimatorDiameter(0.005);
+      fCobremsGeneration->setBeamEmittance(2e-9);
+      fCobremsGeneration->setTargetThickness(50e-6);
+      fCobremsGeneration->setCollimatorSpotrms(0.5e-3);
+      fPhotonBeamGenerator = new GlueXPhotonBeamGenerator(fCobremsGeneration);
+      std::map<string, float> beam_spot_params;
+      jcalib->Get("/PHOTON_BEAM/beam_spot", beam_spot_params);
+      double spotX = beam_spot_params.at("x") * cm;
+      double spotY = beam_spot_params.at("y") * cm;
+      fPhotonBeamGenerator->setBeamOffset(spotX, spotY);
+      std::cout << "no beam card found, looking up beam properties in ccdb, "
+                << "run number " << runno 
+                << ": endpoint=" << fBeamEndpointEnergy/GeV << "GeV,"
+                << " peak=" << fBeamPeakEnergy/GeV << "GeV" << std::endl;
+   }
+
+   std::map<int, double> bgratepars;
+   std::map<int, double> bggatepars;
+   if (user_opts->Find("BGRATE", bgratepars) &&
+       user_opts->Find("BGGATE", bggatepars))
+   {
+      fBeamBackgroundRate = bgratepars[1] * 1/ns;
+      fBeamBackgroundGateStart = bggatepars[1] * ns;
+      fBeamBackgroundGateStop = bggatepars[2] * ns;
+      if (fBeamBackgroundRate > 0 &&
+          fBeamBackgroundGateStart >= fBeamBackgroundGateStop)
       {
-         fBeamBackgroundRate = bgratepars[1] * 1/ns;
-         fBeamBackgroundGateStart = bggatepars[1] * ns;
-         fBeamBackgroundGateStop = bggatepars[2] * ns;
-         if (fBeamBackgroundRate > 0 &&
-             fBeamBackgroundGateStart >= fBeamBackgroundGateStop)
-         {
-            G4cerr << "GlueXPrimaryGeneratorAction error: "
-                   << "BGRATE is non-zero, but the time window specified "
-                   << "in BGGATE is invalid."
-                   << G4endl;
-            exit(-1);
-         }
+         G4cerr << "GlueXPrimaryGeneratorAction error: "
+                << "BGRATE is non-zero, but the time window specified "
+                << "in BGGATE is invalid."
+                << G4endl;
+         exit(-1);
       }
    }
 

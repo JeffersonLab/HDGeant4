@@ -31,9 +31,9 @@ int GlueXHitFMWPCwire::operator==(const GlueXHitFMWPCwire &right) const
    for (int ih=0; ih < (int)hits.size(); ++ih) {
       if (hits[ih].dE_keV   != right.hits[ih].dE_keV  ||
           hits[ih].t_ns     != right.hits[ih].t_ns    ||
-          hits[ih].dx_cm    != right.hits[ih].dx_cm   ||
-          hits[ih].itrack_  != right.hits[ih].itrack_ ||
-          hits[ih].z0_cm    != right.hits[ih].z0_cm)
+          hits[ih].d_cm    != right.hits[ih].d_cm   ||
+          hits[ih].itrack_  != right.hits[ih].itrack_ 
+          )
       {
          return 0;
       }
@@ -74,10 +74,9 @@ void GlueXHitFMWPCwire::Print() const
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   dE = " << hiter->dE_keV << " keV" << G4endl
              << "   t = " << hiter->t_ns << " ns" << G4endl
-             << "   dx = " << hiter->dx_cm << " cm" << G4endl
+             << "   d = " << hiter->d_cm << " cm" << G4endl
              << "   itrack = " << hiter->itrack_ << G4endl
-             << "   z0 = " << hiter->z0_cm << " cm" << G4endl
-             << G4endl;
+	     << G4endl;
    }
 }
 

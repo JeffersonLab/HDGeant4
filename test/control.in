@@ -8,9 +8,11 @@ c by which of the following three "cards" are present below.
 c    1. Input from Monte Carlo generator (card INFILE)
 c    2. Built-in coherent bremsstrahlung source (card BEAM)
 c    3. Built-in single-track event generator (card KINE)
-c The order of the list is significant, that is if INFILE is present then the
-c BEAM and KINE cards are ignored, otherwise if BEAM is present then KINE is
-c ignored.  For example, the 3-card sequence:
+c The order of the list is significant, that is, if INFILE is present then the
+c event source is the input file, or else if BEAM is present then the internal
+c photon beam generator is selected, otherwise the internal particle gun is
+c activated to produce single-track events as specified by the KINE card.
+c For example, the 3-card sequence:
 c     INFILE 'phi-1680.hddm'
 c     SKIP 25
 c     TRIG 100
