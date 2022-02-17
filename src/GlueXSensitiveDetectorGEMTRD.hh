@@ -14,7 +14,7 @@
 #include "G4VSensitiveDetector.hh"
 #include "G4AutoLock.hh"
 
-#include "GlueXHitGEMTRDtrace.hh"
+#include "GlueXHitGEMTRDhit.hh"
 #include "GlueXHitGEMTRDpoint.hh"
 
 class G4Step;
@@ -35,13 +35,12 @@ class GlueXSensitiveDetectorGEMTRD : public G4VSensitiveDetector
    int GetIdent(std::string div, const G4VTouchable *touch);
 
  private:
-  GlueXHitsMapGEMTRDtrace* fTracesMap;
+  GlueXHitsMapGEMTRDhit* fHitsMap;
   GlueXHitsMapGEMTRDpoint* fPointsMap;
   
   std::map<G4LogicalVolume*, int> fVolumeTable;
   
   static int MAX_HITS;
-  static int MAX_TRACES;
   static const double ELECTRON_CHARGE;
   static double GAS_GAIN;
   static double W_EFF_PER_ION;

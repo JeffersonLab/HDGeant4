@@ -24,15 +24,14 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits and traces
-int GlueXSensitiveDetectorGEMTRD::MAX_TRACES = 20;
-int GlueXSensitiveDetectorGEMTRD::MAX_HITS = 100;
+// Cutoff on the total number of allowed hits and hits
+int GlueXSensitiveDetectorGEMTRD::MAX_HITS = 1000;
 
 const double fC = 1e-15 * coulomb;
 const double GlueXSensitiveDetectorGEMTRD::ELECTRON_CHARGE = 1.6022e-4*fC;
 
 // Parameters for setting signal pulse height
-double GlueXSensitiveDetectorGEMTRD::GAS_GAIN = 1e5;
+double GlueXSensitiveDetectorGEMTRD::GAS_GAIN = 5e4;
 
 // Average number of secondary ion pairs for 90/10 Xe/CO2 mixture
 double GlueXSensitiveDetectorGEMTRD::N_SECOND_PER_PRIMARY = 5.6; 
@@ -45,9 +44,9 @@ G4Mutex GlueXSensitiveDetectorGEMTRD::fMutex = G4MUTEX_INITIALIZER;
 
 GlueXSensitiveDetectorGEMTRD::GlueXSensitiveDetectorGEMTRD(const G4String& name)
  : G4VSensitiveDetector(name),
-   fTracesMap(0), fPointsMap(0)
+   fHitsMap(0), fPointsMap(0)
 {
-   collectionName.insert("GEMTRDTracesCollection");
+   collectionName.insert("GEMTRDHitsCollection");
    collectionName.insert("GEMTRDPointsCollection");
 
    // The rest of this only needs to happen once, the first time an object
@@ -77,7 +76,7 @@ GlueXSensitiveDetectorGEMTRD::GlueXSensitiveDetectorGEMTRD(const G4String& name)
 GlueXSensitiveDetectorGEMTRD::GlueXSensitiveDetectorGEMTRD(
                      const GlueXSensitiveDetectorGEMTRD &src)
  : G4VSensitiveDetector(src),
-   fTracesMap(src.fTracesMap), fPointsMap(src.fPointsMap)
+   fHitsMap(src.fHitsMap), fPointsMap(src.fPointsMap)
 {
    G4AutoLock barrier(&fMutex);
    ++instanceCount;
@@ -88,7 +87,7 @@ GlueXSensitiveDetectorGEMTRD &GlueXSensitiveDetectorGEMTRD::operator=(const
 {
    G4AutoLock barrier(&fMutex);
    *(G4VSensitiveDetector*)this = src;
-   fTracesMap = src.fTracesMap;
+   fHitsMap = src.fHitsMap;
    fPointsMap = src.fPointsMap;
    return *this;
 }
@@ -101,12 +100,12 @@ GlueXSensitiveDetectorGEMTRD::~GlueXSensitiveDetectorGEMTRD()
 
 void GlueXSensitiveDetectorGEMTRD::Initialize(G4HCofThisEvent* hce)
 {
-   fTracesMap = new
-              GlueXHitsMapGEMTRDtrace(SensitiveDetectorName, collectionName[0]);
+   fHitsMap = new
+              GlueXHitsMapGEMTRDhit(SensitiveDetectorName, collectionName[0]);
    fPointsMap = new
               GlueXHitsMapGEMTRDpoint(SensitiveDetectorName, collectionName[1]);
    G4SDManager *sdm = G4SDManager::GetSDMpointer();
-   hce->AddHitsCollection(sdm->GetCollectionID(collectionName[0]), fTracesMap);
+   hce->AddHitsCollection(sdm->GetCollectionID(collectionName[0]), fHitsMap);
    hce->AddHitsCollection(sdm->GetCollectionID(collectionName[1]), fPointsMap);
 }
 
@@ -128,7 +127,11 @@ G4bool GlueXSensitiveDetectorGEMTRD::ProcessHits(G4Step* step,
   double t = (tin + tout) / 2;
   
   const G4VTouchable* touch = step->GetPreStepPoint()->GetTouchable();
-  
+  const G4AffineTransform &local_from_global = touch->GetHistory()
+    ->GetTopTransform();
+  G4ThreeVector xinlocal = local_from_global.TransformPoint(xin);
+  G4ThreeVector xoutlocal = local_from_global.TransformPoint(xout);
+
   // For particles that range out inside the active volume, the
   // "out" time may sometimes be set to something enormously high.
   // This screws up the hit. Check for this case here by looking
@@ -174,35 +177,45 @@ G4bool GlueXSensitiveDetectorGEMTRD::ProcessHits(G4Step* step,
       }
   }
   
-  // Post the trace info to the traces map, ordered by layer
+  // Post the hit info to the hits map, ordered by layer
   
   if (dEsum > 0) {
     int layer = GetIdent("layer", touch);
-    int key = GlueXHitGEMTRDtrace::GetKey(layer);
-    GlueXHitGEMTRDtrace *counter = (*fTracesMap)[key];
+    int key = GlueXHitGEMTRDhit::GetKey(layer);
+    GlueXHitGEMTRDhit *counter = (*fHitsMap)[key];
     if (counter == 0) {
-      GlueXHitGEMTRDtrace newtrace(layer);
-      fTracesMap->add(key, newtrace);
-      counter = (*fTracesMap)[key];
+      GlueXHitGEMTRDhit newhit(layer);
+      fHitsMap->add(key, newhit);
+      counter = (*fHitsMap)[key];
     }
-    
-    // Add the trace to the traces vector
-    std::vector<GlueXHitGEMTRDtrace::traceinfo_t>::iterator titer=counter->traces.end();
-    if ((int)counter->traces.size() < MAX_TRACES) {
-      // create new hit 
-      titer = counter->traces.insert(titer, GlueXHitGEMTRDtrace::traceinfo_t());
-      titer->dE_keV = dEsum/keV;
-      titer->x_cm = xin[0]/cm;
-      titer->y_cm = xin[1]/cm;
-      titer->dxdz = dx[0]/dx[2];
-      titer->dydz = dx[1]/dx[2];
-      titer->t_ns = tin/ns;
-    }
-    else {
-      G4cerr << "GlueXSensitiveDetectorGEMTRD::ProcessHits error: "
-	     << "max trace count " << MAX_TRACES
-	     << " exceeded, truncating!"
-	     << G4endl;
+    // Generate the number of primary ion pairs produced in the gas
+    double n_p_mean=dEsum/W_EFF_PER_ION/(1.+N_SECOND_PER_PRIMARY);
+    int n_p=CLHEP::RandPoisson::shoot(n_p_mean);
+     
+    // Add hits to the hits vector
+    std::vector<GlueXHitGEMTRDhit::hitinfo_t>::iterator hiter=counter->hits.end();
+    for (int ip=0;ip<n_p;ip++){
+      if ((int)counter->hits.size() < MAX_HITS) {
+	// create new hit 
+	hiter = counter->hits.insert(hiter, GlueXHitGEMTRDhit::hitinfo_t());
+	hiter->t_ns=tin/ns; // ignore additional flight time in cell
+	// Generate a cluster for this primary pair
+	int n_s=CLHEP::RandPoisson::shoot(N_SECOND_PER_PRIMARY);
+	hiter->q_fC=(GAS_GAIN*ELECTRON_CHARGE/fC)*n_s;
+	// Randomly generate the positions of these clusters along the path
+	// of the track
+	double frac=G4UniformRand();
+	hiter->x_cm = (xin[0]+dx[0]*frac)/cm;
+	hiter->y_cm = (xin[1]+dx[1]*frac)/cm;
+	hiter->d_cm = 1.-(xinlocal[2]+dx[2]*frac)/cm;
+      }
+      else {
+	G4cerr << "GlueXSensitiveDetectorGEMTRD::ProcessHits error: "
+	       << "max hit count " << MAX_HITS
+	       << " exceeded, truncating!"
+	       << G4endl;
+	break;
+      }
     }
   }
   return true;
@@ -210,19 +223,20 @@ G4bool GlueXSensitiveDetectorGEMTRD::ProcessHits(G4Step* step,
 
 void GlueXSensitiveDetectorGEMTRD::EndOfEvent(G4HCofThisEvent*)
 {
-   std::map<int,GlueXHitGEMTRDtrace*> *traces = fTracesMap->GetMap();
+   std::map<int,GlueXHitGEMTRDhit*> *hits = fHitsMap->GetMap();
    std::map<int,GlueXHitGEMTRDpoint*> *points = fPointsMap->GetMap();
-   if (traces->size() == 0 && points->size() == 0)
+   if (hits->size() == 0 && points->size() == 0)
       return;
-   std::map<int,GlueXHitGEMTRDtrace*>::iterator siter;
+   std::map<int,GlueXHitGEMTRDhit*>::iterator siter;
    std::map<int,GlueXHitGEMTRDpoint*>::iterator piter;
 
-   if (verboseLevel > 1) { 
+   if (verboseLevel > 1) 
+     { 
       G4cout << G4endl
              << "--------> Hits Collection: in this event there are "
-             << traces->size() << " traces in the GEMTRD: "
+             << hits->size() << " hits in the GEMTRD: "
              << G4endl;
-      for (siter = traces->begin(); siter != traces->end(); ++siter)
+      for (siter = hits->begin(); siter != hits->end(); ++siter)
          siter->second->Print();
 
       G4cout << G4endl
@@ -255,37 +269,25 @@ void GlueXSensitiveDetectorGEMTRD::EndOfEvent(G4HCofThisEvent*)
    hddm_s::GEMTRD &gemtrd = hitview.getGEMTRD();
 
    // Collect and output the gemtrdTruthHits
-   for (siter = traces->begin(); siter != traces->end(); ++siter) {
-     std::vector<GlueXHitGEMTRDtrace::traceinfo_t> &traces = siter->second->traces;
+   for (siter = hits->begin(); siter != hits->end(); ++siter) {
+     std::vector<GlueXHitGEMTRDhit::hitinfo_t> &hits = siter->second->hits;
      hddm_s::GemtrdChamberList chamber = gemtrd.addGemtrdChambers(1);
      chamber(0).setLayer(siter->second->layer_);
-     double charge_per_ion_pair=GAS_GAIN*ELECTRON_CHARGE/fC;
-     for (int it=0; it < (int)traces.size(); ++it) {
+    
+     for (int ih=0; ih < (int)hits.size(); ++ih) {
        // Position and direction at entry to gas volume
-       double x0=traces[it].x_cm;
-       double y0=traces[it].y_cm;
-       double dxdz=traces[it].dxdz;
-       double dydz=traces[it].dydz;
-       // Generate the number of primary ion pairs produced in the gas    
-       double dE=traces[it].dE_keV;
-       double n_p_mean=dE/W_EFF_PER_ION/(1.+N_SECOND_PER_PRIMARY);
-       int n_p=CLHEP::RandPoisson::shoot(n_p_mean);
-       for (int ip=0;ip<n_p;ip++){
-	 hddm_s::GemtrdTruthHitList thit = chamber(0).addGemtrdTruthHits(1);
-	 // Generate a cluster for this primary pair
-	 int n_s=CLHEP::RandPoisson::shoot(N_SECOND_PER_PRIMARY);
-	 thit(0).setQ(charge_per_ion_pair*n_s);
-	 // Randomly generate the drift distance for this cluster in units of 
-	 // the chamber width
-	 double drift_fraction=G4UniformRand();
-	 // Use simple linear time-to-distance relationship for now
-	 double drift_time=800*ns*drift_fraction;
-	 thit(0).setT(traces[it].t_ns+drift_time);
-	 // position in x and y
-	 double dz=2.0*cm*(1.-drift_fraction);
-	 thit(0).setX(x0+dxdz*dz);
-	 thit(0).setY(y0+dydz*dz);
-       }
+       double x=hits[ih].x_cm;
+       double y=hits[ih].y_cm;
+       double d=hits[ih].d_cm;
+       double t=hits[ih].t_ns;
+       double q=hits[ih].q_fC;
+  
+       hddm_s::GemtrdTruthHitList thit = chamber(0).addGemtrdTruthHits(1);
+       thit(0).setD(d);
+       thit(0).setT(t);
+       thit(0).setQ(q);
+       thit(0).setX(x);
+       thit(0).setY(y);
      }
    }
    
