@@ -82,7 +82,7 @@ endif
 DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -lANALYSIS -lBCAL -lCCAL -lCDC -lCERE -lTRD -lDIRC -lFCAL \
            -lFDC -lFMWPC -lHDDM -lPAIR_SPECTROMETER -lPID -lRF \
-           -lSTART_COUNTER -lTAGGER -lTOF -lTPOL -lTRACKING \
+           -lSTART_COUNTER -lTAGGER -lTOF -lTPOL -lTRACKING -lGEMTRD \
            -lTRIGGER -lDAQ -lTTAB -lEVENTSTORE -lKINFITTER -lTAC \
            -L$(SQLITECPP_HOME)/$(SQLITECPP_LIBDIR) -lSQLiteCpp -L$(SQLITE_HOME)/lib -Wl,-rpath=$(SQLITE_HOME)/lib -lsqlite3 \
            -lxstream -lbz2 -lz \
