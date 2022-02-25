@@ -22,9 +22,11 @@ endif
 ifdef DIRACXX_HOME
     DIRACXX_CMAKE := $(shell if [ -f $(DIRACXX_HOME)/CMakeLists.txt ]; then echo true; else echo false; fi)
     ifeq ($(DIRACXX_CMAKE), true)
-        CPPFLAGS += -I$(DIRACXX_HOME)/include -DUSING_DIRACXX -L$(DIRACXX_HOME)/lib -lDirac
+        CPPFLAGS += -I$(DIRACXX_HOME)/include -DUSING_DIRACXX
+        DIRACXXLIBS = -L$(DIRACXX_HOME)/lib -lDirac
     else
-        CPPFLAGS += -I$(DIRACXX_HOME) -DUSING_DIRACXX -L$(DIRACXX_HOME) -lDirac
+        CPPFLAGS += -I$(DIRACXX_HOME) -DUSING_DIRACXX
+        DIRACXXLIBS = -L$(DIRACXX_HOME) -lDirac
     endif
 endif
 
@@ -105,8 +107,7 @@ DANALIBS += -L$(ETROOT)/lib -let -let_remote
 endif
 
 G4shared_libs := $(wildcard $(G4ROOT)/lib64/*.so)
-#BOOST_PYTHON_LIB = boost_python
-#PYTHON_LIB_OPTION = ""
+
 ifeq ($(PYTHON_GE_3), true)
   BOOST_PYTHON_LIB = boost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
 else
@@ -118,6 +119,7 @@ CPPFLAGS += -DHDF5_SUPPORT -I ${HDF5ROOT}/include
 DANALIBS +=	-L $(HDF5ROOT)/lib -lhdf5_cpp -lhdf5_hl -lhdf5 -lsz -lz -lbz2 -ldl 
 endif
 
+INTYLIBS += $(DIRACXXLIBS)
 INTYLIBS += -Wl,--whole-archive $(DANALIBS) -Wl,--no-whole-archive
 INTYLIBS += -fPIC -I$(HDDS_HOME) -I$(XERCESCROOT)/include
 INTYLIBS += -L${XERCESCROOT}/lib -lxerces-c
@@ -241,6 +243,18 @@ $(G4BINDIR)/samplesep: src/utils/samplesep.cc
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -O4 -fopenmp -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(DANALIBS) $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
 
 show_env:
+	@echo CXX = $(CXX)
+	@echo CPPFLAGS = $(CPPFLAGS)
+	@echo CXXFLAGS = $(CXXFLAGS)
+	@echo DANALIBS = $(DANALIBS)
+	@echo G4BINDIR = $(G4BINDIR)
+	@echo G4INSTALL = $(G4INSTALL)
+	@echo G4TARGET = $(G4TARGET)
+	@echo INTYLIBS = $(INTYLIBS)
+	@echo LDFLAGS = $(LDFLAGS)
+	@echo LDLIBS = $(LDLIBS)
+	@echo objects = $(objects)
+	@echo OUT = $(OUT)
 	@echo PYTHON_VERSION = $(PYTHON_VERSION)
 	@echo PYTHON_MAJOR_VERSION = $(PYTHON_MAJOR_VERSION)
 	@echo PYTHON_MINOR_VERSION = $(PYTHON_MINOR_VERSION)
