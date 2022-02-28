@@ -201,7 +201,7 @@ G4bool GlueXSensitiveDetectorGEMTRD::ProcessHits(G4Step* step,
 	hiter->t_ns=tin/ns; // ignore additional flight time in cell
 	// Generate a cluster for this primary pair
 	int n_s=CLHEP::RandPoisson::shoot(N_SECOND_PER_PRIMARY);
-	hiter->q_fC=(GAS_GAIN*ELECTRON_CHARGE/fC)*n_s;
+	hiter->q_fC=(GAS_GAIN*ELECTRON_CHARGE/fC)*(1.+n_s);
 	// Randomly generate the positions of these clusters along the path
 	// of the track
 	double frac=G4UniformRand();
