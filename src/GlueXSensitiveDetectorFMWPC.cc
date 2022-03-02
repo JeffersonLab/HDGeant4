@@ -352,9 +352,11 @@ void GlueXSensitiveDetectorFMWPC::EndOfEvent(G4HCofThisEvent*)
 	   
 	   hddm_s::FmwpcTruthHitList thit = wire(0).addFmwpcTruthHits(1);
 	   thit(0).setDE(dE);
-	   thit(0).setD(hits[ih].d_cm);
 	   thit(0).setT(hits[ih].t_ns);
-	   thit(0).setQ(q_pC);
+	   thit(0).setDx(0.); // not used any more (SJT 2/28/22)
+	   hddm_s::FmwpcTruthHitQList charges=thit(0).addFmwpcTruthHitQs(1);
+	   charges(0).setD(hits[ih].d_cm);
+	   charges(0).setQ(q_pC);
          }
       }
    }
