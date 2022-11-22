@@ -362,7 +362,6 @@ void GlueXDetectorConstruction::ConstructSDandField()
          if (fcalHandler == 0) {
             fcalInsertHandler = new GlueXSensitiveDetectorFCALinsert("fcalinsert");
             SDman->AddNewDetector(fcalInsertHandler);
-	    cout << "got here" <<endl;
          }
          iter->second->SetSensitiveDetector(fcalInsertHandler);
       }

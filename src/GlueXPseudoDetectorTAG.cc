@@ -120,29 +120,30 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
 
    int micro_channel = -1;
    int hodo_channel = -1;
-   double E = energy;
+   double micro_energy = energy;
+   double hodo_energy = energy;
 
-   if (E < MICRO_LIMITS_ERANGE[0] && E > MICRO_LIMITS_ERANGE[1]) {
-      int i = MICRO_NCHANNELS * (E - MICRO_LIMITS_ERANGE[0]) /
+   if (energy < MICRO_LIMITS_ERANGE[0] && energy > MICRO_LIMITS_ERANGE[1]) {
+      int i = MICRO_NCHANNELS * (energy - MICRO_LIMITS_ERANGE[0]) /
               (MICRO_LIMITS_ERANGE[1] - MICRO_LIMITS_ERANGE[0]);
-      while (E < MICRO_CHANNEL_EMIN[i] || MICRO_CHANNEL_EMIN[i] < 1.) 
+      while (energy < MICRO_CHANNEL_EMIN[i] || MICRO_CHANNEL_EMIN[i] < 1.) 
          ++i;
-      while (E > MICRO_CHANNEL_EMAX[i] || MICRO_CHANNEL_EMAX[i] < 1.) 
+      while (energy > MICRO_CHANNEL_EMAX[i] || MICRO_CHANNEL_EMAX[i] < 1.) 
          --i;
-      if (E >= MICRO_CHANNEL_EMIN[i] && E <= MICRO_CHANNEL_EMAX[i]) {
-         E = (MICRO_CHANNEL_EMIN[i] + MICRO_CHANNEL_EMAX[i]) / 2;
+      if (energy >= MICRO_CHANNEL_EMIN[i] && energy <= MICRO_CHANNEL_EMAX[i]) {
+         micro_energy = (MICRO_CHANNEL_EMIN[i] + MICRO_CHANNEL_EMAX[i]) / 2;
          micro_channel = MICRO_CHANNEL_NUMBER[i];
       }
    }
-   else if (E < HODO_LIMITS_ERANGE[0] && E > HODO_LIMITS_ERANGE[1]) {
-      int i = HODO_NCHANNELS * (E - HODO_LIMITS_ERANGE[0]) /
+   if (energy < HODO_LIMITS_ERANGE[0] && energy > HODO_LIMITS_ERANGE[1]) {
+      int i = HODO_NCHANNELS * (energy - HODO_LIMITS_ERANGE[0]) /
               (HODO_LIMITS_ERANGE[1] - HODO_LIMITS_ERANGE[0]);
-      while (E < HODO_CHANNEL_EMIN[i] || HODO_CHANNEL_EMIN[i] < 1.) 
+      while (energy < HODO_CHANNEL_EMIN[i] || HODO_CHANNEL_EMIN[i] < 1.) 
          ++i;
-      while (E > HODO_CHANNEL_EMAX[i] || HODO_CHANNEL_EMAX[i] < 1.) 
+      while (energy > HODO_CHANNEL_EMAX[i] || HODO_CHANNEL_EMAX[i] < 1.) 
          --i;
-      if (E >= HODO_CHANNEL_EMIN[i] && E <= HODO_CHANNEL_EMAX[i]) {
-         E = (HODO_CHANNEL_EMIN[i] + HODO_CHANNEL_EMAX[i]) / 2;
+      if (energy >= HODO_CHANNEL_EMIN[i] && energy <= HODO_CHANNEL_EMAX[i]) {
+         hodo_energy = (HODO_CHANNEL_EMIN[i] + HODO_CHANNEL_EMAX[i]) / 2;
          hodo_channel = HODO_CHANNEL_NUMBER[i];
       }
    }
@@ -187,7 +188,7 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          citer = columns.begin();
          citer->setColumn(micro_channel);
          citer->setRow(0);
-         citer->setE(E/GeV);
+         citer->setE(micro_energy/GeV);
       }
       hddm_s::TaggerTruthHitList hits = citer->getTaggerTruthHits();
       hddm_s::TaggerTruthHitList::iterator hiter;
@@ -236,7 +237,7 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          counters = tagger.addHodoChannels();
          citer = counters.begin();
          citer->setCounterId(hodo_channel);
-         citer->setE(E/GeV);
+         citer->setE(hodo_energy/GeV);
       }
       hddm_s::TaggerTruthHitList hits = citer->getTaggerTruthHits();
       hddm_s::TaggerTruthHitList::iterator hiter;
