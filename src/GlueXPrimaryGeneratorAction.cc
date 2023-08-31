@@ -962,6 +962,9 @@ void GlueXPrimaryGeneratorAction::GeneratePrimariesHDDM(G4Event* anEvent)
          fPhotonBeamGenerator->GenerateBeamPhoton(anEvent, t);
       }
    }
+
+   // Add the RF sync
+   fPhotonBeamGenerator->GenerateRFsync(anEvent);
 }
 
 void GlueXPrimaryGeneratorAction::GeneratePrimariesCobrems(G4Event* anEvent)
