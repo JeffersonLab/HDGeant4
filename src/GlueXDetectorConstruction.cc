@@ -18,6 +18,7 @@
 #include "GlueXSensitiveDetectorGCAL.hh"
 #include "GlueXSensitiveDetectorCCAL.hh"
 #include "GlueXSensitiveDetectorFTOF.hh"
+#include "GlueXSensitiveDetectorITOF.hh"
 #include "GlueXSensitiveDetectorDIRC.hh"
 #include "GlueXSensitiveDetectorCERE.hh"
 #include "GlueXSensitiveDetectorFMWPC.hh"
@@ -281,7 +282,8 @@ void GlueXDetectorConstruction::ConstructSDandField()
    GlueXSensitiveDetectorFCALinsert* fcalInsertHandler = 0;
    GlueXSensitiveDetectorGCAL* gcalHandler = 0;
    GlueXSensitiveDetectorCCAL* ccalHandler = 0;
-   GlueXSensitiveDetectorFTOF* ftofHandler = 0;
+   GlueXSensitiveDetectorFTOF* ftofHandler = 0;  
+   GlueXSensitiveDetectorITOF* itofHandler = 0;
    GlueXSensitiveDetectorDIRC* dircHandler = 0;
    GlueXSensitiveDetectorCERE* cereHandler = 0;
    GlueXSensitiveDetectorFMWPC* fmwpcHandler = 0;
@@ -387,6 +389,14 @@ void GlueXDetectorConstruction::ConstructSDandField()
             SDman->AddNewDetector(ftofHandler);
          }
          iter->second->SetSensitiveDetector(ftofHandler);
+      } 
+      else if (volname == "ITOF")
+      {
+         if (itofHandler == 0) {
+            itofHandler = new GlueXSensitiveDetectorITOF("itof");
+            SDman->AddNewDetector(itofHandler);
+         }
+         iter->second->SetSensitiveDetector(itofHandler);
       }
       else if (volname == "CTOF")
       {
