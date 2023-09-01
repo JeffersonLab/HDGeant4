@@ -183,8 +183,8 @@ G4bool GlueXSensitiveDetectorITOF::ProcessHits(G4Step* step,
       hiter = counter->hits.insert(hiter, GlueXHitITOFhit::hitinfo_t());
       hiter->t_ns=tin/ns; // ignore additional flight time in volume
       hiter->dE_GeV=dEsum/GeV;
-      hiter->x_cm = xin[0];
-      hiter->y_cm = xin[1];
+      hiter->x_cm = xin[0]/cm;
+      hiter->y_cm = xin[1]/cm;
     }
     else {
       G4cerr << "GlueXSensitiveDetectorITOF::ProcessHits error: "
