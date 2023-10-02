@@ -41,6 +41,7 @@ class GlueXSensitiveDetectorITOF : public G4VSensitiveDetector
   std::map<G4LogicalVolume*, int> fVolumeTable;
   
   static int MAX_HITS;
+  static double TWO_HIT_TIME_RESOL;
 
   static int instanceCount;
   static G4Mutex fMutex;

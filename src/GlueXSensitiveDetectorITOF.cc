@@ -27,6 +27,9 @@
 // Cutoff on the total number of allowed hits and hits
 int GlueXSensitiveDetectorITOF::MAX_HITS = 1000;
 
+// Minimum hit time difference for two hits on the same detector element
+double GlueXSensitiveDetectorITOF::TWO_HIT_TIME_RESOL = 25*ns;
+
 int GlueXSensitiveDetectorITOF::instanceCount = 0;
 G4Mutex GlueXSensitiveDetectorITOF::fMutex = G4MUTEX_INITIALIZER;
 
@@ -177,11 +180,26 @@ G4bool GlueXSensitiveDetectorITOF::ProcessHits(G4Step* step,
     }
      
     // Add hits to the hits vector
-    std::vector<GlueXHitITOFhit::hitinfo_t>::iterator hiter=counter->hits.end();
-    if ((int)counter->hits.size() < MAX_HITS) {
+    int merge_hit = 0;
+    std::vector<GlueXHitITOFhit::hitinfo_t>::iterator hiter;
+    for (hiter = counter->hits.begin(); 
+	 hiter != counter->hits.end(); ++hiter){
+      //G4cerr << "tdiff " << hiter->t_ns*ns - t << G4endl;
+      if (fabs(hiter->t_ns*ns - t) < TWO_HIT_TIME_RESOL) {
+	//merge_hit = 1;
+	break;
+      }
+    }
+    if (merge_hit) {
+      // sum the charge, do energy weighting of the time
+      hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
+		     dEsum/GeV * t/ns) /
+	(hiter->dE_GeV += dEsum/GeV);
+    }
+    else if ((int)counter->hits.size() < MAX_HITS) {
       // create new hit 
       hiter = counter->hits.insert(hiter, GlueXHitITOFhit::hitinfo_t());
-      hiter->t_ns=tin/ns; // ignore additional flight time in volume
+      hiter->t_ns=t/ns; // ignore additional flight time in volume
       hiter->dE_GeV=dEsum/GeV;
       hiter->x_cm = xin[0]/cm;
       hiter->y_cm = xin[1]/cm;
