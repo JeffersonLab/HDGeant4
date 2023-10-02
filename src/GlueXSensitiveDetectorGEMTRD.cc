@@ -207,7 +207,7 @@ G4bool GlueXSensitiveDetectorGEMTRD::ProcessHits(G4Step* step,
 	double frac=G4UniformRand();
 	hiter->x_cm = (xin[0]+dx[0]*frac)/cm;
 	hiter->y_cm = (xin[1]+dx[1]*frac)/cm;
-	hiter->d_cm = (xoutlocal[2]-(xinlocal[2]+dx[2]*frac))/cm;
+	hiter->d_cm = (12.5-(xinlocal[2]+dx[2]*frac))/cm;
       }
       else {
 	G4cerr << "GlueXSensitiveDetectorGEMTRD::ProcessHits error: "
