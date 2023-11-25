@@ -35,6 +35,7 @@ class GlueXHitCCALblock : public G4VHit
 
    G4int column_;          // CCal block column, from 1 increasing x
    G4int row_;             // CCAL block row, from 1 increasing y
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double E_GeV;      // energy deposition (GeV)

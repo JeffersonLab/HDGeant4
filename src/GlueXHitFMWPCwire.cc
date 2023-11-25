@@ -11,13 +11,15 @@ G4ThreadLocal G4Allocator<GlueXHitFMWPCwire>* GlueXHitFMWPCwireAllocator = 0;
 GlueXHitFMWPCwire::GlueXHitFMWPCwire(G4int layer, G4int wire)
  : G4VHit(),
    layer_(layer),
-   wire_(wire)
+   wire_(wire),
+   overflow_(0)
 {}
 
 GlueXHitFMWPCwire::GlueXHitFMWPCwire(const GlueXHitFMWPCwire &src)
 {
    layer_ = src.layer_;
    wire_ = src.wire_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -58,6 +60,7 @@ GlueXHitFMWPCwire &GlueXHitFMWPCwire::operator+=(const GlueXHitFMWPCwire &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -69,7 +72,9 @@ void GlueXHitFMWPCwire::Draw() const
 void GlueXHitFMWPCwire::Print() const
 {
    G4cout << "GlueXHitFMWPCwire: "
-          << "   layer = " << layer_ << ", wire = " << wire_ << G4endl;
+          << "   layer = " << layer_ 
+          << ",  wire = " << wire_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   dE = " << hiter->dE_keV << " keV" << G4endl

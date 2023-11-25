@@ -12,7 +12,8 @@ GlueXHitBCALcell::GlueXHitBCALcell(G4int module, G4int layer, G4int sector)
  : G4VHit(),
    module_(module),
    layer_(layer),
-   sector_(sector)
+   sector_(sector),
+   overflow_(0)
 {}
 
 GlueXHitBCALcell::GlueXHitBCALcell(const GlueXHitBCALcell &src)
@@ -20,6 +21,7 @@ GlueXHitBCALcell::GlueXHitBCALcell(const GlueXHitBCALcell &src)
    module_ = src.module_;
    layer_ = src.layer_;
    sector_ = src.sector_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -69,6 +71,7 @@ GlueXHitBCALcell &GlueXHitBCALcell::operator+=(const GlueXHitBCALcell &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -82,7 +85,8 @@ void GlueXHitBCALcell::Print() const
    G4cout << "GlueXHitBCALcell: "
           << "  module = " << module_
           << ", layer = " << layer_
-          << ", sector = " << sector_ << G4endl;
+          << ", sector = " << sector_
+          << ", overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   E = " << hiter->E_GeV << " GeV" << G4endl

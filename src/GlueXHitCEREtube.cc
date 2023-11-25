@@ -10,12 +10,14 @@ G4ThreadLocal G4Allocator<GlueXHitCEREtube>* GlueXHitCEREtubeAllocator = 0;
 
 GlueXHitCEREtube::GlueXHitCEREtube(G4int sector)
  : G4VHit(),
-   sector_(sector)
+   sector_(sector),
+   overflow_(0)
 {}
 
 GlueXHitCEREtube::GlueXHitCEREtube(const GlueXHitCEREtube &src)
 {
    sector_ = src.sector_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -55,6 +57,7 @@ GlueXHitCEREtube &GlueXHitCEREtube::operator+=(const GlueXHitCEREtube &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -66,7 +69,8 @@ void GlueXHitCEREtube::Draw() const
 void GlueXHitCEREtube::Print() const
 {
    G4cout << "GlueXHitCEREtube: "
-          << "   sector = " << sector_ << G4endl;
+          << "   sector = " << sector_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   pe = " << hiter->pe_ << G4endl

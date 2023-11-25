@@ -36,6 +36,7 @@ class GlueXHitFDCcathode : public G4VHit
    G4int chamber_;        // chamber number, from upstream starting at 1
    G4int plane_;          // cathode plane number, from upstream starting at 1
    G4int strip_;          // cathode strip number, ordered by u starting at 1
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double q_fC;       // pulse integral (fC)

@@ -12,13 +12,15 @@ G4ThreadLocal G4Allocator<GlueXHitCDCstraw>* GlueXHitCDCstrawAllocator = 0;
 GlueXHitCDCstraw::GlueXHitCDCstraw(G4int ring, G4int sector)
  : G4VHit(),
    ring_(ring),
-   sector_(sector)
+   sector_(sector),
+   overflow_(0)
 {}
 
 GlueXHitCDCstraw::GlueXHitCDCstraw(const GlueXHitCDCstraw &src)
 {
    ring_ = src.ring_;
    sector_ = src.sector_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -64,6 +66,7 @@ GlueXHitCDCstraw &GlueXHitCDCstraw::operator+=(const GlueXHitCDCstraw &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -76,7 +79,8 @@ void GlueXHitCDCstraw::Print() const
 {
    G4cout << "GlueXHitCDCstraw: "
           << "   ring = " << ring_
-          << "   sector = " << sector_ << G4endl;
+          << ",  sector = " << sector_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   q = " << hiter->q_fC << " fC" << G4endl

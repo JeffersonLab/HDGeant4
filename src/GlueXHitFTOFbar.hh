@@ -35,6 +35,7 @@ class GlueXHitFTOFbar : public G4VHit
 
    G4int plane_;           // =0 (downstr, vertical) or =1 (upstr, horizontal)
    G4int bar_;             // bar number, bottom-top, south-north (see hdds)
+   G4int overflow_;
 
    struct hitextra_t {
       G4double track_;     // G4 track index of first particle making this hit

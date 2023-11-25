@@ -11,13 +11,15 @@ G4ThreadLocal G4Allocator<GlueXHitPSCpaddle>* GlueXHitPSCpaddleAllocator = 0;
 GlueXHitPSCpaddle::GlueXHitPSCpaddle(G4int arm, G4int module)
  : G4VHit(),
    arm_(arm),
-   module_(module)
+   module_(module),
+   overflow_(0)
 {}
 
 GlueXHitPSCpaddle::GlueXHitPSCpaddle(const GlueXHitPSCpaddle &src)
 {
    arm_ = src.arm_;
    module_ = src.module_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -57,6 +59,7 @@ GlueXHitPSCpaddle &GlueXHitPSCpaddle::operator+=(const GlueXHitPSCpaddle &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -69,7 +72,8 @@ void GlueXHitPSCpaddle::Print() const
 {
    G4cout << "GlueXHitPSCpaddle: "
           << "   arm = " << arm_
-          << ",  module = " << module_ << G4endl;
+          << ",  module = " << module_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   dE = " << hiter->dE_GeV << " GeV" << G4endl

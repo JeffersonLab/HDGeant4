@@ -36,6 +36,7 @@ class GlueXHitFDCwire : public G4VHit
 
    G4int chamber_;            // FDC chamber, count from upstream starting at 1
    G4int wire_;               // wire number, ordered by u starting at 1
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double dE_keV;     // energy deposited (keV)

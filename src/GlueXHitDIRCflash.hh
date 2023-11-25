@@ -46,6 +46,7 @@ class GlueXHitDIRCflash : public G4VHit
    // no reason to hide hit data
 
    G4int bar_;             // place holder, may not be used
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double E_GeV;      // track particle total energy (GeV)

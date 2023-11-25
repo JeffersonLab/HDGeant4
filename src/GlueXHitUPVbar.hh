@@ -35,6 +35,7 @@ class GlueXHitUPVbar : public G4VHit
 
    G4int layer_;           // =0 (downstr, vertical) or =1 (upstr, horizontal)
    G4int row_;             // row number, bottom-top, south-north (see hdds)
+   G4int overflow_;
 
    struct hitinfo_t {
       G4int end_;          // end=0: top, north/left; end=1: bottom, south/right

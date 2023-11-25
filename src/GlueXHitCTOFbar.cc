@@ -10,12 +10,14 @@ G4ThreadLocal G4Allocator<GlueXHitCTOFbar>* GlueXHitCTOFbarAllocator = 0;
 
 GlueXHitCTOFbar::GlueXHitCTOFbar(G4int bar)
  : G4VHit(),
-   bar_(bar)
+   bar_(bar),
+   overflow_(0)
 {}
 
 GlueXHitCTOFbar::GlueXHitCTOFbar(const GlueXHitCTOFbar &src)
 {
    bar_ = src.bar_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -56,6 +58,7 @@ GlueXHitCTOFbar &GlueXHitCTOFbar::operator+=(const GlueXHitCTOFbar &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -67,7 +70,8 @@ void GlueXHitCTOFbar::Draw() const
 void GlueXHitCTOFbar::Print() const
 {
    G4cout << "GlueXHitCTOFbar: "
-          << "   bar = " << bar_ << G4endl;
+          << "   bar = " << bar_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   end = " << hiter->end_ << G4endl

@@ -35,6 +35,7 @@ class GlueXHitPStile : public G4VHit
 
    G4int arm_;             // =0 for south (left), =1 for north (right)
    G4int column_;          // column number, from 1 increasing with x
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double dE_GeV;     // energy deposition (GeV)

@@ -11,13 +11,15 @@ G4ThreadLocal G4Allocator<GlueXHitUPVbar>* GlueXHitUPVbarAllocator = 0;
 GlueXHitUPVbar::GlueXHitUPVbar(G4int layer, G4int row)
  : G4VHit(),
    layer_(layer),
-   row_(row)
+   row_(row),
+   overflow_(0)
 {}
 
 GlueXHitUPVbar::GlueXHitUPVbar(const GlueXHitUPVbar &src)
 {
    layer_ = src.layer_;
    row_ = src.row_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -57,6 +59,7 @@ GlueXHitUPVbar &GlueXHitUPVbar::operator+=(const GlueXHitUPVbar &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -69,7 +72,8 @@ void GlueXHitUPVbar::Print() const
 {
    G4cout << "GlueXHitUPVbar: "
           << "   layer = " << layer_ 
-          << ",  row = " << row_ << G4endl;
+          << ",  row = " << row_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   end = " << hiter->end_ << G4endl

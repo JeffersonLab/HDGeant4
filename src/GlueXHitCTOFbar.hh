@@ -34,6 +34,7 @@ class GlueXHitCTOFbar : public G4VHit
    // no reason to hide hit data
 
    G4int bar_;             // bar number (see hdds)
+   G4int overflow_;
 
    struct hitinfo_t {
       G4int end_;          // end=0: top, end=1: bottom

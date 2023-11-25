@@ -10,12 +10,14 @@ G4ThreadLocal G4Allocator<GlueXHitSTCpaddle>* GlueXHitSTCpaddleAllocator = 0;
 
 GlueXHitSTCpaddle::GlueXHitSTCpaddle(G4int sector)
  : G4VHit(),
-   sector_(sector)
+   sector_(sector),
+   overflow_(0)
 {}
 
 GlueXHitSTCpaddle::GlueXHitSTCpaddle(const GlueXHitSTCpaddle &src)
 {
    sector_ = src.sector_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -57,6 +59,7 @@ GlueXHitSTCpaddle &GlueXHitSTCpaddle::operator+=(const GlueXHitSTCpaddle &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -68,7 +71,8 @@ void GlueXHitSTCpaddle::Draw() const
 void GlueXHitSTCpaddle::Print() const
 {
    G4cout << "GlueXHitSTCpaddle: "
-          << "   sector = " << sector_ << G4endl;
+          << "   sector = " << sector_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   dE = " << hiter->dE_MeV << " MeV" << G4endl

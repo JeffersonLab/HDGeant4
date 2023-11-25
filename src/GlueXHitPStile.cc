@@ -11,13 +11,15 @@ G4ThreadLocal G4Allocator<GlueXHitPStile>* GlueXHitPStileAllocator = 0;
 GlueXHitPStile::GlueXHitPStile(G4int arm, G4int column)
  : G4VHit(),
    arm_(arm),
-   column_(column)
+   column_(column),
+   overflow_(0)
 {}
 
 GlueXHitPStile::GlueXHitPStile(const GlueXHitPStile &src)
 {
    arm_ = src.arm_;
    column_ = src.column_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -57,6 +59,7 @@ GlueXHitPStile &GlueXHitPStile::operator+=(const GlueXHitPStile &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -69,7 +72,8 @@ void GlueXHitPStile::Print() const
 {
    G4cout << "GlueXHitPStile: "
           << "   arm = " << arm_
-          << ",  column = " << column_ << G4endl;
+          << ",  column = " << column_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   dE = " << hiter->dE_GeV << " GeV" << G4endl

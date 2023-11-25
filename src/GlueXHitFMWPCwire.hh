@@ -35,6 +35,7 @@ class GlueXHitFMWPCwire : public G4VHit
 
    G4int layer_;           // layer number, from 1 upstream to down
    G4int wire_;            // wire number, from 1 low to high u
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double dE_keV;     // energy loss (keV)

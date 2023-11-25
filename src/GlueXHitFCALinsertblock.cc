@@ -9,13 +9,15 @@ G4ThreadLocal G4Allocator<GlueXHitFCALinsertblock>* GlueXHitFCALinsertblockAlloc
 GlueXHitFCALinsertblock::GlueXHitFCALinsertblock(G4int column, G4int row)
  : G4VHit(),
    column_(column),
-   row_(row)
+   row_(row),
+   overflow_(0)
 {}
 
 GlueXHitFCALinsertblock::GlueXHitFCALinsertblock(const GlueXHitFCALinsertblock &src)
 {
    column_ = src.column_;
    row_ = src.row_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -57,6 +59,7 @@ GlueXHitFCALinsertblock &GlueXHitFCALinsertblock::operator+=(const GlueXHitFCALi
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -69,7 +72,8 @@ void GlueXHitFCALinsertblock::Print() const
 {
    G4cout << "GlueXHitFCALinsertblock: "
           << "  column = " << column_
-          << ", row = " << row_ << G4endl;
+          << ", row = " << row_
+          << ", overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   E = " << hiter->E_GeV << " GeV" << G4endl

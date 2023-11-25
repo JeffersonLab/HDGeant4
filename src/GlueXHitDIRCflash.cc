@@ -23,12 +23,14 @@ G4ThreadLocal G4Allocator<GlueXHitDIRCflash>* GlueXHitDIRCflashAllocator = 0;
 
 GlueXHitDIRCflash::GlueXHitDIRCflash(G4int bar)
  : G4VHit(),
-   bar_(bar)
+   bar_(bar),
+   overflow_(0)
 {}
 
 GlueXHitDIRCflash::GlueXHitDIRCflash(const GlueXHitDIRCflash &src)
 {
    bar_ = src.bar_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -69,6 +71,7 @@ GlueXHitDIRCflash &GlueXHitDIRCflash::operator+=(const GlueXHitDIRCflash &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -80,7 +83,8 @@ void GlueXHitDIRCflash::Draw() const
 void GlueXHitDIRCflash::Print() const
 {
    G4cout << "GlueXHitDIRCflash: "
-          << "   bar = " << bar_ << G4endl;
+          << "   bar = " << bar_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   E = " << hiter->E_GeV << " GeV" << G4endl

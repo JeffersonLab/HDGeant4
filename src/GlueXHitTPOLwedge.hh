@@ -35,6 +35,7 @@ class GlueXHitTPOLwedge : public G4VHit
 
    G4int ring_;            // ring number, from 1, inner to outer
    G4int sector_;          // sector number, from 1 at/past phi=0
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double dE_MeV;     // energy deposition (MeV)

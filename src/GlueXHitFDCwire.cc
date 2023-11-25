@@ -11,13 +11,15 @@ G4ThreadLocal G4Allocator<GlueXHitFDCwire>* GlueXHitFDCwireAllocator = 0;
 GlueXHitFDCwire::GlueXHitFDCwire(G4int chamber, G4int wire)
  : G4VHit(),
    chamber_(chamber),
-   wire_(wire)
+   wire_(wire),
+   overflow_(0)
 {}
 
 GlueXHitFDCwire::GlueXHitFDCwire(const GlueXHitFDCwire &src)
 {
    chamber_ = src.chamber_;
    wire_ = src.wire_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -60,6 +62,7 @@ GlueXHitFDCwire &GlueXHitFDCwire::operator+=(const GlueXHitFDCwire &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -72,7 +75,8 @@ void GlueXHitFDCwire::Print() const
 {
    G4cout << "GlueXHitFDCwire: "
           << "   chamber = " << chamber_
-          << "   wire = " << wire_ << G4endl;
+          << ",  wire = " << wire_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   dE = " << hiter->dE_keV << " keV" << G4endl

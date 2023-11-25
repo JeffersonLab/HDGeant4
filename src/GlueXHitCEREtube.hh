@@ -34,6 +34,7 @@ class GlueXHitCEREtube : public G4VHit
    // no reason to hide hit data
 
    G4int sector_;          // counter number, from 1 at/past phi=0
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double pe_;        // number of photoelectrons in hit

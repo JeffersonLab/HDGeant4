@@ -10,7 +10,9 @@ G4ThreadLocal G4Allocator<GlueXHitTPOLwedge>* GlueXHitTPOLwedgeAllocator = 0;
 
 GlueXHitTPOLwedge::GlueXHitTPOLwedge(G4int sector, G4int ring)
  : G4VHit(),
-   ring_(ring), sector_(sector)
+   ring_(ring),
+   sector_(sector),
+   overflow_(0)
 {}
 
 
@@ -18,6 +20,7 @@ GlueXHitTPOLwedge::GlueXHitTPOLwedge(const GlueXHitTPOLwedge &src)
 {
    ring_ = src.ring_;
    sector_ = src.sector_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -59,6 +62,7 @@ GlueXHitTPOLwedge &GlueXHitTPOLwedge::operator+=(const GlueXHitTPOLwedge &right)
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -70,8 +74,9 @@ void GlueXHitTPOLwedge::Draw() const
 void GlueXHitTPOLwedge::Print() const
 {
    G4cout << "GlueXHitTPOLwedge: "
-          << "   ring = " << ring_ << G4endl
-          << "   sector = " << sector_ << G4endl;
+          << "   ring = " << ring_
+          << ",  sector = " << sector_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   dE = " << hiter->dE_MeV << " MeV" << G4endl

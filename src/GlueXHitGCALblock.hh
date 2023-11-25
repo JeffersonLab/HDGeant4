@@ -34,6 +34,7 @@ class GlueXHitGCALblock : public G4VHit
    // no reason to hide hit data
 
    G4int module_;          // GCal module, from 1 starting at/after phi=0
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double E_GeV;      // energy deposition (GeV)

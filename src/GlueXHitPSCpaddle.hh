@@ -35,6 +35,7 @@ class GlueXHitPSCpaddle : public G4VHit
 
    G4int arm_;             // =0 for right/south, =1 for left/north
    G4int module_;          // counter number, from 1 increasing with x
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double dE_GeV;     // energy deposition (GeV)

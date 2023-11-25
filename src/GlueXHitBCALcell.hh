@@ -36,6 +36,7 @@ class GlueXHitBCALcell : public G4VHit
    G4int module_;          // BCal module number, from 1 at/past phi=0
    G4int layer_;           // cell layer number, from 1 inner - outer
    G4int sector_;          // cell sector number, from 1 advancing phi
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double E_GeV;       // energy deposition (GeV)

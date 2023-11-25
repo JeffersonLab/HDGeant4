@@ -36,6 +36,7 @@ class GlueXHitCDCstraw : public G4VHit
 
    G4int ring_;            // straw ring, numbered from inside starting at 1
    G4int sector_;          // straw number within ring, from 1 at/past phi=0
+   G4int overflow_;
 
    struct hitinfo_t {
       G4double track_;     // G4 track number making this hit

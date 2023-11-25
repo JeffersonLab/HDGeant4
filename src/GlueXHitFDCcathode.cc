@@ -12,7 +12,8 @@ GlueXHitFDCcathode::GlueXHitFDCcathode(G4int chamber, G4int plane, G4int strip)
  : G4VHit(),
    chamber_(chamber),
    plane_(plane),
-   strip_(strip)
+   strip_(strip),
+   overflow_(0)
 {}
 
 GlueXHitFDCcathode::GlueXHitFDCcathode(const GlueXHitFDCcathode &src)
@@ -20,6 +21,7 @@ GlueXHitFDCcathode::GlueXHitFDCcathode(const GlueXHitFDCcathode &src)
    chamber_ = src.chamber_;
    plane_ = src.plane_;
    strip_ = src.strip_;
+   overflow_ = src.overflow_;
    hits = src.hits;
 }
 
@@ -68,6 +70,7 @@ GlueXHitFDCcathode &GlueXHitFDCcathode::operator+=(const GlueXHitFDCcathode &rig
       }
       hiter = hits.insert(hiter, *hitsrc);
    }
+   overflow_ += right.overflow_;
    return *this;
 }
 
@@ -80,8 +83,9 @@ void GlueXHitFDCcathode::Print() const
 {
    G4cout << "GlueXHitFDCcathode: "
           << "   chamber = " << chamber_
-          << "   plane = " << plane_
-          << "   strip = " << strip_ << G4endl;
+          << ",  plane = " << plane_
+          << ",  strip = " << strip_
+          << ",  overflow = " << overflow_ << G4endl;
    std::vector<hitinfo_t>::const_iterator hiter;
    for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
       G4cout << "   q = " << hiter->q_fC << " fC" << G4endl
