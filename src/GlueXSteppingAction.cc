@@ -20,6 +20,9 @@
 #include <exception>
 #include <map>
 
+#include <dilog.h>
+#include <sstream>
+
 //#define BACKGROUND_PROFILING 1
 #if BACKGROUND_PROFILING
 #include <TFile.h>
@@ -146,6 +149,43 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
    if (fSaveTrajectories) {
       eventinfo->AddMCtrajectoryPoint(*step, fSaveTrajectories);
    }
+
+   G4String volname = (pvol)? pvol->GetName() : "NULL";
+   int copyno = (pvol)? pvol->GetCopyNo() : 0;
+   const G4VProcess* process = step->GetPostStepPoint()->GetProcessDefinedStep();
+   G4String procName = " UserLimit";
+   if (process) procName = process->GetProcessName();
+   G4String stepstat;
+   G4StepStatus stepStatus = step->GetPostStepPoint()->GetStepStatus();
+   if (stepStatus == fWorldBoundary)
+      stepstat = "WorldBoundary";
+   else if (stepStatus == fGeomBoundary)
+      stepstat = "GeomBoundary";
+   else if (stepStatus == fAtRestDoItProc)
+      stepstat = "AtRestDoItProc";
+   else if (stepStatus == fAlongStepDoItProc)
+      stepstat = "AlongStepDoItProc";
+   else if (stepStatus == fPostStepDoItProc)
+      stepstat = "PostStepDoItProc";
+   else if (stepStatus == fUserDefinedLimit)
+      stepstat = "UserDefinedLimit";
+   else if (stepStatus == fExclusivelyForcedProc)
+      stepstat = "ExclusivelyForcedProc";
+   else
+      stepstat == "Undefined";
+   if (stepStatus == fWorldBoundary) procName = "OutOfWorld";
+   std::stringstream evno;
+   evno << "event_" << eventinfo->GetEventNo();
+   dilog::get(evno.str().c_str()).printf("step %d (%f,%f,%f) KE=%f, dE=%f, ds=%f, s=%f, %s:%d (%s, %s)",
+                                         track->GetCurrentStepNumber(),
+                                         track->GetPosition().x(),
+                                         track->GetPosition().y(),
+                                         track->GetPosition().z(),
+                                         track->GetKineticEnergy(),
+                                         step->GetTotalEnergyDeposit(),
+                                         step->GetStepLength(),
+                                         track->GetTrackLength(),
+                                         volname.data(), copyno, procName.data(), stepstat.data());
 
 #if BACKGROUND_PROFILING
 

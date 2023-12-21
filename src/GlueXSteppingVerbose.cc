@@ -10,12 +10,6 @@
 #include "G4ParallelWorldProcess.hh"
 #include "G4Navigator.hh"
 #include "G4UnitsTable.hh"
-#include "G4RunManager.hh"
-#include "G4Event.hh"
-
-#include <GlueXUserEventInformation.hh>
-#include <dilog.h>
-#include <sstream>
 
 #define G4setw std::setw
 
@@ -113,20 +107,6 @@ void GlueXSteppingVerbose::StepInfo()
        }
      }
  
-     const G4Event *event = G4RunManager::GetRunManager()
-                                        ->GetCurrentEvent();
-     std::stringstream evno;
-     evno << "event_" << ((GlueXUserEventInformation*)event->GetUserInformation())->GetEventNo();
-     dilog::get(evno.str().c_str()).printf("step %d (%f,%f,%f) KE=%f, dE=%f, ds=%f, s=%f, %s:%d (%s, %s)",
-                                           fTrack->GetCurrentStepNumber(),
-                                           fTrack->GetPosition().x(),
-                                           fTrack->GetPosition().y(),
-                                           fTrack->GetPosition().z(),
-                                           fTrack->GetKineticEnergy(),
-                                           fStep->GetTotalEnergyDeposit(),
-                                           fStep->GetStepLength(),
-                                           fTrack->GetTrackLength(),
-                                           volname.data(), copyno, procName.data(), stepstat.data());
    }
 
    G4cout.precision(prec);
@@ -184,21 +164,6 @@ void GlueXSteppingVerbose::TrackingStarted()
             << G4setw(12) << volname << ":" << copyno
             << "   initStep"
             << G4endl;
-
-     const G4Event *event = G4RunManager::GetRunManager()
-                                        ->GetCurrentEvent();
-     std::stringstream evno;
-     evno << "event_" << ((GlueXUserEventInformation*)event->GetUserInformation())->GetEventNo();
-     dilog::get(evno.str().c_str()).printf("start %d (%f,%f,%f) KE=%f, dE=%f, ds=%f, s=%f, %s:%d (%s, %s)",
-                                           fTrack->GetCurrentStepNumber(),
-                                           fTrack->GetPosition().x(),
-                                           fTrack->GetPosition().y(),
-                                           fTrack->GetPosition().z(),
-                                           fTrack->GetKineticEnergy(),
-                                           fStep->GetTotalEnergyDeposit(),
-                                           fStep->GetStepLength(),
-                                           fTrack->GetTrackLength(),
-                                           volname.data(), copyno, "initStep", "");
    }
 
    G4cout.precision(prec);
