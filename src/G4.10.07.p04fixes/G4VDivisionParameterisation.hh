@@ -85,6 +85,7 @@ template <class T> class G4Splitter {
          return;
       delete offset;
    }
+   friend class G4VDivisionParameterisation;
 };
 
 class G4VDivisionData
@@ -173,6 +174,9 @@ class G4VDivisionParameterisation : public G4VPVParameterisation
 
     G4int gClassInstanceId;
     static G4VDivisionParameterisationSubInstanceManager subInstanceManager; 
+
+  public:
+    static void reset_thread_state();
 };
 
 #include "G4VDivisionParameterisation.icc"

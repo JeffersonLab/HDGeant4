@@ -30,6 +30,12 @@
 
 #include <iomanip>
 
+#include <sstream>
+#include <dilog.h>
+#include <GlueXUserEventInformation.hh>
+#include <G4RunManager.hh>
+#include <G4EventManager.hh>
+
 template <class Driver>
 G4ChordFinderDelegate<Driver>::~G4ChordFinderDelegate()
 {
@@ -75,9 +81,25 @@ AdvanceChordLimitedImpl(G4FieldTrack& yCurrent, G4double stepMax,
 
     // Advance more accurately to "end of chord"
     //
+G4FieldTrack yStart = yCurrent;
     const G4double startCurveLen = yCurrent.GetCurveLength();
     const G4bool goodAdvance =
           GetDriver().AccurateAdvance(yCurrent,stepPossible,epsStep,nextStep);
+  {
+    std::stringstream evno;
+    const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
+    GlueXUserEventInformation *eventinfo = (GlueXUserEventInformation*)
+                                           event->GetUserInformation();
+    evno << "event_" << eventinfo->GetEventNo();
+    std::stringstream sdilog;
+    sdilog.precision(9);
+    sdilog << "AdvanceChordLimitedImpl calls AccurateAdvance with"
+           << " yStart=" << yStart << ", yCurrent=" << yCurrent
+           << ", gets back " << goodAdvance
+           << ", startCurveLen=" << startCurveLen
+           << ", currentCurveLength()=" << yCurrent.GetCurveLength();
+    dilog::get(evno.str().c_str()).printf("%s", sdilog.str().c_str());
+  }
 
     return goodAdvance ? stepPossible
                        : yCurrent.GetCurveLength() - startCurveLen;

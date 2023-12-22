@@ -176,7 +176,8 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
    if (stepStatus == fWorldBoundary) procName = "OutOfWorld";
    std::stringstream evno;
    evno << "event_" << eventinfo->GetEventNo();
-   dilog::get(evno.str().c_str()).printf("step %d (%f,%f,%f) KE=%f, dE=%f, ds=%f, s=%f, %s:%d (%s, %s)",
+   dilog::get(evno.str().c_str()).printf("step %d (%.9f,%.9f,%.9f) KE=%.9f, "
+		                         "dE=%.9f, ds=%.9f, s=%.9f, %s:%d (%s, %s)",
                                          track->GetCurrentStepNumber(),
                                          track->GetPosition().x(),
                                          track->GetPosition().y(),

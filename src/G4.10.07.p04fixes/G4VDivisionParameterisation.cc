@@ -175,6 +175,19 @@ void G4VDivisionParameterisation::CheckNDivAndWidth( G4double maxPar )
   }
 }
 
+
+void G4VDivisionParameterisation::reset_thread_state()
+{
+  if (subInstanceManager.workertotalspace != 0) {
+    for (int i=0; i < subInstanceManager.totalobj; ++i) {
+      if (subInstanceManager.offset[i].fRot != 0) {
+        G4cout << "clearing fRot in instance " << i << G4endl;
+        subInstanceManager.offset[i].fRot = 0;
+      }
+    }
+  }
+}
+
 //--------------------------------------------------------------------------
 G4double G4VDivisionParameterisation::OffsetZ() const
 {
