@@ -33,6 +33,9 @@
 #include "G4ChordFinder.hh" 
 #include "G4MagIntegratorDriver.hh" 
 #include "G4MagHelicalStepper.hh" 
+#include "G4OldMagIntDriver.hh"
+#include "G4BFieldIntegrationDriver.hh"
+#include "G4IntegrationDriver.hh"
 
 // ***************************************************************************
 // Static class variables
@@ -162,14 +165,16 @@ G4FieldManagerStore::ClearAllChordFindersState()
     if( pChordFnd != nullptr )
     {
       pChordFnd->ResetStepEstimate();
-      G4MagInt_Driver *driver =
-        dynamic_cast<G4MagInt_Driver*>(pChordFnd->GetIntegrationDriver());
+      G4IntegrationDriver<G4MagIntegratorStepper> *driver =
+        dynamic_cast<G4IntegrationDriver<G4MagIntegratorStepper>*>(
+			         pChordFnd->GetIntegrationDriver());
       if (driver) {
          driver->SetFractions_Last_Next(-1, -1);
          G4MagHelicalStepper *stepper =
            dynamic_cast<G4MagHelicalStepper*>(driver->GetStepper());
-         if (stepper)
+         if (stepper) {
             stepper->ResetState();
+         }
       }
     }
   }
