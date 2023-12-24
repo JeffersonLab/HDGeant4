@@ -60,6 +60,12 @@
 #include "G4ThreeVector.hh"
 #include "G4LineSection.hh"
 
+#include <sstream>
+#include <dilog.h>
+#include <GlueXUserEventInformation.hh>
+#include <G4RunManager.hh>
+#include <G4EventManager.hh>
+
 // ---------------------------------------------------------------------------
 G4HelixMixedStepper::
 G4HelixMixedStepper(G4Mag_EqRhs* EqRhs,
@@ -185,10 +191,33 @@ G4double G4HelixMixedStepper::DistChord() const
   //
   G4double distChord;
   G4double Ang_curve=GetAngCurve();
+
+ {
+    std::stringstream evno;
+    const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
+    GlueXUserEventInformation *eventinfo = (GlueXUserEventInformation*)
+                                           event->GetUserInformation();
+    evno << "event_" << eventinfo->GetEventNo();
+    std::stringstream sdilog;
+    sdilog.precision(9);
+    sdilog << "G4HelixMixedStepper::DistChord finds GetAngCurve=" << Ang_curve;
+    dilog::get(evno.str().c_str()).printf("%s", sdilog.str().c_str());
+  }
   
   if(Ang_curve<=pi)
   {
     distChord=GetRadHelix()*(1-std::cos(0.5*Ang_curve));
+{
+    std::stringstream evno;
+    const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
+    GlueXUserEventInformation *eventinfo = (GlueXUserEventInformation*)
+                                           event->GetUserInformation();
+    evno << "event_" << eventinfo->GetEventNo();
+    std::stringstream sdilog;
+    sdilog.precision(9);
+    sdilog << "G4HelixMixedStepper::DistChord finds GetRadHelix()*(1-cos(Ang_curve/2))=" << distChord;
+    dilog::get(evno.str().c_str()).printf("%s", sdilog.str().c_str());
+}
   }
   else
   {

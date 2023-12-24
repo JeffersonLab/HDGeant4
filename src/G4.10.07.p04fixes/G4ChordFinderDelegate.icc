@@ -68,9 +68,23 @@ AdvanceChordLimitedImpl(G4FieldTrack& yCurrent, G4double stepMax,
     G4FieldTrack yEnd = yCurrent;
     G4double nextStep;
 
+    G4FieldTrack yStart = yCurrent;
     const G4double stepPossible = FindNextChord(yCurrent, stepMax,
                                                 epsStep, chordDistance,
                                                 yEnd, dyErr, nextStep);
+   {
+    std::stringstream evno;
+    const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
+    GlueXUserEventInformation *eventinfo = (GlueXUserEventInformation*)
+                                           event->GetUserInformation();
+    evno << "event_" << eventinfo->GetEventNo();
+    std::stringstream sdilog;
+    sdilog.precision(9);
+    sdilog << "AdvanceChordLimitedImpl calls FindNextChord with"
+           << " yStart=" << yStart << ", yCurrent=" << yCurrent
+           << ", gets back " << stepPossible;
+    dilog::get(evno.str().c_str()).printf("%s", sdilog.str().c_str());
+  }
     if (dyErr < epsStep * stepPossible)
     {
          // Accept this accuracy.
@@ -81,7 +95,6 @@ AdvanceChordLimitedImpl(G4FieldTrack& yCurrent, G4double stepMax,
 
     // Advance more accurately to "end of chord"
     //
-G4FieldTrack yStart = yCurrent;
     const G4double startCurveLen = yCurrent.GetCurveLength();
     const G4bool goodAdvance =
           GetDriver().AccurateAdvance(yCurrent,stepPossible,epsStep,nextStep);
@@ -147,6 +160,24 @@ FindNextChord(const G4FieldTrack& yStart,
         validEndPoint = dChordStep < chordDistance;
         stepForChord = NewStep(stepTrial, dChordStep,
                                chordDistance, newStepEst_Uncons);
+{
+    std::stringstream evno;
+    const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
+    GlueXUserEventInformation *eventinfo = (GlueXUserEventInformation*)
+                                           event->GetUserInformation();
+    evno << "event_" << eventinfo->GetEventNo();
+    std::stringstream sdilog;
+    sdilog.precision(9);
+    sdilog << "FindNextChord calls QuickAdvance with noTrials=" << noTrials
+           << ", yStart=" << yStart << ", yEnd" << yEnd
+           << ", dydx=(" << dydx[0] << "," << dydx[1] << "," << dydx[2] << ","
+                         << dydx[3] << "," << dydx[4] << "," << dydx[5] << ")"
+           << ", stepTrial=" << stepTrial
+           << ", stepForChord=" << stepForChord << ", dChordStep=" << dChordStep
+           << ", chordDistance=" << chordDistance << ", newStepEst_Uncons=" << newStepEst_Uncons
+           << ", lastStepLength=" << lastStepLength;
+    dilog::get(evno.str().c_str()).printf("%s", sdilog.str().c_str());
+  }
         if (validEndPoint)
         {
             break;

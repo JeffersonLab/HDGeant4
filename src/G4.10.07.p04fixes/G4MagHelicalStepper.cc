@@ -42,6 +42,12 @@
 #include "G4TransportationManager.hh"
 #include "G4MagIntegratorDriver.hh"
 
+#include <sstream>
+#include <dilog.h>
+#include <GlueXUserEventInformation.hh>
+#include <G4RunManager.hh>
+#include <G4EventManager.hh>
+
 // Constant for determining unit conversion when using normal as integrand.
 //
 const G4double G4MagHelicalStepper::fUnitConstant = 0.299792458*(GeV/(tesla*m));
@@ -252,6 +258,17 @@ G4MagHelicalStepper::DistChord() const
   // Method DistLine is good only for <  pi
 
   G4double Ang=GetAngCurve();
+  {
+    std::stringstream evno;
+    const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
+    GlueXUserEventInformation *eventinfo = (GlueXUserEventInformation*)
+                                           event->GetUserInformation();
+    evno << "event_" << eventinfo->GetEventNo();
+    std::stringstream sdilog;
+    sdilog.precision(9);
+    sdilog << "G4MagHelicalStepper::DistChord finds Ang=" << Ang;
+    dilog::get(evno.str().c_str()).printf("%s", sdilog.str().c_str());
+  }
   if(Ang<=pi)
   {
     return GetRadHelix()*(1-std::cos(0.5*Ang));
