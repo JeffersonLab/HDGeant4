@@ -24,7 +24,7 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per chamber
 int GlueXSensitiveDetectorFMWPC::MAX_HITS = 100;
 
 // Minimum hit time difference for two hits on the same wire
@@ -263,18 +263,12 @@ G4bool GlueXSensitiveDetectorFMWPC::ProcessHits(G4Step* step,
 	    hiter->d_cm = d/cm;
          }
       }
-      else if ((int)counter->hits.size() < MAX_HITS) {
+      else {
          // create new hit 
          hiter = counter->hits.insert(hiter, GlueXHitFMWPCwire::hitinfo_t());
          hiter->dE_keV = dEsum/keV;
          hiter->d_cm = d/cm;
          hiter->t_ns = t/ns;
-      }
-      else {
-         G4cerr << "GlueXSensitiveDetectorFMWPC::ProcessHits error: "
-                << "max hit count " << MAX_HITS
-                << " exceeded, truncating!"
-                << G4endl;
       }
    }
    return true;
@@ -340,23 +334,31 @@ void GlueXSensitiveDetectorFMWPC::EndOfEvent(G4HCofThisEvent*)
          hddm_s::FmwpcChamberList wire = fmwpc.addFmwpcChambers(1);
          wire(0).setLayer(siter->second->layer_);
          wire(0).setWire(siter->second->wire_);
+         int hitscount = hits.size();
+         if (hitscount > MAX_HITS) {
+            hitscount = MAX_HITS;
+            G4cerr << "GlueXSensitiveDetectorFMWPC::EndOfEvent warning: "
+                   << "max hit count " << MAX_HITS << "exceeded, "
+                   << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
          for (int ih=0; ih < (int)hits.size(); ++ih) {
-	   double dE=hits[ih].dE_keV*keV;
-	   double n_p_mean=dE/W_EFF_PER_ION/(1.+N_SECOND_PER_PRIMARY);
-	   int n_p=CLHEP::RandPoisson::shoot(n_p_mean);
-	   double n_s_mean=n_p*N_SECOND_PER_PRIMARY;
-	   int n_s=CLHEP::RandPoisson::shoot(n_s_mean);
-	   int n_t=n_p+n_s;
-	   const double pC=1e-12*coulomb;
-	   double q_pC=n_t*GAS_GAIN*ELECTRON_CHARGE/pC;
-	   
-	   hddm_s::FmwpcTruthHitList thit = wire(0).addFmwpcTruthHits(1);
-	   thit(0).setDE(dE);
-	   thit(0).setT(hits[ih].t_ns);
-	   thit(0).setDx(0.); // not used any more (SJT 2/28/22)
-	   hddm_s::FmwpcTruthHitQList charges=thit(0).addFmwpcTruthHitQs(1);
-	   charges(0).setD(hits[ih].d_cm);
-	   charges(0).setQ(q_pC);
+             double dE=hits[ih].dE_keV*keV;
+             double n_p_mean=dE/W_EFF_PER_ION/(1.+N_SECOND_PER_PRIMARY);
+             int n_p=CLHEP::RandPoisson::shoot(n_p_mean);
+             double n_s_mean=n_p*N_SECOND_PER_PRIMARY;
+             int n_s=CLHEP::RandPoisson::shoot(n_s_mean);
+             int n_t=n_p+n_s;
+             const double pC=1e-12*coulomb;
+             double q_pC=n_t*GAS_GAIN*ELECTRON_CHARGE/pC;
+       
+             hddm_s::FmwpcTruthHitList thit = wire(0).addFmwpcTruthHits(1);
+             thit(0).setDE(dE);
+             thit(0).setT(hits[ih].t_ns);
+             thit(0).setDx(0.); // not used any more (SJT 2/28/22)
+             hddm_s::FmwpcTruthHitQList charges=thit(0).addFmwpcTruthHitQs(1);
+             charges(0).setD(hits[ih].d_cm);
+             charges(0).setQ(q_pC);
          }
       }
    }

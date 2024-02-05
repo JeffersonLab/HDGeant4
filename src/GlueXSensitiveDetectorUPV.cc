@@ -21,7 +21,7 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per counter
 int GlueXSensitiveDetectorUPV::MAX_HITS = 100;
 
 // Light propagation parameters in tof bars
@@ -219,17 +219,12 @@ G4bool GlueXSensitiveDetectorUPV::ProcessHits(G4Step* step,
                hiter->t_ns = tleft/ns;
             }
          }
-         else if ((int)counter->hits.size() < MAX_HITS)	{
+         else {
             // create new hit 
             hiter = counter->hits.insert(hiter, GlueXHitUPVbar::hitinfo_t());
             hiter->end_ = 0;
             hiter->E_GeV = dEleft/GeV;
             hiter->t_ns = tleft/ns;
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorUPV::ProcessHits error: "
-                << "max hit count " << MAX_HITS << " exceeded, truncating!"
-                << G4endl;
          }
       }
 
@@ -255,17 +250,12 @@ G4bool GlueXSensitiveDetectorUPV::ProcessHits(G4Step* step,
                hiter->t_ns = tright/ns;
             }
          }
-         else if ((int)counter->hits.size() < MAX_HITS)	{
+         else {
             // create new hit 
             hiter = counter->hits.insert(hiter, GlueXHitUPVbar::hitinfo_t());
             hiter->end_ = 1;
             hiter->E_GeV = dEright/GeV;
             hiter->t_ns = tright/ns;
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorUPV::ProcessHits error: "
-                << "max hit count " << MAX_HITS << " exceeded, truncating!"
-                << G4endl;
          }
       }
    }
@@ -349,6 +339,14 @@ void GlueXSensitiveDetectorUPV::EndOfEvent(G4HCofThisEvent*)
                thit(0).setE(hits[ih].E_GeV);
                thit(0).setT(hits[ih].t_ns);
             }
+         }
+         int hitscount = counter(0).getUpvTruthHits().size();
+         if (hitscount > 2 * MAX_HITS) {
+            counter(0).deleteUpvTruthHits(-1, 2 * MAX_HITS);
+            G4cerr << "GlueXSensitiveDetectorUPV::ENdOfEvent warning: "
+                << "max hit count " << 2 * MAX_HITS << " exceeded, "
+                << hitscount - 2 * MAX_HITS << " hits discarded."
+                << G4endl;
          }
       }
    }

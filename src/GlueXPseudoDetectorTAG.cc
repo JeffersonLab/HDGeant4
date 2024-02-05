@@ -13,8 +13,10 @@
 
 #include <JANA/JApplication.h>
 
+// Place limits on the number of hits per counter or column per event
 int GlueXPseudoDetectorTAG::HODO_MAX_HITS = 5000;
 int GlueXPseudoDetectorTAG::MICRO_MAX_HITS = 5000;
+
 double GlueXPseudoDetectorTAG::HODO_TWO_HIT_TIME_RESOL = 25.*ns;
 double GlueXPseudoDetectorTAG::MICRO_TWO_HIT_TIME_RESOL = 25.*ns;
 double GlueXPseudoDetectorTAG::MICRO_HIT_DE = 3.5*MeV;
@@ -197,12 +199,19 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          if (fabs(t - hiter->getT()*ns) < MICRO_TWO_HIT_TIME_RESOL)
             break;
          else if (hiter->getT()*ns > t) {
-            hits = citer->addTaggerTruthHits(1, hit);
-            hiter = hits.begin();
-            hiter->setE(energy/GeV);
-            hiter->setT(1e99);
-            hiter->setDE(0);
-            hiter->setBg(bg);
+            if (citer->getTaggerTruthHits().size() < MICRO_MAX_HITS) {
+               hits = citer->addTaggerTruthHits(1, hit);
+               hiter = hits.begin();
+               hiter->setE(energy/GeV);
+               hiter->setT(1e99);
+               hiter->setDE(0);
+               hiter->setBg(bg);
+            }
+            else {
+               G4cerr << "GlueXPseudoDetectorTAG::addTaggerPhoton warning: "
+                      << "TAGM max hit count " << MICRO_MAX_HITS 
+                      << " exceeded, discarding hit." << G4endl;
+            }
             break;
          }
       }
@@ -215,12 +224,19 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          hiter->setDE(hiter->getDE() + MICRO_HIT_DE/GeV);
       }
       else {                                 // make a new hit
-         hits = citer->addTaggerTruthHits();
-         hiter = hits.begin();
-         hiter->setT(t/ns);
-         hiter->setE(energy/GeV);
-         hiter->setDE(MICRO_HIT_DE/GeV);
-         hiter->setBg(bg);
+         if (citer->getTaggerTruthHits().size() < MICRO_MAX_HITS) {
+            hits = citer->addTaggerTruthHits();
+            hiter = hits.begin();
+            hiter->setT(t/ns);
+            hiter->setE(energy/GeV);
+            hiter->setDE(MICRO_HIT_DE/GeV);
+            hiter->setBg(bg);
+         }
+         else {
+            G4cerr << "GlueXPseudoDetectorTAG::addTaggerPhoton warning: "
+             << "TAGM max hit count " << MICRO_MAX_HITS << " exceeded,"
+             << " discarding hit." << G4endl;
+         }
       }
    }
  
@@ -246,12 +262,19 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          if (fabs(t - hiter->getT()*ns) < HODO_TWO_HIT_TIME_RESOL)
             break;
          else if (hiter->getT()*ns > t) {
-            hits = citer->addTaggerTruthHits(1, hit);
-            hiter = hits.begin();
-            hiter->setE(energy/GeV);
-            hiter->setT(1e99);
-            hiter->setDE(0);
-            hiter->setBg(bg);
+            if (citer->getTaggerTruthHits().size() < HODO_MAX_HITS) {
+               hits = citer->addTaggerTruthHits(1, hit);
+               hiter = hits.begin();
+               hiter->setE(energy/GeV);
+               hiter->setT(1e99);
+               hiter->setDE(0);
+               hiter->setBg(bg);
+            }
+            else {
+               G4cerr << "GlueXPseudoDetectorTAG::addTaggerPhoton warning: "
+                << "TAGH max hit count " << HODO_MAX_HITS << " exceeded,"
+                << " discarding hit." << G4endl;
+            }
             break;
          }
       }
@@ -264,12 +287,19 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          hiter->setDE(hiter->getDE() + HODO_HIT_DE/GeV);
       }
       else {                                 // make a new hit
-         hits = citer->addTaggerTruthHits();
-         hiter = hits.begin();
-         hiter->setT(t/ns);
-         hiter->setE(energy/GeV);
-         hiter->setDE(HODO_HIT_DE/GeV);
-         hiter->setBg(bg);
+         if (citer->getTaggerTruthHits().size() < HODO_MAX_HITS) {
+            hits = citer->addTaggerTruthHits();
+            hiter = hits.begin();
+            hiter->setT(t/ns);
+            hiter->setE(energy/GeV);
+            hiter->setDE(HODO_HIT_DE/GeV);
+            hiter->setBg(bg);
+         }
+         else {
+            G4cerr << "GlueXPseudoDetectorTAG::addTaggerPhoton warning: "
+             << "TAGH max hit count " << MICRO_MAX_HITS << " exceeded,"
+             << " discarding hit." << G4endl;
+         }
       }
    }
    return (micro_channel > -1 || hodo_channel > -1);

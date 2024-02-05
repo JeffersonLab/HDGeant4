@@ -232,7 +232,6 @@ G4bool GlueXSensitiveDetectorDIRC::ProcessHits(G4Step* step,
   
   // PMT's pixel volume
   if (volname == "PIXV") {
-    if ((int)fHitsPmt.size() < MAX_HITS) {
 
       // fix propagation speed for op
       double tracklen=track->GetTrackLength()/cm;
@@ -314,12 +313,6 @@ G4bool GlueXSensitiveDetectorDIRC::ProcessHits(G4Step* step,
         pmthit.key_bar = fLutId;
       }
       fHitsPmt.push_back(pmthit);
-    }
-    else {
-      G4cerr << "GlueXSensitiveDetectorDIRC::ProcessHits error: "
-             << "max hit count " << MAX_HITS << " exceeded, truncating!"
-             << G4endl;
-    }
   }
   return true;
 }
@@ -386,7 +379,15 @@ void GlueXSensitiveDetectorDIRC::EndOfEvent(G4HCofThisEvent*)
   }
 
   // Collect and output the DircTruthPmtHit
-  for(unsigned int h=0; h<fHitsPmt.size(); h++){
+  int hitscount = fHitsPmt.size();
+  if (hitscount > MAX_HITS) {
+    hitscount = MAX_HITS;
+    G4cerr << "GlueXSensitiveDetectorDIRC::EndOfEvent warning: "
+           << "max hit count " << MAX_HITS << " exceeded, "
+           << fHitsPmt.size() - hitscount << " hits discarded."
+           << G4endl;
+  }
+  for(int h=0; h<hitscount; h++){
     hddm_s::DircTruthPmtHitList mhit = dirc.addDircTruthPmtHits(1);
     mhit(0).setE(fHitsPmt[h].E_GeV);
     mhit(0).setT(fHitsPmt[h].t_ns);

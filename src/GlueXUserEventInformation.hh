@@ -75,6 +75,12 @@ class GlueXUserEventInformation: public G4VUserEventInformation
    static int getWriteNoHitEvents() {
       return fWriteNoHitEvents;
    }
+   static void setTrackingVerbose(int vlevel) {
+      fTrackingVerboseLevel = vlevel;
+   }
+   static int getTrackingVerbose(int vlevel) {
+      return fTrackingVerboseLevel;
+   }
 
  protected:
    hddm_s::HDDM *fOutputRecord;
@@ -97,6 +103,7 @@ class GlueXUserEventInformation: public G4VUserEventInformation
    long int fEventSequenceNo;
 
    static G4Mutex fMutex;
+   static int fTrackingVerboseLevel;
 };
 
 class BCALincidentParticle {

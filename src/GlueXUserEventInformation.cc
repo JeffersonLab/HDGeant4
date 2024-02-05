@@ -89,6 +89,7 @@ std::map<G4String, G4String> process_4letter_abbrev = {
 
 int GlueXUserEventInformation::fWriteNoHitEvents = 0;
 long int *GlueXUserEventInformation::fStartingSeeds = 0;
+int GlueXUserEventInformation::fTrackingVerboseLevel = 0;
 
 G4Mutex GlueXUserEventInformation::fMutex = G4MUTEX_INITIALIZER;
 
@@ -112,6 +113,14 @@ GlueXUserEventInformation::GlueXUserEventInformation(hddm_s::HDDM *hddmevent)
       fNvertices = fOutputRecord->getVertices().size();
    }
    SetRandomSeeds();
+   G4EventManager::GetEventManager()->
+                   GetTrackingManager()->
+                   SetVerboseLevel(fTrackingVerboseLevel);
+   if (fTrackingVerboseLevel > 0) {
+      hddm_s::PhysicsEventList pev = fOutputRecord->getPhysicsEvents();
+      G4cout << "GlueXUserEventInformation: new event " << pev(0).getEventNo()
+             << ", run " << pev(0).getRunNo() << G4endl;
+   }
 }
 
 GlueXUserEventInformation::~GlueXUserEventInformation()

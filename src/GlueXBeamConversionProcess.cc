@@ -99,6 +99,11 @@
 #include <TLepton.h>
 #include <TCrossSection.h>
 
+#else
+const double mElectron=0.51099907e-3;
+const double mMuon=0.105658389;
+const double mProton=0.9382723128;
+const double mNeutron=0.9395656328;
 #endif
 
 void unif01(int n, double *u) {

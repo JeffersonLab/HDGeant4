@@ -8,21 +8,22 @@ G4TARGET := $(name)
 G4EXLIB := true
 G4LIB_BUILD_SHARED := true
 G4WORKDIR := $(shell pwd)
+G4SYSTEM := Linux-g++
 
 ifndef G4ROOT
     $(error G4ROOT is not set, please set it and try again)
 endif
 
 ifndef G4SYSTEM
-    $(error Geant4 environment not set up, please source $(G4ROOT)/share/Geant4-10.2.2/geant4make/geant4make.sh and try again)
+    $(error Geant4 environment not set up, please source $(G4ROOT)/share/Geant4-10.*/geant4make/geant4make.sh and try again)
 endif
 
-ifdef DIRACXX_HOME
+ifdef DIRACXX_DIR
     DIRACXX_CMAKE := $(shell if [ -f $(DIRACXX_HOME)/CMakeLists.txt ]; then echo true; else echo false; fi)
     ifeq ($(DIRACXX_CMAKE), true)
-        CPPFLAGS += -I$(DIRACXX_HOME)/include -DUSING_DIRACXX -L$(DIRACXX_HOME)/lib -lDirac
+        CPPFLAGS += -I$(DIRACXX_DIR)/include -DUSING_DIRACXX -L$(DIRACXX_DIR)/lib -lDirac
     else
-        CPPFLAGS += -I$(DIRACXX_HOME) -DUSING_DIRACXX -L$(DIRACXX_HOME) -lDirac
+        CPPFLAGS += -I$(DIRACXX_DIR) -DUSING_DIRACXX -L$(DIRACXX_DIR) -lDirac
     endif
 endif
 
@@ -35,7 +36,7 @@ CPPFLAGS += -I$(JANA_HOME)/include
 CPPFLAGS += -I$(shell root-config --incdir)
 CPPFLAGS += $(shell $(PYTHON_CONFIG) --includes)
 CPPFLAGS += -Wno-unused-parameter -Wno-unused-but-set-variable
-CPPFLAGS += -DUSE_SSE2 -std=c++11
+CPPFLAGS += -DUSE_SSE2
 #CPPFLAGS += -I/usr/include/Qt
 #CPPFLAGS += -DLINUX_CPUTIME_PROFILING=1
 #CPPFLAGS += -DCHECK_OVERLAPS_MM=1e-6
@@ -69,7 +70,13 @@ G4fixes_sources := $(wildcard src/G4fixes/*.cc)
 G4debug_sources := $(wildcard src/G4debug/*.cc)
 HDDS_sources := $(HDDS_HOME)/XString.cpp $(HDDS_HOME)/XParsers.cpp $(HDDS_HOME)/hddsCommon.cpp
 
-ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer -ltbb
+ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer
+ifeq ($(shell test -s $(ROOTSYS)/lib/libtbb.so && echo -n yes),yes)
+    ROOTLIBS += $(ROOTSYS)/lib/libtbb.so.2
+endif
+ifeq ($(shell test -s $(VDTHOME)/lib/libvdt.so && echo -n yes),yes)
+    ROOTLIBS += -L$(VDTHOME)/lib -lvdt
+endif
 
 ifdef SQLITECPP_VERSION
     SQLITECPP_MAJOR_VERSION := $(shell echo $(SQLITECPP_VERSION) | awk -F. '{print $$1}')
@@ -90,7 +97,6 @@ DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -L$(JANA_HOME)/lib -lJANA \
            -L$(CCDB_HOME)/lib -lccdb \
            -L$(EVIOROOT)/lib -levioxx -levio \
-           $(ROOTLIBS) \
            -lpthread -ldl
 
 ifdef ETROOT
@@ -98,12 +104,11 @@ DANALIBS += -L$(ETROOT)/lib -let -let_remote
 endif
 
 G4shared_libs := $(wildcard $(G4ROOT)/lib64/*.so)
-#BOOST_PYTHON_LIB = boost_python
-#PYTHON_LIB_OPTION = ""
 ifeq ($(PYTHON_GE_3), true)
-  BOOST_PYTHON_LIB = boost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION)
+  BOOST_PYTHON_LIB = -lboost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION) -lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+  CPPFLAGS += -DBOOST_NO_AUTO_PTR -DBOOST_BIND_GLOBAL_PLACEHOLDERS
 else
-  BOOST_PYTHON_LIB = boost_python
+  BOOST_PYTHON_LIB = -lboost_python
 endif
 
 ifdef HDF5ROOT
@@ -115,11 +120,14 @@ INTYLIBS += -Wl,--whole-archive $(DANALIBS) -Wl,--no-whole-archive
 INTYLIBS += -fPIC -I$(HDDS_HOME) -I$(XERCESCROOT)/include
 INTYLIBS += -L${XERCESCROOT}/lib -lxerces-c
 INTYLIBS += -L$(G4TMPDIR) -lhdds
-INTYLIBS += -l$(BOOST_PYTHON_LIB) -L$(shell $(PYTHON_CONFIG) --prefix)/lib $(shell $(PYTHON_CONFIG) --ldflags) $(PYTHON_LIB_OPTION)
+INTYLIBS += $(BOOST_PYTHON_LIB)
+INTYLIBS += -L$(shell $(PYTHON_CONFIG) --prefix)/lib
+INTYLIBS += $(shell $(PYTHON_CONFIG) --ldflags) $(PYTHON_LIB_OPTION)
 INTYLIBS += -L$(G4ROOT)/lib64 $(patsubst $(G4ROOT)/lib64/lib%.so, -l%, $(G4shared_libs))
 INTYLIBS += -lgfortran
 INTYLIBS += -L/usr/lib64
 INTYLIBS += -ltirpc
+INTYLIBS += $(ROOTLIBS)
 
 EXTRALIBS += -lG4fixes -lGLU
 
@@ -132,7 +140,19 @@ cobrems: $(G4TMPDIR)/libcobrems.so
 hdds:  $(G4TMPDIR)/libhdds.so
 g4fixes: $(G4TMPDIR)/libG4fixes.so
 
-CXXFLAGS = -std=c++11 -g -O4 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
+CXXFLAGS = -g -O4 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
+
+GCCVERSION = $(shell gcc --version | awk -F'[. ]*' '/gcc/{print $$3}')
+ifeq ($(shell test $(GCCVERSION) -ge 8; echo $$?),0)
+    CPPFLAGS += -std=c++17
+    CXXFLAGS += -std=c++17
+else ifeq ($(shell test $(GCCVERSION) -ge 5; echo $$?),0)
+    CPPFLAGS += -std=c++14
+    CXXFLAGS += -std=c++14
+else
+    CPPFLAGS += -std=c++11
+    CXXFLAGS += -std=c++11
+endif
 
 HDDSDIR := $(G4TMPDIR)/hdds
 G4FIXESDIR := $(G4TMPDIR)/G4fixes
@@ -145,7 +165,7 @@ G4fixes_symlink:
 
 $(G4TMPDIR)/libcobrems.so: $(Cobrems_sources)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Wl,--export-dynamic -Wl,-soname,libcobrems.so \
-	-shared -o $@ $^ $(G4shared_libs) -l$(BOOST_PYTHON_LIB)
+	-shared -o $@ $^ $(G4shared_libs) $(BOOST_PYTHON_LIB)
 
 hdgeant4_objects := $(patsubst src/%.cc, $(G4TMPDIR)/%.o, $(hdgeant4_sources))
 G4fixes_objects := $(patsubst src/G4fixes/%.cc, $(G4FIXESDIR)/%.o, $(G4fixes_sources))
@@ -156,7 +176,7 @@ $(G4TMPDIR)/libhdgeant4.so: $(hdgeant4_objects)
 
 $(G4TMPDIR)/libG4fixes.so: $(G4FIXESDIR)/G4fixes.o $(G4fixes_objects) $(G4debug_objects)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -Wl,--export-dynamic -Wl,-soname,libG4fixes.so \
-	-shared -o $@ $^ $(G4shared_libs) -l$(BOOST_PYTHON_LIB)
+	-shared -o $@ $^ $(G4shared_libs) $(BOOST_PYTHON_LIB)
 
 $(G4FIXESDIR)/G4fixes.o: src/G4fixes.cc
 	@mkdir -p $(G4FIXESDIR)
@@ -219,7 +239,7 @@ $(G4LIBDIR)/../../../g4py/G4fixes/libG4fixes.so: $(G4LIBDIR)/libG4fixes.so
 utils: $(G4BINDIR)/beamtree $(G4BINDIR)/genBH $(G4BINDIR)/adapt $(G4BINDIR)/geneBH $(G4BINDIR)/samplesep
 
 $(G4BINDIR)/beamtree: src/utils/beamtree.cc
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR) $(G4shared_libs) -l$(BOOST_PYTHON_LIB)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR) $(G4shared_libs) $(BOOST_PYTHON_LIB)
 
 $(G4BINDIR)/genBH: src/utils/genBH.cc
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -L$(G4LIBDIR) -lhdgeant4 $(DANALIBS) $(ROOTLIBS) -Wl,-rpath=$(G4LIBDIR)
@@ -242,3 +262,7 @@ show_env:
 
 diff:
 	diff -q -r ../jlab . -x ".[a-z]*" -x tmp -x bin -x "*.pyc" -x "*.so" -x test -x "*-orig"
+
+check_flags:
+	@echo CPPFLAGS=$(CPPFLAGS)
+	@echo __cpluslplus=$(__cplusplus)

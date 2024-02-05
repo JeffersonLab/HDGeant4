@@ -1018,7 +1018,7 @@ int GlueXPrimaryGeneratorAction::ConvertGeant3ToPdg(int Geant3type)
       case 47  : return 1000020040; // alpha
       case 48  : return 0;        // geantino (no PDG type)
       case 49  : return 1000020030; // He3 ion
-      case 50  : return 0;        // Cerenkov photon (no PDG type)
+      case 50  : return -22;        // Cerenkov photon (assigned in G4.10.7 release)
       case 61  : return 1000030060;  // Li6
       case 62  : return 1000030070;  // Li7
       case 63  : return 1000040070;  // Be7
@@ -1129,7 +1129,8 @@ int GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(int PDGtype)
    // Invert the table contained in ConvertGeant3ToPdg
 
    switch (PDGtype) {
-      case          0 : return 50;    // optical photon
+      case          0 : return 50;    // old usage, optical photon
+      case        -22 : return 50;    // optical photon
       case         22 : return 1;     // photon
       case        -11 : return 2;     // e+
       case         11 : return 3;     // e-
@@ -1286,6 +1287,9 @@ G4ParticleDefinition *GlueXPrimaryGeneratorAction::GetParticle(int PDGtype)
    if (p==0) {
       if (PDGtype > 1000000000) {
          p = fParticleTable->GetIonTable()->GetIon(PDGtype);
+      }
+      else if (PDGtype == -22) {
+         p = fParticleTable->FindParticle(22);
       }
       else {
          G4cout << "unknown particle type " << PDGtype
