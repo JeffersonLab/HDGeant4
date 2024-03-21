@@ -262,10 +262,12 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
          }
 
          if (merge_hit) {
-            // sum the charge, do energy weighting of the time
-            hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
-                           dEnorth/GeV * tnorth/ns) /
-            (hiter->dE_GeV += dEnorth/GeV);
+            // sum the charge, do energy weighting of the time --disabled for bad behavior, rtj--
+            //hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
+            //               dEnorth/GeV * tnorth/ns) /
+            //(hiter->dE_GeV += dEnorth/GeV);
+            // Use the time from the earlier hit but add the charge
+            hiter->dE_GeV += dEnorth/GeV;
             std::vector<GlueXHitFTOFbar::hitextra_t>::reverse_iterator xiter;
             xiter = hiter->extra.rbegin();
             if (trackID != xiter->track_ || fabs(tin/ns - xiter->t_ns) > 0.1) {
@@ -326,10 +328,12 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
             }
          }
          if (merge_hit) {
-            // sum the charge, do energy weighting of the time
-            hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
-                           dEsouth/GeV * tsouth/ns) /
-            (hiter->dE_GeV += dEsouth/GeV);
+            // sum the charge, do energy weighting of the time --disabled for bad behavior, rtj--
+            //hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
+            //               dEsouth/GeV * tsouth/ns) /
+            //(hiter->dE_GeV += dEsouth/GeV);
+            // Use the time from the earlier hit but add the charge
+            hiter->dE_GeV += dEsouth/GeV;
             std::vector<GlueXHitFTOFbar::hitextra_t>::reverse_iterator xiter;
             xiter = hiter->extra.rbegin();
             if (trackID != xiter->track_ || fabs(tin/ns - xiter->t_ns) > 0.1) {
