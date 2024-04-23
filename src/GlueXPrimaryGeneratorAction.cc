@@ -44,8 +44,8 @@ G4Mutex GlueXPrimaryGeneratorAction::fMutex = G4MUTEX_INITIALIZER;
 std::list<GlueXPrimaryGeneratorAction*> GlueXPrimaryGeneratorAction::fInstance;
 
 double GlueXPrimaryGeneratorAction::DIRC_LUT_X[48] = {0};
-double GlueXPrimaryGeneratorAction::DIRC_BAR_Y[48] = {0};
-double GlueXPrimaryGeneratorAction::DIRC_LUT_Z = 0;
+double GlueXPrimaryGeneratorAction::DIRC_LUT_Y[48] = {0};
+double GlueXPrimaryGeneratorAction::DIRC_LUT_Z[48] = {0};
 double GlueXPrimaryGeneratorAction::DIRC_QZBL_DY = 0;
 double GlueXPrimaryGeneratorAction::DIRC_QZBL_DZ = 0;
 double GlueXPrimaryGeneratorAction::DIRC_OWDG_DZ = 0;
@@ -122,422 +122,292 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
          jgeom = 0;
          G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
       }
+
+      // set array of bar positions
+      vector<double>DIRC;
+      vector<double>DRCC;
+      vector<double>DCML00_XYZ;
+      vector<double>DCML01_XYZ;
+      vector<double>DCML10_XYZ;
+      vector<double>DCML11_XYZ;
       
-      std::vector<double> DIRC;
-      std::vector<double> DRCC;
-      std::vector<double> DCML00_XYZ;
-      std::vector<double> DCML01_XYZ;
-      std::vector<double> DCML10_XYZ;
-      std::vector<double> DCML11_XYZ;
-      std::vector<double> WNGL00_XYZ;
-      std::vector<double> WNGL01_XYZ;
-      std::vector<double> WNGL10_XYZ;
-      std::vector<double> WNGL11_XYZ;
-      std::vector<double> OWDG_XYZ;
       jgeom->Get("//section/composition/posXYZ[@volume='DIRC']/@X_Y_Z", DIRC);
       jgeom->Get("//composition[@name='DIRC']/posXYZ[@volume='DRCC']/@X_Y_Z", DRCC);
       jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML00']/@X_Y_Z", DCML00_XYZ);
       jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML01']/@X_Y_Z", DCML01_XYZ);
       jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML10']/@X_Y_Z", DCML10_XYZ);
       jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML11']/@X_Y_Z", DCML11_XYZ);
-      jgeom->Get("//composition[@name='DCML00']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL00_XYZ);
-      jgeom->Get("//composition[@name='DCML01']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL01_XYZ);
-      jgeom->Get("//composition[@name='DCML10']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL10_XYZ);
-      jgeom->Get("//composition[@name='DCML11']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL11_XYZ);
-      jgeom->Get("//composition[@name='DCML11']/posXYZ[@volume='WNGL']/@X_Y_Z", WNGL11_XYZ);
-      jgeom->Get("//trd[@name='OWDG']/@Xmp_Ymp_Z", OWDG_XYZ);
-      DIRC_LUT_Z = (DIRC[2] + DRCC[2] + DCML01_XYZ[2] + 0.8625) * cm;
-      DIRC_QZBL_DY = 3.5 * cm;   // nominal width to generate LUT
-      DIRC_QZBL_DZ = 1.725 * cm; // nominal thickness to generate LUT
-      DIRC_OWDG_DZ = OWDG_XYZ[4];
-
+      
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML00']/@rot", DCML00_rot);
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML01']/@rot", DCML01_rot);
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML10']/@rot", DCML10_rot);
+      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML11']/@rot", DCML11_rot);
+      
+      DCML10_InHall.setX((DIRC[0] + DRCC[0] + DCML10_XYZ[0])*cm);
+      DCML10_InHall.setY((DIRC[1] + DRCC[1] + DCML10_XYZ[1])*cm);
+      DCML10_InHall.setZ((DIRC[2] + DRCC[2] + DCML10_XYZ[2])*cm);
+      
+      DCML11_InHall.setX((DIRC[0] + DRCC[0] + DCML11_XYZ[0])*cm);
+      DCML11_InHall.setY((DIRC[1] + DRCC[1] + DCML11_XYZ[1])*cm);
+      DCML11_InHall.setZ((DIRC[2] + DRCC[2] + DCML11_XYZ[2])*cm);
+      
+      DCML01_InHall.setX((DIRC[0] + DRCC[0] + DCML01_XYZ[0])*cm);
+      DCML01_InHall.setY((DIRC[1] + DRCC[1] + DCML01_XYZ[1])*cm);
+      DCML01_InHall.setZ((DIRC[2] + DRCC[2] + DCML01_XYZ[2])*cm);
+      
+      DCML00_InHall.setX((DIRC[0] + DRCC[0] + DCML00_XYZ[0])*cm);
+      DCML00_InHall.setY((DIRC[1] + DRCC[1] + DCML00_XYZ[1])*cm);
+      DCML00_InHall.setZ((DIRC[2] + DRCC[2] + DCML00_XYZ[2])*cm);
+      
       // set array of bar positions
       for (int i=0; i<48; i++) {
-         std::vector<double> DCBR_XYZ;
-         if (i<12) {
-            std::stringstream geomDCML10;
-            geomDCML10 << "//composition[@name='DCML10']/posXYZ[@volume='DCBR" 
-                  << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z"; 
-            jgeom->Get(geomDCML10.str(), DCBR_XYZ);
-            DIRC_BAR_Y[i] = (DCML10_XYZ[1] - DCBR_XYZ[1]) * cm;
-            DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML10_XYZ[0] - WNGL10_XYZ[0] + DIRC_OWDG_DZ) * cm;
-         }
-         else if (i<24) {
-            std::stringstream geomDCML11;
-            geomDCML11 << "//composition[@name='DCML11']/posXYZ[@volume='DCBR" 
-                  << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z"; 
-            jgeom->Get(geomDCML11.str(), DCBR_XYZ);
-            DIRC_BAR_Y[i] = (DCML11_XYZ[1] - DCBR_XYZ[1]) * cm;
-            DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML11_XYZ[0] - WNGL11_XYZ[0] + DIRC_OWDG_DZ) * cm;
-         }
-<<<<<<< HEAD
-         
-         vector<double>DIRC;
-         vector<double>DRCC;
-         vector<double>DCML00_XYZ;
-         vector<double>DCML01_XYZ;
-         vector<double>DCML10_XYZ;
-         vector<double>DCML11_XYZ;
-
-         jgeom->Get("//section/composition/posXYZ[@volume='DIRC']/@X_Y_Z", DIRC);
-         jgeom->Get("//composition[@name='DIRC']/posXYZ[@volume='DRCC']/@X_Y_Z", DRCC);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML00']/@X_Y_Z", DCML00_XYZ);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML01']/@X_Y_Z", DCML01_XYZ);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML10']/@X_Y_Z", DCML10_XYZ);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML11']/@X_Y_Z", DCML11_XYZ);
-
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML00']/@rot", DCML00_rot);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML01']/@rot", DCML01_rot);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML10']/@rot", DCML10_rot);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='DCML11']/@rot", DCML11_rot);
-
-         DCML10_InHall.setX((DIRC[0] + DRCC[0] + DCML10_XYZ[0])*cm);
-         DCML10_InHall.setY((DIRC[1] + DRCC[1] + DCML10_XYZ[1])*cm);
-         DCML10_InHall.setZ((DIRC[2] + DRCC[2] + DCML10_XYZ[2])*cm);
-
-         DCML11_InHall.setX((DIRC[0] + DRCC[0] + DCML11_XYZ[0])*cm);
-         DCML11_InHall.setY((DIRC[1] + DRCC[1] + DCML11_XYZ[1])*cm);
-         DCML11_InHall.setZ((DIRC[2] + DRCC[2] + DCML11_XYZ[2])*cm);
-
-         DCML01_InHall.setX((DIRC[0] + DRCC[0] + DCML01_XYZ[0])*cm);
-         DCML01_InHall.setY((DIRC[1] + DRCC[1] + DCML01_XYZ[1])*cm);
-         DCML01_InHall.setZ((DIRC[2] + DRCC[2] + DCML01_XYZ[2])*cm);
-
-         DCML00_InHall.setX((DIRC[0] + DRCC[0] + DCML00_XYZ[0])*cm);
-         DCML00_InHall.setY((DIRC[1] + DRCC[1] + DCML00_XYZ[1])*cm);
-         DCML00_InHall.setZ((DIRC[2] + DRCC[2] + DCML00_XYZ[2])*cm);
-
-
-         // set array of bar positions
-         for (int i=0; i<48; i++) {
-            vector<double>DCBR_XYZ;
-            vector<double>BXXA_posXYZ;
-            vector<double>BXXA_boxXYZ_loc;
-            if (i<12) {
-               std::stringstream geomDCML10;
-               geomDCML10 << "//composition[@name='DCML10']/posXYZ[@volume='DCBR"
+	vector<double>DCBR_XYZ;
+	vector<double>BXXA_posXYZ;
+	vector<double>BXXA_boxXYZ_loc;
+	if (i<12) {
+	  std::stringstream geomDCML10;
+	  geomDCML10 << "//composition[@name='DCML10']/posXYZ[@volume='DCBR"
                      << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z";
-               jgeom->Get(geomDCML10.str(), DCBR_XYZ);
-
-               std::stringstream geomDCML10_BXXA_posXYZ;
-               geomDCML10_BXXA_posXYZ << "//composition[@name='DCBR" << std::setfill('0') << std::setw(2) << i 
-				     << "']/posXYZ[@volume='B"<< std::setfill('0') << std::setw(2) << i << "A']/@X_Y_Z"; 
-               jgeom->Get(geomDCML10_BXXA_posXYZ.str(), BXXA_posXYZ);
-
-               std::stringstream geomDCML10_BXXA_boxXYZ;
-               geomDCML10_BXXA_boxXYZ << "//box[@name='B" << std::setfill('0') << std::setw(2) << i 
-				    << "A']/@X_Y_Z"; 
-               jgeom->Get(geomDCML10_BXXA_boxXYZ.str(), BXXA_boxXYZ_loc);
-
-	       BXXA_boxX[i] = BXXA_boxXYZ_loc[0];
-	       BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
-	       BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
-
-               DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML10_XYZ[0] - DCBR_XYZ[0] - 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
-               DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML10_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
-               DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML10_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
-
-            }
-            else if (i<24) {
-               std::stringstream geomDCML11;
-               geomDCML11 << "//composition[@name='DCML11']/posXYZ[@volume='DCBR"
+	  jgeom->Get(geomDCML10.str(), DCBR_XYZ);
+	  
+	  std::stringstream geomDCML10_BXXA_posXYZ;
+	  geomDCML10_BXXA_posXYZ << "//composition[@name='DCBR" << std::setfill('0') << std::setw(2) << i 
+				 << "']/posXYZ[@volume='B"<< std::setfill('0') << std::setw(2) << i << "A']/@X_Y_Z"; 
+	  jgeom->Get(geomDCML10_BXXA_posXYZ.str(), BXXA_posXYZ);
+	  
+	  std::stringstream geomDCML10_BXXA_boxXYZ;
+	  geomDCML10_BXXA_boxXYZ << "//box[@name='B" << std::setfill('0') << std::setw(2) << i 
+				 << "A']/@X_Y_Z"; 
+	  jgeom->Get(geomDCML10_BXXA_boxXYZ.str(), BXXA_boxXYZ_loc);
+	  
+	  BXXA_boxX[i] = BXXA_boxXYZ_loc[0];
+	  BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
+	  BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
+	  
+	  DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML10_XYZ[0] - DCBR_XYZ[0] - 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
+	  DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML10_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
+	  DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML10_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
+	  
+	}
+	else if (i<24) {
+	  std::stringstream geomDCML11;
+	  geomDCML11 << "//composition[@name='DCML11']/posXYZ[@volume='DCBR"
                      << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z";
-               jgeom->Get(geomDCML11.str(), DCBR_XYZ);
-
-               std::stringstream geomDCML11_BXXA_posXYZ;
-               geomDCML11_BXXA_posXYZ << "//composition[@name='DCBR" << std::setfill('0') << std::setw(2) << i
-                                     << "']/posXYZ[@volume='B"<< std::setfill('0') << std::setw(2) << i << "A']/@X_Y_Z";
-               jgeom->Get(geomDCML11_BXXA_posXYZ.str(), BXXA_posXYZ);
-
-               std::stringstream geomDCML11_BXXA_boxXYZ;
-               geomDCML11_BXXA_boxXYZ << "//box[@name='B" << std::setfill('0') << std::setw(2) << i
-                                    << "A']/@X_Y_Z";
-               jgeom->Get(geomDCML11_BXXA_boxXYZ.str(), BXXA_boxXYZ_loc);
-	       BXXA_boxX[i] = BXXA_boxXYZ_loc[0];
-	       BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
-	       BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
-
-               DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML11_XYZ[0] - DCBR_XYZ[0] - 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
-               DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML11_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
-               DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML11_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
-
-            }
-            else if (i<36) {
-               std::stringstream geomDCML01;
-               geomDCML01 << "//composition[@name='DCML01']/posXYZ[@volume='DCBR"
+	  jgeom->Get(geomDCML11.str(), DCBR_XYZ);
+	  
+	  std::stringstream geomDCML11_BXXA_posXYZ;
+	  geomDCML11_BXXA_posXYZ << "//composition[@name='DCBR" << std::setfill('0') << std::setw(2) << i
+				 << "']/posXYZ[@volume='B"<< std::setfill('0') << std::setw(2) << i << "A']/@X_Y_Z";
+	  jgeom->Get(geomDCML11_BXXA_posXYZ.str(), BXXA_posXYZ);
+	  
+	  std::stringstream geomDCML11_BXXA_boxXYZ;
+	  geomDCML11_BXXA_boxXYZ << "//box[@name='B" << std::setfill('0') << std::setw(2) << i
+				 << "A']/@X_Y_Z";
+	  jgeom->Get(geomDCML11_BXXA_boxXYZ.str(), BXXA_boxXYZ_loc);
+	  BXXA_boxX[i] = BXXA_boxXYZ_loc[0];
+	  BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
+	  BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
+	  
+	  DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML11_XYZ[0] - DCBR_XYZ[0] - 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
+	  DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML11_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
+	  DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML11_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
+	  
+	}
+	else if (i<36) {
+	  std::stringstream geomDCML01;
+	  geomDCML01 << "//composition[@name='DCML01']/posXYZ[@volume='DCBR"
                      << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z";
-               jgeom->Get(geomDCML01.str(), DCBR_XYZ);
-
-               std::stringstream geomDCML01_BXXA_posXYZ;
-               geomDCML01_BXXA_posXYZ << "//composition[@name='DCBR" << std::setfill('0') << std::setw(2) << i
-				     << "']/posXYZ[@volume='B"<< std::setfill('0') << std::setw(2) << i << "A']/@X_Y_Z";
-               jgeom->Get(geomDCML01_BXXA_posXYZ.str(), BXXA_posXYZ);
-
-               std::stringstream geomDCML01_BXXA_boxXYZ;
-               geomDCML01_BXXA_boxXYZ << "//box[@name='B" << std::setfill('0') << std::setw(2) << i
+	  jgeom->Get(geomDCML01.str(), DCBR_XYZ);
+	  
+	  std::stringstream geomDCML01_BXXA_posXYZ;
+	  geomDCML01_BXXA_posXYZ << "//composition[@name='DCBR" << std::setfill('0') << std::setw(2) << i
+				 << "']/posXYZ[@volume='B"<< std::setfill('0') << std::setw(2) << i << "A']/@X_Y_Z";
+	  jgeom->Get(geomDCML01_BXXA_posXYZ.str(), BXXA_posXYZ);
+	  
+	  std::stringstream geomDCML01_BXXA_boxXYZ;
+	  geomDCML01_BXXA_boxXYZ << "//box[@name='B" << std::setfill('0') << std::setw(2) << i
                                  << "A']/@X_Y_Z";
-               jgeom->Get(geomDCML01_BXXA_boxXYZ.str(), BXXA_boxXYZ_loc);
-	       BXXA_boxX[i] = BXXA_boxXYZ_loc[0];
-	       BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
-	       BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
-
-               DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML01_XYZ[0] - DCBR_XYZ[0] + 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
-               DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML01_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
-               DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML01_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
-
-            }
-            else if (i<48) {
-               std::stringstream geomDCML00;
-               geomDCML00 << "//composition[@name='DCML00']/posXYZ[@volume='DCBR"
+	  jgeom->Get(geomDCML01_BXXA_boxXYZ.str(), BXXA_boxXYZ_loc);
+	  BXXA_boxX[i] = BXXA_boxXYZ_loc[0];
+	  BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
+	  BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
+	  
+	  DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML01_XYZ[0] - DCBR_XYZ[0] + 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
+	  DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML01_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
+	  DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML01_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
+	  
+	}
+	else if (i<48) {
+	  std::stringstream geomDCML00;
+	  geomDCML00 << "//composition[@name='DCML00']/posXYZ[@volume='DCBR"
                      << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z";
-               jgeom->Get(geomDCML00.str(), DCBR_XYZ);
-
-               std::stringstream geomDCML00_BXXA_posXYZ;
-               geomDCML00_BXXA_posXYZ << "//composition[@name='DCBR" << std::setfill('0') << std::setw(2) << i
-                                     << "']/posXYZ[@volume='B"<< std::setfill('0') << std::setw(2) << i << "A']/@X_Y_Z";
-               jgeom->Get(geomDCML00_BXXA_posXYZ.str(), BXXA_posXYZ);
-
-               std::stringstream geomDCML00_BXXA_boxXYZ;
-               geomDCML00_BXXA_boxXYZ << "//box[@name='B" << std::setfill('0') << std::setw(2) << i
-                                    << "A']/@X_Y_Z";
-               jgeom->Get(geomDCML00_BXXA_boxXYZ.str(), BXXA_boxXYZ_loc);
-	       BXXA_boxX[i] = BXXA_boxXYZ_loc[0];
-	       BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
-	       BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
-
-               DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML00_XYZ[0] + DCBR_XYZ[0] + 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
-               DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML00_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
-               DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML00_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
-
-            }            
-=======
-         else if (i<36) {
-            std::stringstream geomDCML01;
-            geomDCML01 << "//composition[@name='DCML01']/posXYZ[@volume='DCBR" 
-                  << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z"; 
-            jgeom->Get(geomDCML01.str(), DCBR_XYZ);
-            DIRC_BAR_Y[i] = (DCML01_XYZ[1] + DCBR_XYZ[1]) * cm;
-            DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML01_XYZ[0] + WNGL01_XYZ[0] - DIRC_OWDG_DZ) * cm;
->>>>>>> origin/master
-         }
-         else if (i<48) {
-            std::stringstream geomDCML00;
-            geomDCML00 << "//composition[@name='DCML00']/posXYZ[@volume='DCBR" 
-                  << std::setfill('0') << std::setw(2) << i << "']/@X_Y_Z"; 
-            jgeom->Get(geomDCML00.str(), DCBR_XYZ);
-            DIRC_BAR_Y[i] = (DCML00_XYZ[1] + DCBR_XYZ[1]) * cm;
-            DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML00_XYZ[0] + WNGL00_XYZ[0] - DIRC_OWDG_DZ) * cm;
-         }            
+	  jgeom->Get(geomDCML00.str(), DCBR_XYZ);
+	  
+	  std::stringstream geomDCML00_BXXA_posXYZ;
+	  geomDCML00_BXXA_posXYZ << "//composition[@name='DCBR" << std::setfill('0') << std::setw(2) << i
+				 << "']/posXYZ[@volume='B"<< std::setfill('0') << std::setw(2) << i << "A']/@X_Y_Z";
+	  jgeom->Get(geomDCML00_BXXA_posXYZ.str(), BXXA_posXYZ);
+	  
+	  std::stringstream geomDCML00_BXXA_boxXYZ;
+	  geomDCML00_BXXA_boxXYZ << "//box[@name='B" << std::setfill('0') << std::setw(2) << i
+				 << "A']/@X_Y_Z";
+	  jgeom->Get(geomDCML00_BXXA_boxXYZ.str(), BXXA_boxXYZ_loc);
+	  BXXA_boxX[i] = BXXA_boxXYZ_loc[0];
+	  BXXA_boxY[i] = BXXA_boxXYZ_loc[1];
+	  BXXA_boxZ[i] = BXXA_boxXYZ_loc[2];
+	  
+	  DIRC_LUT_X[i] = (DIRC[0] + DRCC[0] + DCML00_XYZ[0] + DCBR_XYZ[0] + 0.   - BXXA_posXYZ[0] - BXXA_boxXYZ_loc[0]/2.) * cm + 0.25;
+	  DIRC_LUT_Y[i] = (DIRC[1] + DRCC[1] + DCML00_XYZ[1] - DCBR_XYZ[1] + 1.75 - BXXA_boxXYZ_loc[1]/2.) * cm;
+	  DIRC_LUT_Z[i] = (DIRC[2] + DRCC[2] + DCML00_XYZ[2] + DCBR_XYZ[2] + 1.7  - BXXA_boxXYZ_loc[2]/2.) * cm;
+	  
+	}            
       }
    }
 
-<<<<<<< HEAD
-      if (user_opts->Find("DIRCLED", dircledpars)) {
-         extern int run_number;
-         extern jana::JApplication *japp;
-         if (japp == 0) {
-            G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
+   if (user_opts->Find("DIRCLED", dircledpars)) {
+     extern int run_number;
+     extern jana::JApplication *japp;
+     if (japp == 0) {
+       G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
               << "jana global DApplication object not set, "
               << "cannot continue." << G4endl;
-            exit(-1);
-         }
-         jana::JGeometry *jgeom = japp->GetJGeometry(run_number);
-         if (japp == 0) {   // dummy
-            jgeom = 0;
+       exit(-1);
+     }
+     jana::JGeometry *jgeom = japp->GetJGeometry(run_number);
+     if (japp == 0) {   // dummy
+       jgeom = 0;
             G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
-         }
-         vector<double>DIRC;
-         vector<double>DRCC;
-         vector<double>OBCS_XYZ;
-         vector<double>OBCN_XYZ;
-         vector<double>MRAN_XYZ;
-         vector<double>MRAS_XYZ;
-         vector<double>WM1N_XYZ;
-         vector<double>WM1S_XYZ;
-         vector<double>WM1N_BOX_XYZ;
-         vector<double>WM1S_BOX_XYZ;
-
-         jgeom->Get("//section/composition/posXYZ[@volume='DIRC']/@X_Y_Z", DIRC);
-         jgeom->Get("//composition[@name='DIRC']/posXYZ[@volume='DRCC']/@X_Y_Z", DRCC);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCN']/@X_Y_Z", OBCN_XYZ);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCS']/@X_Y_Z", OBCS_XYZ);
-         jgeom->Get("//composition[@name='OBCN']/posXYZ[@volume='MRAN']/@X_Y_Z", MRAN_XYZ);
-         jgeom->Get("//composition[@name='OBCS']/posXYZ[@volume='MRAS']/@X_Y_Z", MRAS_XYZ);
-         jgeom->Get("//composition[@name='MRAN']/posXYZ[@volume='WM1N']/@X_Y_Z", WM1N_XYZ);
-         jgeom->Get("//composition[@name='MRAS']/posXYZ[@volume='WM1S']/@X_Y_Z", WM1S_XYZ);
-         jgeom->Get("//box[@name='WM1N']/@X_Y_Z", WM1N_BOX_XYZ);
-         jgeom->Get("//box[@name='WM1S']/@X_Y_Z", WM1S_BOX_XYZ);
-
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCN']/@rot", OBCN_rot);
-         jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCS']/@rot", OBCS_rot);
-
-         jgeom->Get("//composition[@name='OBCN']/posXYZ[@volume='MRAN']/@rot", MRAN_rot);
-         jgeom->Get("//composition[@name='OBCS']/posXYZ[@volume='MRAS']/@rot", MRAS_rot);
-
-	 G4ThreeVector OBCN_InHall((DIRC[0] + DRCC[0] + OBCN_XYZ[0]) * cm,
-				   (DIRC[1] + DRCC[1] + OBCN_XYZ[1]) * cm,
-				   (DIRC[2] + DRCC[2] + OBCN_XYZ[2]) * cm
-				  );
-	 G4ThreeVector OBCS_InHall((DIRC[0] + DRCC[0] + OBCS_XYZ[0]) * cm,
-				   (DIRC[1] + DRCC[1] + OBCS_XYZ[1]) * cm,
-				   (DIRC[2] + DRCC[2] + OBCS_XYZ[2]) * cm
-				  );
-
-	 G4ThreeVector MRAN_InOBCN_vec(MRAN_XYZ[0]*cm, MRAN_XYZ[1]*cm, MRAN_XYZ[2]*cm);
-	 G4ThreeVector MRAS_InOBCS_vec(MRAS_XYZ[0]*cm, MRAS_XYZ[1]*cm, MRAS_XYZ[2]*cm);
-
-         vector<G4ThreeVector> FDTHs_InMRA_vec;
-         FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1N_XYZ[0] + WM1N_BOX_XYZ[0]/2. + 1.27) * cm,
-                                                 (WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932) * cm,
-                                                 (WM1N_XYZ[2] - WM1N_BOX_XYZ[2]/2. ) * cm));
-         FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1N_XYZ[0] + WM1N_BOX_XYZ[0]/2. + 1.27) * cm,
-                                                 (WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932 + 31.800038)*cm,
-                                                 (WM1N_XYZ[2] - WM1N_BOX_XYZ[2]/2. ) * cm));
-         FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1N_XYZ[0] + WM1N_BOX_XYZ[0]/2. + 1.27) * cm,
-                                                 (WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932 + 31.800038*2.)*cm,
-                                                 (WM1N_XYZ[2] - WM1N_BOX_XYZ[2]/2. ) * cm));
-         FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1S_XYZ[0] - WM1S_BOX_XYZ[0]/2. - 1.27) * cm,
-                                                 (WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932) * cm,
-                                                 (WM1S_XYZ[2] - WM1S_BOX_XYZ[2]/2. ) * cm));
-         FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1S_XYZ[0] - WM1S_BOX_XYZ[0]/2. - 1.27) * cm,
-                                                 (WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932 - 31.800038) * cm,
-                                                 (WM1S_XYZ[2] - WM1S_BOX_XYZ[2]/2. ) * cm));
-         FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1S_XYZ[0] - WM1S_BOX_XYZ[0]/2. - 1.27) * cm,
-                                                 (WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932 - 31.800038 * 2.) * cm,
-                                                 (WM1S_XYZ[2] - WM1S_BOX_XYZ[2]/2. ) * cm));
-
-	 //We do the first rotation of those feedthroughs w.r.t. MRAN/S origin by MRAN/S_rot
-	 FDTHs_InMRA_vec[0].rotateX(MRAN_rot[0]*degree);
-	 FDTHs_InMRA_vec[0].rotateY(MRAN_rot[1]*degree);
-	 FDTHs_InMRA_vec[0].rotateZ(MRAN_rot[2]*degree);
-
-	 FDTHs_InMRA_vec[1].rotateX(MRAN_rot[0]*degree);
-	 FDTHs_InMRA_vec[1].rotateY(MRAN_rot[1]*degree);
-	 FDTHs_InMRA_vec[1].rotateZ(MRAN_rot[2]*degree);
-
-	 FDTHs_InMRA_vec[2].rotateX(MRAN_rot[0]*degree);
-	 FDTHs_InMRA_vec[2].rotateY(MRAN_rot[1]*degree);
-	 FDTHs_InMRA_vec[2].rotateZ(MRAN_rot[2]*degree);
-
-	 FDTHs_InMRA_vec[3].rotateX(MRAS_rot[0]*degree);
-	 FDTHs_InMRA_vec[3].rotateY(MRAS_rot[1]*degree);
-	 FDTHs_InMRA_vec[3].rotateZ(MRAS_rot[2]*degree);
-
-	 FDTHs_InMRA_vec[4].rotateX(MRAS_rot[0]*degree);
-	 FDTHs_InMRA_vec[4].rotateY(MRAS_rot[1]*degree);
-	 FDTHs_InMRA_vec[4].rotateZ(MRAS_rot[2]*degree);
-
-	 FDTHs_InMRA_vec[5].rotateX(MRAS_rot[0]*degree);
-	 FDTHs_InMRA_vec[5].rotateY(MRAS_rot[1]*degree);
-	 FDTHs_InMRA_vec[5].rotateZ(MRAS_rot[2]*degree);
-
-	 //After this, we obtain FDTH position in OBCN/S origin
-         vector<G4ThreeVector> FDTHs_InOBC_vec;
-	 for (int i = 0 ; i < 6 ; i++)
-	 {
-		if (i < 3)
-			FDTHs_InOBC_vec.push_back(FDTHs_InMRA_vec[i] + MRAN_InOBCN_vec);
-		else	
-			FDTHs_InOBC_vec.push_back(FDTHs_InMRA_vec[i] + MRAS_InOBCS_vec);
-	 }
-
-	 //Perform the next rotations of FDTH in OBCN/S origin using OBCN/S_rot
-	 FDTHs_InOBC_vec[0].rotateX(OBCN_rot[0]*degree);
-	 FDTHs_InOBC_vec[0].rotateY(OBCN_rot[1]*degree);
-	 FDTHs_InOBC_vec[0].rotateZ(OBCN_rot[2]*degree);
-
-	 FDTHs_InOBC_vec[1].rotateX(OBCN_rot[0]*degree);
-	 FDTHs_InOBC_vec[1].rotateY(OBCN_rot[1]*degree);
-	 FDTHs_InOBC_vec[1].rotateZ(OBCN_rot[2]*degree);
-
-	 FDTHs_InOBC_vec[2].rotateX(OBCN_rot[0]*degree);
-	 FDTHs_InOBC_vec[2].rotateY(OBCN_rot[1]*degree);
-	 FDTHs_InOBC_vec[2].rotateZ(OBCN_rot[2]*degree);
-
-	 FDTHs_InOBC_vec[3].rotateX(OBCS_rot[0]*degree);
-	 FDTHs_InOBC_vec[3].rotateY(OBCS_rot[1]*degree);
-	 FDTHs_InOBC_vec[3].rotateZ(OBCS_rot[2]*degree);
-
-	 FDTHs_InOBC_vec[4].rotateX(OBCS_rot[0]*degree);
-	 FDTHs_InOBC_vec[4].rotateY(OBCS_rot[1]*degree);
-	 FDTHs_InOBC_vec[4].rotateZ(OBCS_rot[2]*degree);
-
-	 FDTHs_InOBC_vec[5].rotateX(OBCS_rot[0]*degree);
-	 FDTHs_InOBC_vec[5].rotateY(OBCS_rot[1]*degree);
-	 FDTHs_InOBC_vec[5].rotateZ(OBCS_rot[2]*degree);
-
-	 //finally, obtain FDTHs position in the hall, i.e. global coordinates for the particle gun
-	 for (int i = 0 ; i < 6 ; i++ )
-	 {
-		if (i < 3)
-			FDTHs_InHall.push_back(FDTHs_InOBC_vec[i] + OBCN_InHall);
-		else	
-			FDTHs_InHall.push_back(FDTHs_InOBC_vec[i] + OBCS_InHall);
-	 }
-
-	}//END OF DIRC LED generator
-=======
-   if (user_opts->Find("DIRCLED", dircledpars)) {
-      int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
-      if (japp == 0) {
-         G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
-           << "jana global DApplication object not set, "
-           << "cannot continue." << G4endl;
-         exit(-1);
-      }
-      jana::JGeometry *jgeom = japp->GetJGeometry(runno);
-      if (japp == 0) {   // dummy
-         jgeom = 0;
-         G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
-      }
-      std::vector<double> DIRC;
-      std::vector<double> DRCC;
-      std::vector<double> OBCS_XYZ;
-      std::vector<double> OBCN_XYZ;
-      std::vector<double> MRAN_XYZ;
-      std::vector<double> MRAS_XYZ;
-      std::vector<double> WM1N_XYZ;
-      std::vector<double> WM1S_XYZ;
-      std::vector<double> WM1N_BOX_XYZ;
-      std::vector<double> WM1S_BOX_XYZ;
-
-      jgeom->Get("//section/composition/posXYZ[@volume='DIRC']/@X_Y_Z", DIRC);
-      jgeom->Get("//composition[@name='DIRC']/posXYZ[@volume='DRCC']/@X_Y_Z", DRCC);
-      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCN']/@X_Y_Z", OBCN_XYZ);
-      jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCS']/@X_Y_Z", OBCS_XYZ);
-      jgeom->Get("//composition[@name='OBCN']/posXYZ[@volume='MRAN']/@X_Y_Z", MRAN_XYZ);
-      jgeom->Get("//composition[@name='OBCS']/posXYZ[@volume='MRAS']/@X_Y_Z", MRAS_XYZ);
-      jgeom->Get("//composition[@name='MRAN']/posXYZ[@volume='WM1N']/@X_Y_Z", WM1N_XYZ);
-      jgeom->Get("//composition[@name='MRAS']/posXYZ[@volume='WM1S']/@X_Y_Z", WM1S_XYZ);
-      jgeom->Get("//box[@name='WM1N']/@X_Y_Z", WM1N_BOX_XYZ);
-      jgeom->Get("//box[@name='WM1S']/@X_Y_Z", WM1S_BOX_XYZ);
-
-      DIRC_LED_OBCN_FDTH_X  = (DIRC[0] + DRCC[0] + OBCN_XYZ[0] + MRAN_XYZ[0] +
-                               WM1N_XYZ[0] + WM1N_BOX_XYZ[0]/2. + 1.27) * cm;
-      DIRC_LED_OBCS_FDTH_X  = (DIRC[0] + DRCC[0] + OBCS_XYZ[0] + MRAS_XYZ[0] +
-                               WM1S_XYZ[0] - WM1S_BOX_XYZ[0]/2. - 1.27) * cm;
-
-      DIRC_LED_OBCN_FDTH_Z  = (DIRC[2] + DRCC[2] + OBCN_XYZ[2] + MRAN_XYZ[2] +
-                               WM1N_XYZ[2] - WM1N_BOX_XYZ[2]/2. ) * cm;
-      DIRC_LED_OBCS_FDTH_Z  = (DIRC[2] + DRCC[2] + OBCS_XYZ[2] + MRAS_XYZ[2] +
-                               WM1S_XYZ[2] - WM1S_BOX_XYZ[2]/2. ) * cm;
-
-      DIRC_LED_OBCN_FDTH1_Y = (DIRC[1] + DRCC[1] + OBCN_XYZ[1] + MRAN_XYZ[1] +
-                               WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932) * cm;
-      DIRC_LED_OBCN_FDTH2_Y = (DIRC[1] + DRCC[1] + OBCN_XYZ[1] + MRAN_XYZ[1] +
-                               WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932 + 31.800038 ) * cm;
-      DIRC_LED_OBCN_FDTH3_Y = (DIRC[1] + DRCC[1] + OBCN_XYZ[1] + MRAN_XYZ[1] +
-                               WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932 + 31.800038 * 2. ) * cm;
-      DIRC_LED_OBCS_FDTH4_Y = (DIRC[1] + DRCC[1] + OBCS_XYZ[1] + MRAS_XYZ[1] +
-                               WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932) * cm;
-      DIRC_LED_OBCS_FDTH5_Y = (DIRC[1] + DRCC[1] + OBCS_XYZ[1] + MRAS_XYZ[1] +
-                               WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932 - 31.800038 ) * cm;
-      DIRC_LED_OBCS_FDTH6_Y = (DIRC[1] + DRCC[1] + OBCS_XYZ[1] + MRAS_XYZ[1] +
-                               WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932 - 31.800038 * 2. ) * cm;
->>>>>>> origin/master
-
-   }
+     }
+     vector<double>DIRC;
+     vector<double>DRCC;
+     vector<double>OBCS_XYZ;
+     vector<double>OBCN_XYZ;
+     vector<double>MRAN_XYZ;
+     vector<double>MRAS_XYZ;
+     vector<double>WM1N_XYZ;
+     vector<double>WM1S_XYZ;
+     vector<double>WM1N_BOX_XYZ;
+     vector<double>WM1S_BOX_XYZ;
+     
+     jgeom->Get("//section/composition/posXYZ[@volume='DIRC']/@X_Y_Z", DIRC);
+     jgeom->Get("//composition[@name='DIRC']/posXYZ[@volume='DRCC']/@X_Y_Z", DRCC);
+     jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCN']/@X_Y_Z", OBCN_XYZ);
+     jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCS']/@X_Y_Z", OBCS_XYZ);
+     jgeom->Get("//composition[@name='OBCN']/posXYZ[@volume='MRAN']/@X_Y_Z", MRAN_XYZ);
+     jgeom->Get("//composition[@name='OBCS']/posXYZ[@volume='MRAS']/@X_Y_Z", MRAS_XYZ);
+     jgeom->Get("//composition[@name='MRAN']/posXYZ[@volume='WM1N']/@X_Y_Z", WM1N_XYZ);
+     jgeom->Get("//composition[@name='MRAS']/posXYZ[@volume='WM1S']/@X_Y_Z", WM1S_XYZ);
+     jgeom->Get("//box[@name='WM1N']/@X_Y_Z", WM1N_BOX_XYZ);
+     jgeom->Get("//box[@name='WM1S']/@X_Y_Z", WM1S_BOX_XYZ);
+     
+     jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCN']/@rot", OBCN_rot);
+     jgeom->Get("//composition[@name='DRCC']/posXYZ[@volume='OBCS']/@rot", OBCS_rot);
+     
+     jgeom->Get("//composition[@name='OBCN']/posXYZ[@volume='MRAN']/@rot", MRAN_rot);
+     jgeom->Get("//composition[@name='OBCS']/posXYZ[@volume='MRAS']/@rot", MRAS_rot);
+     
+     G4ThreeVector OBCN_InHall((DIRC[0] + DRCC[0] + OBCN_XYZ[0]) * cm,
+			       (DIRC[1] + DRCC[1] + OBCN_XYZ[1]) * cm,
+			       (DIRC[2] + DRCC[2] + OBCN_XYZ[2]) * cm
+			       );
+     G4ThreeVector OBCS_InHall((DIRC[0] + DRCC[0] + OBCS_XYZ[0]) * cm,
+			       (DIRC[1] + DRCC[1] + OBCS_XYZ[1]) * cm,
+			       (DIRC[2] + DRCC[2] + OBCS_XYZ[2]) * cm
+			       );
+     
+     G4ThreeVector MRAN_InOBCN_vec(MRAN_XYZ[0]*cm, MRAN_XYZ[1]*cm, MRAN_XYZ[2]*cm);
+     G4ThreeVector MRAS_InOBCS_vec(MRAS_XYZ[0]*cm, MRAS_XYZ[1]*cm, MRAS_XYZ[2]*cm);
+     
+     vector<G4ThreeVector> FDTHs_InMRA_vec;
+     FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1N_XYZ[0] + WM1N_BOX_XYZ[0]/2. + 1.27) * cm,
+					     (WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932) * cm,
+					     (WM1N_XYZ[2] - WM1N_BOX_XYZ[2]/2. ) * cm));
+     FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1N_XYZ[0] + WM1N_BOX_XYZ[0]/2. + 1.27) * cm,
+					     (WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932 + 31.800038)*cm,
+					     (WM1N_XYZ[2] - WM1N_BOX_XYZ[2]/2. ) * cm));
+     FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1N_XYZ[0] + WM1N_BOX_XYZ[0]/2. + 1.27) * cm,
+					     (WM1N_XYZ[1] - WM1N_BOX_XYZ[1]/2. + 17.235932 + 31.800038*2.)*cm,
+					     (WM1N_XYZ[2] - WM1N_BOX_XYZ[2]/2. ) * cm));
+     FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1S_XYZ[0] - WM1S_BOX_XYZ[0]/2. - 1.27) * cm,
+					     (WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932) * cm,
+					     (WM1S_XYZ[2] - WM1S_BOX_XYZ[2]/2. ) * cm));
+     FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1S_XYZ[0] - WM1S_BOX_XYZ[0]/2. - 1.27) * cm,
+					     (WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932 - 31.800038) * cm,
+					     (WM1S_XYZ[2] - WM1S_BOX_XYZ[2]/2. ) * cm));
+     FDTHs_InMRA_vec.push_back(G4ThreeVector((WM1S_XYZ[0] - WM1S_BOX_XYZ[0]/2. - 1.27) * cm,
+					     (WM1S_XYZ[1] + WM1S_BOX_XYZ[1]/2. - 17.235932 - 31.800038 * 2.) * cm,
+					     (WM1S_XYZ[2] - WM1S_BOX_XYZ[2]/2. ) * cm));
+     
+     //We do the first rotation of those feedthroughs w.r.t. MRAN/S origin by MRAN/S_rot
+     FDTHs_InMRA_vec[0].rotateX(MRAN_rot[0]*degree);
+     FDTHs_InMRA_vec[0].rotateY(MRAN_rot[1]*degree);
+     FDTHs_InMRA_vec[0].rotateZ(MRAN_rot[2]*degree);
+     
+     FDTHs_InMRA_vec[1].rotateX(MRAN_rot[0]*degree);
+     FDTHs_InMRA_vec[1].rotateY(MRAN_rot[1]*degree);
+     FDTHs_InMRA_vec[1].rotateZ(MRAN_rot[2]*degree);
+     
+     FDTHs_InMRA_vec[2].rotateX(MRAN_rot[0]*degree);
+     FDTHs_InMRA_vec[2].rotateY(MRAN_rot[1]*degree);
+     FDTHs_InMRA_vec[2].rotateZ(MRAN_rot[2]*degree);
+     
+     FDTHs_InMRA_vec[3].rotateX(MRAS_rot[0]*degree);
+     FDTHs_InMRA_vec[3].rotateY(MRAS_rot[1]*degree);
+     FDTHs_InMRA_vec[3].rotateZ(MRAS_rot[2]*degree);
+     
+     FDTHs_InMRA_vec[4].rotateX(MRAS_rot[0]*degree);
+     FDTHs_InMRA_vec[4].rotateY(MRAS_rot[1]*degree);
+     FDTHs_InMRA_vec[4].rotateZ(MRAS_rot[2]*degree);
+     
+     FDTHs_InMRA_vec[5].rotateX(MRAS_rot[0]*degree);
+     FDTHs_InMRA_vec[5].rotateY(MRAS_rot[1]*degree);
+     FDTHs_InMRA_vec[5].rotateZ(MRAS_rot[2]*degree);
+     
+     //After this, we obtain FDTH position in OBCN/S origin
+     vector<G4ThreeVector> FDTHs_InOBC_vec;
+     for (int i = 0 ; i < 6 ; i++)
+       {
+	 if (i < 3)
+	   FDTHs_InOBC_vec.push_back(FDTHs_InMRA_vec[i] + MRAN_InOBCN_vec);
+	 else	
+	   FDTHs_InOBC_vec.push_back(FDTHs_InMRA_vec[i] + MRAS_InOBCS_vec);
+       }
+     
+     //Perform the next rotations of FDTH in OBCN/S origin using OBCN/S_rot
+     FDTHs_InOBC_vec[0].rotateX(OBCN_rot[0]*degree);
+     FDTHs_InOBC_vec[0].rotateY(OBCN_rot[1]*degree);
+     FDTHs_InOBC_vec[0].rotateZ(OBCN_rot[2]*degree);
+     
+     FDTHs_InOBC_vec[1].rotateX(OBCN_rot[0]*degree);
+     FDTHs_InOBC_vec[1].rotateY(OBCN_rot[1]*degree);
+     FDTHs_InOBC_vec[1].rotateZ(OBCN_rot[2]*degree);
+     
+     FDTHs_InOBC_vec[2].rotateX(OBCN_rot[0]*degree);
+     FDTHs_InOBC_vec[2].rotateY(OBCN_rot[1]*degree);
+     FDTHs_InOBC_vec[2].rotateZ(OBCN_rot[2]*degree);
+     
+     FDTHs_InOBC_vec[3].rotateX(OBCS_rot[0]*degree);
+     FDTHs_InOBC_vec[3].rotateY(OBCS_rot[1]*degree);
+     FDTHs_InOBC_vec[3].rotateZ(OBCS_rot[2]*degree);
+     
+     FDTHs_InOBC_vec[4].rotateX(OBCS_rot[0]*degree);
+     FDTHs_InOBC_vec[4].rotateY(OBCS_rot[1]*degree);
+     FDTHs_InOBC_vec[4].rotateZ(OBCS_rot[2]*degree);
+     
+     FDTHs_InOBC_vec[5].rotateX(OBCS_rot[0]*degree);
+     FDTHs_InOBC_vec[5].rotateY(OBCS_rot[1]*degree);
+     FDTHs_InOBC_vec[5].rotateZ(OBCS_rot[2]*degree);
+     
+     //finally, obtain FDTHs position in the hall, i.e. global coordinates for the particle gun
+     for (int i = 0 ; i < 6 ; i++ )
+       {
+	 if (i < 3)
+	   FDTHs_InHall.push_back(FDTHs_InOBC_vec[i] + OBCN_InHall);
+	 else	
+	   FDTHs_InHall.push_back(FDTHs_InOBC_vec[i] + OBCS_InHall);
+       }
+     
+   }//END OF DIRC LED generator
 
    std::map<int,std::string> infile;
    std::map<int,double> beampars;

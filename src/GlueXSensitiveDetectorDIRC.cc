@@ -59,20 +59,12 @@ GlueXSensitiveDetectorDIRC::GlueXSensitiveDetectorDIRC(const G4String& name)
          << "cannot continue." << G4endl;
       exit(-1);
     }
-<<<<<<< HEAD
-    jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
+    jana::JCalibration *jcalib = japp->GetJCalibration(runno);
     std::map<string, float> mc_parms;
     jcalib->Get("DIRC/mc_parms", mc_parms);
     fEFFIC_SCALE = mc_parms.at("PAR0");
 
     G4cout << "DIRC: ALL parameters loaded from ccdb" << " effic = " << fEFFIC_SCALE << G4endl;
-=======
-    jana::JCalibration *jcalib = japp->GetJCalibration(runno);
-    if (japp == 0) {   // dummy
-      jcalib = 0;
-      G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
-    }
->>>>>>> origin/master
   }
 
   GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
