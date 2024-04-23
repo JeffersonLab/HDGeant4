@@ -21,8 +21,7 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits
-int GlueXSensitiveDetectorCTOF::MAX_HITS = 25;
+// Cutoff on the number of allowed hits per bar
 int GlueXSensitiveDetectorCTOF::MAX_HITS_PER_BAR = 25;
 
 // Cutoff on the maximum time of flight
@@ -77,7 +76,6 @@ GlueXSensitiveDetectorCTOF::GlueXSensitiveDetectorCTOF(const G4String& name)
       FULL_BAR_LENGTH = tof_parms.at("TOF_PADDLE_LENGTH")*cm;
       TWO_HIT_TIME_RESOL = tof_parms.at("TOF_TWO_HIT_RESOL")*ns;
       THRESH_MEV = tof_parms.at("TOF_THRESH_MEV");
-      MAX_HITS = tof_parms.at("TOF_MAX_HITS");
       MAX_HITS_PER_BAR = tof_parms.at("TOF_MAX_PAD_HITS");
 
       G4cout << "CTOF: ALL parameters loaded from ccdb" << G4endl;
@@ -235,22 +233,22 @@ G4bool GlueXSensitiveDetectorCTOF::ProcessHits(G4Step* step,
          }
 
          if (merge_hit) {
-            // sum the charge, do energy weighting of the time
-            hiter->t_ns = (hiter->dE_GeV * hiter->t_ns + dEtop/GeV * ttop/ns) /
-	      (hiter->dE_GeV += dEtop/GeV);
+            // sum the charge, do energy weighting of the time --disabled for bad behavior --rtj
+            //hiter->t_ns = (hiter->dE_GeV * hiter->t_ns + dEtop/GeV * ttop/ns) /
+            //(hiter->dE_GeV += dEtop/GeV);
+ 
+            // Use the time from the earlier hit but add the charge
+            hiter->dE_GeV += dEtop/GeV;
+            if (hiter->t_ns*ns > ttop) {
+                hiter->t_ns = ttop/ns;
+            }
          }
-         else if ((int)counter->hits.size() < 2 * MAX_HITS_PER_BAR)	{
+         else {
             // create new hit 
             hiter = counter->hits.insert(hiter, GlueXHitCTOFbar::hitinfo_t());
             hiter->end_ = 0;
             hiter->t_ns = ttop/ns;
             hiter->dE_GeV = dEtop/GeV;
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorCTOF::ProcessHits error: "
-                << "max hit count " << MAX_HITS_PER_BAR
-                << " exceeded, truncating!"
-                << G4endl;
          }
       }
 
@@ -272,23 +270,23 @@ G4bool GlueXSensitiveDetectorCTOF::ProcessHits(G4Step* step,
             }
          }
          if (merge_hit) {
-            // sum the charge, do energy weighting of the time
-            hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
-                           dEbottom/GeV * tbottom/ns) /
-            (hiter->dE_GeV += dEbottom/GeV);
+            // sum the charge, do energy weighting of the time --disabled for bad behavior --rtj
+            // hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
+            //               dEbottom/GeV * tbottom/ns) /
+            //(hiter->dE_GeV += dEbottom/GeV);
+
+            // Use the time from the earlier hit but add the charge
+            hiter->dE_GeV += dEbottom/GeV;
+            if (hiter->t_ns*ns > tbottom) {
+               hiter->t_ns = tbottom/ns;
+            }
          }
-         else if ((int)counter->hits.size() < 2 * MAX_HITS_PER_BAR)	{
+         else {
             // create new hit 
             hiter = counter->hits.insert(hiter, GlueXHitCTOFbar::hitinfo_t());
             hiter->end_ = 1;
             hiter->t_ns = tbottom/ns;
             hiter->dE_GeV = dEbottom/GeV;
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorCTOF::ProcessHits error: "
-                << "max hit count " << MAX_HITS_PER_BAR 
-                << " exceeded, truncating!"
-                << G4endl;
          }
       }
    }
@@ -372,6 +370,14 @@ void GlueXSensitiveDetectorCTOF::EndOfEvent(G4HCofThisEvent*)
                thit(0).setDE(hits[ih].dE_GeV);
                thit(0).setT(hits[ih].t_ns);
             }
+         }
+         int hitscount = counter(0).getCtofTruthHits().size();
+         if (hitscount > 2 * MAX_HITS_PER_BAR) {
+            G4cerr << "GlueXSensitiveDetectorCTOF::EndOfEvent warning: "
+                   << "max hit count " << 2 * MAX_HITS_PER_BAR << " exceeded, "
+                   << hitscount - 2 * MAX_HITS_PER_BAR << " hits discarded."
+                   << G4endl;
+            counter(0).deleteCtofTruthHits(-1, 2 * MAX_HITS_PER_BAR);
          }
       }
    }

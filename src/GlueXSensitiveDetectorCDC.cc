@@ -36,7 +36,7 @@ double GlueXSensitiveDetectorCDC::DRIFT_SPEED = 0.0055*cm/ns;
 // Minimum hit time difference for two hits on the same wire
 double GlueXSensitiveDetectorCDC::TWO_HIT_TIME_RESOL = 25*ns;
 
-// Cutoff on the total number of allowed straw hits
+// Cutoff on the number of allowed straw hits per straw
 int GlueXSensitiveDetectorCDC::MAX_HITS = 1000;
 
 // Minimum energy deposition for a straw hit (keV and mV)
@@ -53,7 +53,7 @@ double GlueXSensitiveDetectorCDC::CDC_TIME_WINDOW = 1000*ns;
 double GlueXSensitiveDetectorCDC::GAS_GAIN = 1e5;
 
 // Average number of secondary ion pairs for 50/50 Ar/CO2 mixture
-int GlueXSensitiveDetectorCDC::N_SECOND_PER_PRIMARY = 1.94; 
+double GlueXSensitiveDetectorCDC::N_SECOND_PER_PRIMARY = 1.94; 
 
 // Average energy needed to produce an ion pair for 50/50 mixture
 double GlueXSensitiveDetectorCDC::W_EFF_PER_ION = 29.5*eV;
@@ -358,7 +358,7 @@ G4bool GlueXSensitiveDetectorCDC::ProcessHits(G4Step* step,
          hiter->t1_ns = tout/ns;
          hiter->x1_g = xout;
       }
-      else if ((int)straw->hits.size() < MAX_HITS) {       // create new hit
+      else {       // create new hit
          hiter = straw->hits.insert(hiter, GlueXHitCDCstraw::hitinfo_t());
          hiter->track_ = trackID;
          hiter->q_fC = dEsum;
@@ -369,11 +369,6 @@ G4bool GlueXSensitiveDetectorCDC::ProcessHits(G4Step* step,
          hiter->t1_ns = tout/ns;
          hiter->x0_g = xin;
          hiter->x1_g = xout;
-      }
-      else {
-         G4cerr << "GlueXSensitiveDetectorCDC::ProcessHits error: "
-                << "max hit count " << MAX_HITS << " exceeded, truncating!"
-                << G4endl;
       }
    }
    return true;
@@ -554,7 +549,16 @@ void GlueXSensitiveDetectorCDC::EndOfEvent(G4HCofThisEvent*)
          hddm_s::CdcStrawList straw = centralDC.addCdcStraws(1);
          straw(0).setRing(siter->second->ring_);
          straw(0).setStraw(siter->second->sector_);
-         for (int ih=0; ih < (int)hits.size(); ++ih) {
+         int hitscount = hits.size();
+         if (hitscount > MAX_HITS) {
+            hitscount = MAX_HITS;
+            G4cerr << "GlueXSensitiveDetectorCDC::EndOfEvent warning: "
+                   << "straw hit count " << hitscount
+                   << " overflows MAX_HITS=" << MAX_HITS
+                   << ", " << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::CdcStrawTruthHitList thit = straw(0).addCdcStrawTruthHits(1);
             thit(0).setQ(hits[ih].q_fC);
             thit(0).setT(hits[ih].t_ns);

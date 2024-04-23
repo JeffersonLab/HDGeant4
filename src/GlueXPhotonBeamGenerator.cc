@@ -69,7 +69,6 @@ GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
    std::map<int,double> beampars;
    std::map<int,std::string> genbeampars;
    if (!user_opts->Find("INFILE", infile) &&
-       user_opts->Find("BEAM", beampars) &&
        user_opts->Find("GENBEAM", genbeampars))
    {
       if (genbeampars.find(1) != genbeampars.end() && 
@@ -88,8 +87,7 @@ GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
    std::map<int, int> bgratepars;
    std::map<int, int> bggatepars;
    std::map<int, int> bgtagonlypars;
-   if (user_opts->Find("BEAM", beampars) &&
-       user_opts->Find("BGRATE", bgratepars) &&
+   if (user_opts->Find("BGRATE", bgratepars) &&
        user_opts->Find("BGGATE", bggatepars))
    {
       if (user_opts->Find("BGTAGONLY", bgtagonlypars)) {
@@ -209,6 +207,9 @@ void GlueXPhotonBeamGenerator::prepareImportanceSamplingPDFs()
    fIncoherentPDFlogx.Psum = 0;
    fIncoherentPDFy.Pmax = 0;
    fIncoherentPDFy.Psum = 0;
+
+   // apply a correction based on endpoint energy
+   fIncoherentPDFy.Pcut *= 12*GeV / Emax;
 }
 
 void GlueXPhotonBeamGenerator::GeneratePrimaryVertex(G4Event* anEvent)

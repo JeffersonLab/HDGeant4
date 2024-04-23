@@ -24,7 +24,7 @@
 // Geant3-style particle index for optical photon
 #define OPTICAL_PHOTON 50
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per section
 int GlueXSensitiveDetectorCERE::MAX_HITS = 100;
 
 // Minimum hit time difference for two hits on the same tube
@@ -207,17 +207,11 @@ G4bool GlueXSensitiveDetectorCERE::ProcessHits(G4Step* step,
                hiter->t_ns = t/ns;
             }
          }
-         else if ((int)counter->hits.size() < MAX_HITS)	{
+         else {
             // create new hit 
             hiter = counter->hits.insert(hiter, GlueXHitCEREtube::hitinfo_t());
             hiter->pe_ = 1;
             hiter->t_ns = t/ns;
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorCERE::ProcessHits error: "
-                << "max hit count " << MAX_HITS
-                << " exceeded, truncating!"
-                << G4endl;
          }
       }
    }
@@ -283,7 +277,15 @@ void GlueXSensitiveDetectorCERE::EndOfEvent(G4HCofThisEvent*)
       if (hits.size() > 0) {
          hddm_s::CereSectionList tube = cerenkov.addCereSections(1);
          tube(0).setSector(siter->second->sector_);
-         for (int ih=0; ih < (int)hits.size(); ++ih) {
+         int hitscount = hits.size();
+         if (hitscount > MAX_HITS) {
+            hitscount = MAX_HITS;
+            G4cerr << "GlueXSensitiveDetectorCERE::EndOfEvent warning: "
+                   << "max tube hit count " << MAX_HITS << " exceeded, "
+                   << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::CereTruthHitList thit = tube(0).addCereTruthHits(1);
             thit(0).setPe(hits[ih].pe_);
             thit(0).setT(hits[ih].t_ns);

@@ -38,7 +38,7 @@ double GlueXSensitiveDetectorFDC::DRIFT_SPEED = 0.0055*cm/ns;
 // Minimum hit time difference for two hits on the same wire
 double GlueXSensitiveDetectorFDC::TWO_HIT_TIME_RESOL = 25*ns;
 
-// Cutoff on the total number of allowed anode and cathode hits
+// Cutoff on the number of allowed hits per anode wire or cathode strip
 int GlueXSensitiveDetectorFDC::MAX_HITS = 1000;
 
 // Minimum energy deposition for a wire hit (keV, pC)
@@ -53,7 +53,7 @@ double GlueXSensitiveDetectorFDC::FDC_TIME_WINDOW = 1000*ns;
 double GlueXSensitiveDetectorFDC::GAS_GAIN = 8e4;
 
 // Average number of secondary ion pairs for 40/60 Ar/CO2 mixture
-int GlueXSensitiveDetectorFDC::N_SECOND_PER_PRIMARY = 1.89; 
+double GlueXSensitiveDetectorFDC::N_SECOND_PER_PRIMARY = 1.89; 
 
 // Average energy needed to produce an ion pair for 40/60 mixture
 double GlueXSensitiveDetectorFDC::W_EFF_PER_ION = 30.2*eV;
@@ -540,7 +540,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             hiter->x1_g = xout;
             hiter->x1_l = x1;
          }
-         else if ((int)anode->hits.size() < MAX_HITS) {
+         else {
             // create new hit
             hiter = anode->hits.insert(hiter, GlueXHitFDCwire::hitinfo_t());
             hiter->dE_keV = dE/keV;
@@ -552,11 +552,6 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             hiter->x1_g = xout;
             hiter->x0_l = x0;
             hiter->x1_l = x1;
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorFDC::ProcessHits error: "
-                   << "max hit count " << MAX_HITS << " exceeded, truncating!"
-                   << G4endl;
          }
       }
    }
@@ -819,7 +814,15 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
             anodes(0).setWire(wire);
             aiter = anodes.begin();
          }
-         for (int ih=0; ih < (int)splits.size(); ++ih) {
+         int hitscount = splits.size();
+         if (hitscount + aiter->getFdcAnodeTruthHits().size() > MAX_HITS) {
+            hitscount = MAX_HITS - aiter->getFdcAnodeTruthHits().size();
+            G4cerr << "GlueXSensitiveDetectorFDC::EndOfEvent warning: "
+                   << "wire hit count exceeds max hit count " << MAX_HITS
+                   << ", " << splits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::FdcAnodeTruthHitList thit = aiter->addFdcAnodeTruthHits(1);
             thit(0).setDE(splits[ih].dE_keV * 1e-6);
             thit(0).setT(splits[ih].t_ns);
@@ -939,7 +942,15 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
             cathodes(0).setStrip(stripNo);
             kiter = cathodes.begin();
          }
-         for (int ih=0; ih < (int)hits.size(); ++ih) {
+         int hitscount = hits.size();
+         if (hitscount + kiter->getFdcCathodeTruthHits().size() > MAX_HITS) {
+            hitscount = MAX_HITS - kiter->getFdcCathodeTruthHits().size();
+            G4cerr << "GlueXSensitiveDetectorFDC::EndOfEvent warning: "
+                   << "cathode hit count exceeds max hit count " << MAX_HITS
+                   << ", " << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::FdcCathodeTruthHitList thit = kiter->addFdcCathodeTruthHits(1);
             thit(0).setQ(hits[ih].q_fC);
             thit(0).setT(hits[ih].t_ns);

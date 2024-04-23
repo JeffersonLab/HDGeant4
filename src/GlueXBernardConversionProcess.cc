@@ -28,6 +28,8 @@
 // pairs inside, otherwise the standard pair conversion
 // probabilities apply.
 #define FORCED_LIH2_PAIR_CONVERSION 0
+#define FORCED_LIHE_PAIR_CONVERSION 0
+#define FORCED_BETG_PAIR_CONVERSION 0
 #define FORCED_TGT0_PAIR_CONVERSION 0
 
 #include <G4SystemOfUnits.hh>
@@ -87,7 +89,6 @@ GlueXBernardConversionProcess::GlueXBernardConversionProcess(
    std::map<int,double> beampars;
    std::map<int,std::string> genbeampars;
    if (!user_opts->Find("INFI", infile) &&
-       user_opts->Find("BEAM", beampars) &&
        user_opts->Find("GENBEAM", genbeampars))
    {
       if (genbeampars.find(1) != genbeampars.end() &&
@@ -207,6 +208,24 @@ G4double GlueXBernardConversionProcess::PostStepGetPhysicalInteractionLength(
    }
    else if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "TGT0" &&
        (FORCED_TGT0_PAIR_CONVERSION || 
+        fStopBeamAfterTarget ))
+   {
+      fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
+                             track, previousStepSize, condition);
+      *condition = Forced;
+      return 100*cm;
+   }
+   else if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "BETG" &&
+       (FORCED_BETG_PAIR_CONVERSION || 
+        fStopBeamAfterTarget ))
+   {
+      fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
+                             track, previousStepSize, condition);
+      *condition = Forced;
+      return 100*cm;
+   }
+   else if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "LIHE" &&
+       (FORCED_LIHE_PAIR_CONVERSION || 
         fStopBeamAfterTarget ))
    {
       fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(

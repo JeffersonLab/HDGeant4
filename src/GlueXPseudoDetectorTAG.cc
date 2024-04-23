@@ -13,8 +13,10 @@
 
 #include <JANA/JApplication.h>
 
+// Place limits on the number of hits per counter or column per event
 int GlueXPseudoDetectorTAG::HODO_MAX_HITS = 5000;
 int GlueXPseudoDetectorTAG::MICRO_MAX_HITS = 5000;
+
 double GlueXPseudoDetectorTAG::HODO_TWO_HIT_TIME_RESOL = 25.*ns;
 double GlueXPseudoDetectorTAG::MICRO_TWO_HIT_TIME_RESOL = 25.*ns;
 double GlueXPseudoDetectorTAG::MICRO_HIT_DE = 3.5*MeV;
@@ -120,31 +122,34 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
 
    int micro_channel = -1;
    int hodo_channel = -1;
-   double E = energy;
-   if (E < MICRO_LIMITS_ERANGE[0] && E > MICRO_LIMITS_ERANGE[1]) {
-      int i = MICRO_NCHANNELS * (E - MICRO_LIMITS_ERANGE[0]) /
+   double micro_energy = energy;
+   double hodo_energy = energy;
+
+   if (energy < MICRO_LIMITS_ERANGE[0] && energy > MICRO_LIMITS_ERANGE[1]) {
+      int i = MICRO_NCHANNELS * (energy - MICRO_LIMITS_ERANGE[0]) /
               (MICRO_LIMITS_ERANGE[1] - MICRO_LIMITS_ERANGE[0]);
-      while (E < MICRO_CHANNEL_EMIN[i])
+      while (energy < MICRO_CHANNEL_EMIN[i] || MICRO_CHANNEL_EMIN[i] < 1.) 
          ++i;
-      while (E > MICRO_CHANNEL_EMAX[i])
+      while (energy > MICRO_CHANNEL_EMAX[i] || MICRO_CHANNEL_EMAX[i] < 1.) 
          --i;
-      if (E >= MICRO_CHANNEL_EMIN[i] && E <= MICRO_CHANNEL_EMAX[i]) {
-         E = (MICRO_CHANNEL_EMIN[i] + MICRO_CHANNEL_EMAX[i]) / 2;
+      if (energy >= MICRO_CHANNEL_EMIN[i] && energy <= MICRO_CHANNEL_EMAX[i]) {
+         micro_energy = (MICRO_CHANNEL_EMIN[i] + MICRO_CHANNEL_EMAX[i]) / 2;
          micro_channel = MICRO_CHANNEL_NUMBER[i];
       }
    }
-   else if (E < HODO_LIMITS_ERANGE[0] && E > HODO_LIMITS_ERANGE[1]) {
-      int i = HODO_NCHANNELS * (E - HODO_LIMITS_ERANGE[0]) /
+   if (energy < HODO_LIMITS_ERANGE[0] && energy > HODO_LIMITS_ERANGE[1]) {
+      int i = HODO_NCHANNELS * (energy - HODO_LIMITS_ERANGE[0]) /
               (HODO_LIMITS_ERANGE[1] - HODO_LIMITS_ERANGE[0]);
-      while (E < HODO_CHANNEL_EMIN[i])
+      while (energy < HODO_CHANNEL_EMIN[i] || HODO_CHANNEL_EMIN[i] < 1.) 
          ++i;
-      while (E > HODO_CHANNEL_EMAX[i])
+      while (energy > HODO_CHANNEL_EMAX[i] || HODO_CHANNEL_EMAX[i] < 1.) 
          --i;
-      if (E >= HODO_CHANNEL_EMIN[i] && E <= HODO_CHANNEL_EMAX[i]) {
-         E = (HODO_CHANNEL_EMIN[i] + HODO_CHANNEL_EMAX[i]) / 2;
+      if (energy >= HODO_CHANNEL_EMIN[i] && energy <= HODO_CHANNEL_EMAX[i]) {
+         hodo_energy = (HODO_CHANNEL_EMIN[i] + HODO_CHANNEL_EMAX[i]) / 2;
          hodo_channel = HODO_CHANNEL_NUMBER[i];
       }
    }
+
    if (micro_channel < 0 && hodo_channel < 0)
       return false;
 
@@ -185,7 +190,7 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          citer = columns.begin();
          citer->setColumn(micro_channel);
          citer->setRow(0);
-         citer->setE(E/GeV);
+         citer->setE(micro_energy/GeV);
       }
       hddm_s::TaggerTruthHitList hits = citer->getTaggerTruthHits();
       hddm_s::TaggerTruthHitList::iterator hiter;
@@ -194,12 +199,19 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          if (fabs(t - hiter->getT()*ns) < MICRO_TWO_HIT_TIME_RESOL)
             break;
          else if (hiter->getT()*ns > t) {
-            hits = citer->addTaggerTruthHits(1, hit);
-            hiter = hits.begin();
-            hiter->setE(energy/GeV);
-            hiter->setT(1e99);
-            hiter->setDE(0);
-            hiter->setBg(bg);
+            if (citer->getTaggerTruthHits().size() < MICRO_MAX_HITS) {
+               hits = citer->addTaggerTruthHits(1, hit);
+               hiter = hits.begin();
+               hiter->setE(energy/GeV);
+               hiter->setT(1e99);
+               hiter->setDE(0);
+               hiter->setBg(bg);
+            }
+            else {
+               G4cerr << "GlueXPseudoDetectorTAG::addTaggerPhoton warning: "
+                      << "TAGM max hit count " << MICRO_MAX_HITS 
+                      << " exceeded, discarding hit." << G4endl;
+            }
             break;
          }
       }
@@ -212,12 +224,19 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          hiter->setDE(hiter->getDE() + MICRO_HIT_DE/GeV);
       }
       else {                                 // make a new hit
-         hits = citer->addTaggerTruthHits();
-         hiter = hits.begin();
-         hiter->setT(t/ns);
-         hiter->setE(energy/GeV);
-         hiter->setDE(MICRO_HIT_DE/GeV);
-         hiter->setBg(bg);
+         if (citer->getTaggerTruthHits().size() < MICRO_MAX_HITS) {
+            hits = citer->addTaggerTruthHits();
+            hiter = hits.begin();
+            hiter->setT(t/ns);
+            hiter->setE(energy/GeV);
+            hiter->setDE(MICRO_HIT_DE/GeV);
+            hiter->setBg(bg);
+         }
+         else {
+            G4cerr << "GlueXPseudoDetectorTAG::addTaggerPhoton warning: "
+             << "TAGM max hit count " << MICRO_MAX_HITS << " exceeded,"
+             << " discarding hit." << G4endl;
+         }
       }
    }
  
@@ -234,7 +253,7 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          counters = tagger.addHodoChannels();
          citer = counters.begin();
          citer->setCounterId(hodo_channel);
-         citer->setE(E/GeV);
+         citer->setE(hodo_energy/GeV);
       }
       hddm_s::TaggerTruthHitList hits = citer->getTaggerTruthHits();
       hddm_s::TaggerTruthHitList::iterator hiter;
@@ -243,12 +262,19 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          if (fabs(t - hiter->getT()*ns) < HODO_TWO_HIT_TIME_RESOL)
             break;
          else if (hiter->getT()*ns > t) {
-            hits = citer->addTaggerTruthHits(1, hit);
-            hiter = hits.begin();
-            hiter->setE(energy/GeV);
-            hiter->setT(1e99);
-            hiter->setDE(0);
-            hiter->setBg(bg);
+            if (citer->getTaggerTruthHits().size() < HODO_MAX_HITS) {
+               hits = citer->addTaggerTruthHits(1, hit);
+               hiter = hits.begin();
+               hiter->setE(energy/GeV);
+               hiter->setT(1e99);
+               hiter->setDE(0);
+               hiter->setBg(bg);
+            }
+            else {
+               G4cerr << "GlueXPseudoDetectorTAG::addTaggerPhoton warning: "
+                << "TAGH max hit count " << HODO_MAX_HITS << " exceeded,"
+                << " discarding hit." << G4endl;
+            }
             break;
          }
       }
@@ -261,12 +287,19 @@ int GlueXPseudoDetectorTAG::addTaggerPhoton(const G4Event *event,
          hiter->setDE(hiter->getDE() + HODO_HIT_DE/GeV);
       }
       else {                                 // make a new hit
-         hits = citer->addTaggerTruthHits();
-         hiter = hits.begin();
-         hiter->setT(t/ns);
-         hiter->setE(energy/GeV);
-         hiter->setDE(HODO_HIT_DE/GeV);
-         hiter->setBg(bg);
+         if (citer->getTaggerTruthHits().size() < HODO_MAX_HITS) {
+            hits = citer->addTaggerTruthHits();
+            hiter = hits.begin();
+            hiter->setT(t/ns);
+            hiter->setE(energy/GeV);
+            hiter->setDE(HODO_HIT_DE/GeV);
+            hiter->setBg(bg);
+         }
+         else {
+            G4cerr << "GlueXPseudoDetectorTAG::addTaggerPhoton warning: "
+             << "TAGH max hit count " << MICRO_MAX_HITS << " exceeded,"
+             << " discarding hit." << G4endl;
+         }
       }
    }
    return (micro_channel > -1 || hodo_channel > -1);

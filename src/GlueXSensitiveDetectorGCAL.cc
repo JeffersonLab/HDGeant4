@@ -21,7 +21,7 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per cell
 int GlueXSensitiveDetectorGCAL::MAX_HITS = 100;
 
 // Light propagation parameters in start counter
@@ -207,16 +207,11 @@ G4bool GlueXSensitiveDetectorGCAL::ProcessHits(G4Step* step,
             hiter->t_ns = tcorr/ns;
          }
       }
-      else if ((int)block->hits.size() < MAX_HITS)	{
+      else {
          // create new hit 
          hiter = block->hits.insert(hiter, GlueXHitGCALblock::hitinfo_t());
          hiter->E_GeV = dEcorr/GeV;
          hiter->t_ns = tcorr/ns;
-      }
-      else {
-         G4cerr << "GlueXSensitiveDetectorGCAL::ProcessHits error: "
-             << "max hit count " << MAX_HITS << " exceeded, truncating!"
-             << G4endl;
       }
    }
    return true;
@@ -281,7 +276,15 @@ void GlueXSensitiveDetectorGCAL::EndOfEvent(G4HCofThisEvent*)
       if (hits.size() > 0) {
          hddm_s::GcalCellList block = gcal.addGcalCells(1);
          block(0).setModule(siter->second->module_);
-         for (int ih=0; ih < (int)hits.size(); ++ih) {
+         int hitscount = hits.size();
+         if (hitscount > MAX_HITS) {
+            hitscount = MAX_HITS;
+            G4cerr << "GlueXSensitiveDetectorGCAL::EndOfEvent warning: "
+                   << "max cell hit count " << MAX_HITS << " exceeded, "
+                   << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::GcalTruthHitList thit = block(0).addGcalTruthHits(1);
             thit(0).setE(hits[ih].E_GeV);
             thit(0).setT(hits[ih].t_ns);

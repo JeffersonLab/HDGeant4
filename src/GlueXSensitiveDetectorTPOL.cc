@@ -23,7 +23,7 @@
 
 #define sqr(x) ((x)*(x))
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per sector
 int GlueXSensitiveDetectorTPOL::MAX_HITS = 100;
 
 // Minimum hit time difference for two hits on the same wedge
@@ -208,7 +208,7 @@ G4bool GlueXSensitiveDetectorTPOL::ProcessHits(G4Step* step,
             hiter->r_cm = x.perp()/cm;
          }
       }
-      else if ((int)wedge->hits.size() < MAX_HITS) {
+      else {
          // create new hit 
          hiter = wedge->hits.insert(hiter, GlueXHitTPOLwedge::hitinfo_t());
          hiter->dE_MeV = dEsum/MeV;
@@ -217,11 +217,6 @@ G4bool GlueXSensitiveDetectorTPOL::ProcessHits(G4Step* step,
          hiter->ptype_G3 = g3type;
          hiter->t0_ns = t/ns;
          hiter->r_cm = x.perp()/cm;
-      }
-      else {
-         G4cerr << "GlueXSensitiveDetectorTPOL::ProcessHits error: "
-             << "max hit count " << MAX_HITS << " exceeded, truncating!"
-             << G4endl;
       }
    }
    return true;
@@ -287,7 +282,15 @@ void GlueXSensitiveDetectorTPOL::EndOfEvent(G4HCofThisEvent*)
          hddm_s::TpolSectorList wedge = polarimeter.addTpolSectors(1);
          wedge(0).setSector(siter->second->sector_);
          wedge(0).setRing(siter->second->ring_);
-         for (int ih=0; ih < (int)hits.size(); ++ih) {
+         int hitscount = hits.size();
+         if (hitscount > MAX_HITS) {
+            hitscount = MAX_HITS;
+            G4cerr << "GlueXSensitiveDetectorTPOL::EndOfEvent warning: "
+                   << "counter max hit count " << MAX_HITS << " exceeded, "
+                   << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::TpolTruthHitList thit = wedge(0).addTpolTruthHits(1);
             thit(0).setDE(hits[ih].dE_MeV*MeV/GeV);
             thit(0).setT(hits[ih].t_ns);

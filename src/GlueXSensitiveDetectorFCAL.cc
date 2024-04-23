@@ -23,9 +23,9 @@
 
 // Scale factors to match reconstructed to generated
 double GlueXSensitiveDetectorFCAL::SHOWER_ENERGY_SCALE_FACTOR =  1.0;
-double GlueXSensitiveDetectorFCAL::MIP_ENERGY_SCALE_FACTOR = 1.35;
+double GlueXSensitiveDetectorFCAL::MIP_ENERGY_SCALE_FACTOR = 1.55;
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per block
 int GlueXSensitiveDetectorFCAL::MAX_HITS = 100;
 
 // Geometry constants for the FCal
@@ -240,18 +240,13 @@ G4bool GlueXSensitiveDetectorFCAL::ProcessHits(G4Step* step,
             hiter->E_GeV += dEcorr/GeV;
             hiter->t_ns /= hiter->E_GeV;
          }
-         else if ((int)block->hits.size() < MAX_HITS) {
+         else {
             // create new hit 
             hiter = block->hits.insert(hiter, GlueXHitFCALblock::hitinfo_t());
             hiter->E_GeV = dEcorr/GeV;
             hiter->t_ns = tcorr/ns;
             hiter->dE_lightguide_GeV = 0;
             hiter->t_lightguide_ns = 0;
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorFCAL::ProcessHits error: "
-                << "max hit count " << MAX_HITS << " exceeded, truncating!"
-                << G4endl;
          }
       }
 
@@ -278,18 +273,13 @@ G4bool GlueXSensitiveDetectorFCAL::ProcessHits(G4Step* step,
                     t/ns * dEsum/GeV) / (hiter->dE_lightguide_GeV + dEsum/GeV);
             hiter->dE_lightguide_GeV += dEsum/GeV;
          }
-         else if ((int)block->hits.size() < MAX_HITS) {
+         else {
             // create new hit 
             hiter = block->hits.insert(hiter, GlueXHitFCALblock::hitinfo_t());
             hiter->dE_lightguide_GeV = dEsum/GeV;
             hiter->t_lightguide_ns = t/ns;
             hiter->E_GeV = 0;
             hiter->t_ns = t/ns;
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorFCAL::ProcessHits error: "
-                << "max hit count " << MAX_HITS << " exceeded, truncating!"
-                << G4endl;
          }
       }
    }
@@ -363,7 +353,15 @@ void GlueXSensitiveDetectorFCAL::EndOfEvent(G4HCofThisEvent*)
          hddm_s::FcalBlockList block = forwardEMcal.addFcalBlocks(1);
          block(0).setColumn(biter->second->column_);
          block(0).setRow(biter->second->row_);
-         for (int ih=0; ih < (int)hits.size(); ++ih) {
+         int hitscount = hits.size();
+         if (hitscount > MAX_HITS) {
+            hitscount = MAX_HITS;
+            G4cerr << "GlueXSensitiveDetectorFCAL::EndOfEvent warning: "
+                   << "max hit count " << MAX_HITS << " exceeded, "
+                   << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::FcalTruthHitList thit = block(0).addFcalTruthHits(1);
             thit(0).setE(hits[ih].E_GeV);
             thit(0).setT(hits[ih].t_ns);

@@ -21,7 +21,7 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per counter
 int GlueXSensitiveDetectorSTC::MAX_HITS = 100;
 
 // Light propagation parameters in start counter
@@ -311,7 +311,7 @@ G4bool GlueXSensitiveDetectorSTC::ProcessHits(G4Step* step,
             hiter->z_cm = x[2]/cm;
          }
       }
-      else if ((int)paddle->hits.size() < MAX_HITS)	{
+      else {
          // create new hit 
          hiter = paddle->hits.insert(hiter, GlueXHitSTCpaddle::hitinfo_t());
          hiter->dE_MeV = dEcorr/MeV;
@@ -320,11 +320,6 @@ G4bool GlueXSensitiveDetectorSTC::ProcessHits(G4Step* step,
          hiter->ptype_G3 = g3type;
          hiter->t0_ns = t/ns;
          hiter->z_cm = x[2]/cm;
-      }
-      else {
-         G4cerr << "GlueXSensitiveDetectorSTC::ProcessHits error: "
-             << "max hit count " << MAX_HITS << " exceeded, truncating!"
-             << G4endl;
       }
    }
    return true;
@@ -389,7 +384,15 @@ void GlueXSensitiveDetectorSTC::EndOfEvent(G4HCofThisEvent*)
       if (hits.size() > 0) {
          hddm_s::StcPaddleList paddle = startCntr.addStcPaddles(1);
          paddle(0).setSector(siter->second->sector_);
-         for (int ih=0; ih < (int)hits.size(); ++ih) {
+         int hitscount = hits.size();
+         if (hitscount > MAX_HITS) {
+            hitscount = MAX_HITS;
+            G4cerr << "GlueXSensitiveDetectorSTC::EndOfEvent warning: "
+                   << "max hit count " << MAX_HITS << " exceeded, "
+                   << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::StcTruthHitList thit = paddle(0).addStcTruthHits(1);
             thit(0).setDE(hits[ih].dE_MeV*MeV/GeV);
             thit(0).setT(hits[ih].t_ns);

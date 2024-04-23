@@ -129,19 +129,23 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
             G4TrackVector &secondary = *(G4TrackVector*)
                                         step->GetSecondaryInCurrentStep();
             G4TrackVector::iterator iter;
+            G4TrackVector decaySecondaries;
             for (iter = secondary.begin(); iter != secondary.end(); ++iter) {
-               int newID = eventinfo->AssignNextGlueXTrackID();
-               trackinfo = new GlueXUserTrackInformation();
-               if (eventinfo) {
-                  trackinfo->SetGlueXTrackID(newID);
+               if ((*iter)->GetCreatorProcess()->GetProcessType() == fDecay) {
+                  int newID = eventinfo->AssignNextGlueXTrackID();
+                  trackinfo = new GlueXUserTrackInformation();
+                  if (eventinfo) {
+                     trackinfo->SetGlueXTrackID(newID);
+                  }
+                  (*iter)->SetUserInformation(trackinfo);
+                  decaySecondaries.push_back(*iter);
                }
-               (*iter)->SetUserInformation(trackinfo);
             }
-            if (eventinfo) {
+            if (eventinfo and decaySecondaries.size() > 0) {
                int mech[2];
                char *cmech = (char*)mech;
                snprintf(cmech, 5, "%c%c%c%c", 'D', 'C', 'A', 'Y');
-               eventinfo->AddSecondaryVertex(secondary, primeID, mech[0]);
+               eventinfo->AddSecondaryVertex(decaySecondaries, primeID, mech[0]);
             }
          }
       }

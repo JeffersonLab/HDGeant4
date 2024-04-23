@@ -21,8 +21,7 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits
-int GlueXSensitiveDetectorFTOF::MAX_HITS = 25;
+// Cutoff on the number of allowed hits per bar
 int GlueXSensitiveDetectorFTOF::MAX_HITS_PER_BAR = 25;
 
 // Cutoff on the maximum time of flight
@@ -75,7 +74,6 @@ GlueXSensitiveDetectorFTOF::GlueXSensitiveDetectorFTOF(const G4String& name)
       FULL_BAR_LENGTH = tof_parms.at("TOF_PADDLE_LENGTH")*cm;
       TWO_HIT_TIME_RESOL = tof_parms.at("TOF_TWO_HIT_RESOL")*ns;
       THRESH_MEV = tof_parms.at("TOF_THRESH_MEV");
-      MAX_HITS = tof_parms.at("TOF_MAX_HITS");
       MAX_HITS_PER_BAR = tof_parms.at("TOF_MAX_PAD_HITS");
 
       G4cout << "FTOF: ALL parameters loaded from ccdb" << G4endl;
@@ -224,22 +222,22 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
       // column=0 is a full bar, column=1,2 are half paddles
       if (plane == 0) {
          if (column == 1) {
-	        tnorth = 0;
-	        dEnorth = 0;
+            tnorth = 0;
+            dEnorth = 0;
          }
-         else if (column == 2) {	
-	        tsouth = 0;
-	        dEsouth =0;
+         else if (column == 2) {    
+            tsouth = 0;
+            dEsouth =0;
          }
       }
       else {
          if (column == 2) {
-	        tnorth = 0;
-	        dEnorth = 0;
+            tnorth = 0;
+            dEnorth = 0;
          }
          else if (column == 1) {
-	        tsouth = 0;
-	        dEsouth = 0;
+            tsouth = 0;
+            dEsouth = 0;
          }
       }
 
@@ -264,10 +262,17 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
          }
 
          if (merge_hit) {
-            // sum the charge, do energy weighting of the time
-            hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
-                           dEnorth/GeV * tnorth/ns) /
-            (hiter->dE_GeV += dEnorth/GeV);
+            // sum the charge, do energy weighting of the time --disabled for bad behavior, rtj--
+            //hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
+            //               dEnorth/GeV * tnorth/ns) /
+            //(hiter->dE_GeV += dEnorth/GeV);
+ 
+            // Use the time from the earlier hit but add the charge
+            hiter->dE_GeV += dEnorth/GeV;
+            if (hiter->t_ns*ns > tnorth) {
+               hiter->t_ns = tnorth/ns;
+            }
+
             std::vector<GlueXHitFTOFbar::hitextra_t>::reverse_iterator xiter;
             xiter = hiter->extra.rbegin();
             if (trackID != xiter->track_ || fabs(tin/ns - xiter->t_ns) > 0.1) {
@@ -287,7 +292,7 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
                hiter->extra.push_back(extra);
             }
          }
-         else if ((int)counter->hits.size() < 2 * MAX_HITS_PER_BAR)	{
+         else {
             // create new hit 
             hiter = counter->hits.insert(hiter, GlueXHitFTOFbar::hitinfo_t());
             hiter->end_ = 0;
@@ -307,12 +312,6 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
             extra.t_ns = tout/ns;
             extra.dist_cm = dist/cm;
             hiter->extra.push_back(extra);
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorFTOF::ProcessHits error: "
-                << "max hit count " << MAX_HITS_PER_BAR
-                << " exceeded, truncating!"
-                << G4endl;
          }
       }
 
@@ -334,10 +333,17 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
             }
          }
          if (merge_hit) {
-            // sum the charge, do energy weighting of the time
-            hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
-                           dEsouth/GeV * tsouth/ns) /
-            (hiter->dE_GeV += dEsouth/GeV);
+            // sum the charge, do energy weighting of the time --disabled for bad behavior, rtj--
+            //hiter->t_ns = (hiter->dE_GeV * hiter->t_ns +
+            //               dEsouth/GeV * tsouth/ns) /
+            //(hiter->dE_GeV += dEsouth/GeV);
+
+            // Use the time from the earlier hit but add the charge
+            hiter->dE_GeV += dEsouth/GeV;
+            if (hiter->t_ns*ns > tsouth) {
+               hiter->t_ns = tsouth/ns;
+            }
+
             std::vector<GlueXHitFTOFbar::hitextra_t>::reverse_iterator xiter;
             xiter = hiter->extra.rbegin();
             if (trackID != xiter->track_ || fabs(tin/ns - xiter->t_ns) > 0.1) {
@@ -357,7 +363,7 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
                hiter->extra.push_back(extra);
             }
          }
-         else if ((int)counter->hits.size() < 2 * MAX_HITS_PER_BAR)	{
+         else {
             // create new hit 
             hiter = counter->hits.insert(hiter, GlueXHitFTOFbar::hitinfo_t());
             hiter->end_ = 1;
@@ -377,12 +383,6 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
             extra.t_ns = tout/ns;
             extra.dist_cm = dist/cm;
             hiter->extra.push_back(extra);
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorFTOF::ProcessHits error: "
-                << "max hit count " << MAX_HITS_PER_BAR 
-                << " exceeded, truncating!"
-                << G4endl;
          }
       }
    }
@@ -492,6 +492,14 @@ void GlueXSensitiveDetectorFTOF::EndOfEvent(G4HCofThisEvent*)
                   xtra(0).setDist(hits[ih].extra[ihx].dist_cm);
                }
             }
+         }
+         int hitscount = counter(0).getFtofTruthHits().size();
+         if (hitscount > 2 * MAX_HITS_PER_BAR) {
+            counter(0).deleteFtofTruthHits(-1, 2 * MAX_HITS_PER_BAR);
+            G4cerr << "GlueXSensitiveDetectorFTOF::EndOfEvent warning: "
+                   << "max bar hit count " << 2 * MAX_HITS_PER_BAR
+                   << " exceeded, " << hitscount - 2 * MAX_HITS_PER_BAR
+                   << " hits discarded." << G4endl;
          }
       }
    }

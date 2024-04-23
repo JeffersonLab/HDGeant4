@@ -85,7 +85,7 @@ class GlueXSensitiveDetectorFDC : public G4VSensitiveDetector
    static double FDC_TIME_WINDOW;
    static double GAS_GAIN;
    static double W_EFF_PER_ION;
-   static int N_SECOND_PER_PRIMARY;
+   static double N_SECOND_PER_PRIMARY;
    static int MAX_HITS;
 
    static double LORENTZ_NR_PAR1;

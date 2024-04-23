@@ -89,6 +89,7 @@ std::map<G4String, G4String> process_4letter_abbrev = {
 
 int GlueXUserEventInformation::fWriteNoHitEvents = 0;
 long int *GlueXUserEventInformation::fStartingSeeds = 0;
+int GlueXUserEventInformation::fTrackingVerboseLevel = 0;
 
 G4Mutex GlueXUserEventInformation::fMutex = G4MUTEX_INITIALIZER;
 
@@ -112,6 +113,14 @@ GlueXUserEventInformation::GlueXUserEventInformation(hddm_s::HDDM *hddmevent)
       fNvertices = fOutputRecord->getVertices().size();
    }
    SetRandomSeeds();
+   G4EventManager::GetEventManager()->
+                   GetTrackingManager()->
+                   SetVerboseLevel(fTrackingVerboseLevel);
+   if (fTrackingVerboseLevel > 0) {
+      hddm_s::PhysicsEventList pev = fOutputRecord->getPhysicsEvents();
+      G4cout << "GlueXUserEventInformation: new event " << pev(0).getEventNo()
+             << ", run " << pev(0).getRunNo() << G4endl;
+   }
 }
 
 GlueXUserEventInformation::~GlueXUserEventInformation()
@@ -155,6 +164,11 @@ void GlueXUserEventInformation::AddBeamParticle(int geanttype, double t0,
    double mass = GlueXPrimaryGeneratorAction::GetMass(geanttype);
    double E = sqrt(mass*mass + mom[0]*mom[0] + mom[1]*mom[1] + mom[2]*mom[2]);
    pmo(0).setE(E/GeV);
+   hddm_s::PropertiesList pro = beam(0).addPropertiesList();
+   int pdg = GlueXPrimaryGeneratorAction::ConvertGeant3ToPdg(geanttype);
+   G4ParticleDefinition *g4type = GlueXPrimaryGeneratorAction::GetParticle(pdg);
+   pro(0).setCharge(g4type->GetPDGCharge());
+   pro(0).setMass(mass);
 }
 
 void GlueXUserEventInformation::AddBeamParticle(int geanttype, double t0,
@@ -179,15 +193,20 @@ void GlueXUserEventInformation::AddTargetParticle(int geanttype, double t0,
    if (rea.size() == 0) {
       rea = pev(0).addReactions();
    }
-   hddm_s::TargetList beam = rea(0).addTargets();
-   beam(0).setType((Particle_t)geanttype);
-   hddm_s::MomentumList pmo = beam(0).addMomenta();
+   hddm_s::TargetList targ = rea(0).addTargets();
+   targ(0).setType((Particle_t)geanttype);
+   hddm_s::MomentumList pmo = targ(0).addMomenta();
    pmo(0).setPx(mom[0]/GeV);
    pmo(0).setPy(mom[1]/GeV);
    pmo(0).setPz(mom[2]/GeV);
    double mass = GlueXPrimaryGeneratorAction::GetMass(geanttype);
    double E = sqrt(mass*mass + mom[0]*mom[0] + mom[1]*mom[1] + mom[2]*mom[2]);
    pmo(0).setE(E/GeV);
+   hddm_s::PropertiesList pro = targ(0).addPropertiesList();
+   int pdg = GlueXPrimaryGeneratorAction::ConvertGeant3ToPdg(geanttype);
+   G4ParticleDefinition *g4type = GlueXPrimaryGeneratorAction::GetParticle(pdg);
+   pro(0).setCharge(g4type->GetPDGCharge());
+   pro(0).setMass(mass);
 }
 
 void GlueXUserEventInformation::AddTargetParticle(int geanttype, double t0,
@@ -196,8 +215,8 @@ void GlueXUserEventInformation::AddTargetParticle(int geanttype, double t0,
                                                   const G4ThreeVector &pol)
 {
    AddTargetParticle(geanttype, t0, pos, mom);
-   hddm_s::TargetList beam = fOutputRecord->getTargets();
-   hddm_s::PolarizationList polar = beam(0).addPolarizations();
+   hddm_s::TargetList targ = fOutputRecord->getTargets();
+   hddm_s::PolarizationList polar = targ(0).addPolarizations();
    polar(0).setPx(pol[0]);
    polar(0).setPy(pol[1]);
    polar(0).setPz(pol[2]);

@@ -142,9 +142,9 @@ void GlueXPrimaryGenerator::GeneratePrimaryVertex(G4Event *event)
          vertex->SetPrimary(pp);
          event_info->SetGlueXTrackID(++Nprimaries, trackId);
          double mass = part->GetPDGMass();
-         double Eexpected = sqrt(mass*mass + px*px + py*py + pz*pz);
-         if (fabs(Eexpected - Etot) > Etot * 1e-3) {
-            double minv = sqrt(Etot*Etot - px*px - py*py - pz*pz);
+         double width = part->GetPDGWidth();
+         double minv = sqrt(Etot*Etot - px*px - py*py - pz*pz);
+         if (fabs(minv - mass) > width * 1e3 + 3*MeV) {
             G4cerr << "=== WARNING in GlueXPrimaryGenerator::"
                       "GeneratePrimaryVertex ==="
                    << G4endl

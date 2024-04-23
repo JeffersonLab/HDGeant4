@@ -19,7 +19,7 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per block
 int GlueXSensitiveDetectorFCALinsert::MAX_HITS = 100;
 
 // Geometry constants for the FCal
@@ -210,18 +210,13 @@ G4bool GlueXSensitiveDetectorFCALinsert::ProcessHits(G4Step* step,
             hiter->E_GeV += dEcorr/GeV;
             hiter->t_ns /= hiter->E_GeV;
          }
-         else if ((int)block->hits.size() < MAX_HITS) {
+         else {
             // create new hit 
             hiter = block->hits.insert(hiter, GlueXHitFCALinsertblock::hitinfo_t());
             hiter->E_GeV = dEcorr/GeV;
             hiter->t_ns = tcorr/ns;
             hiter->dE_lightguide_GeV = 0;
             hiter->t_lightguide_ns = 0;
-         }
-         else {
-            G4cerr << "GlueXSensitiveDetectorFCALinsert::ProcessHits error: "
-                << "max hit count " << MAX_HITS << " exceeded, truncating!"
-                << G4endl;
          }
       }
    }
@@ -288,10 +283,18 @@ void GlueXSensitiveDetectorFCALinsert::EndOfEvent(G4HCofThisEvent*)
       hddm_s::FcalBlockList block = forwardEMcal.addFcalBlocks(1);
       block(0).setColumn(biter->second->column_);
       block(0).setRow(biter->second->row_);
-      for (int ih=0; ih < (int)hits.size(); ++ih) {
-	hddm_s::FcalTruthHitList thit = block(0).addFcalTruthHits(1);
-	thit(0).setE(hits[ih].E_GeV);
-	thit(0).setT(hits[ih].t_ns);
+      int hitscount = hits.size();
+      if (hitscount > MAX_HITS) {
+         hitscount = MAX_HITS;
+         G4cerr << "GlueXSensitiveDetectorFCALinsert::EndOfEvent warning:"
+                << "max hit count " << MAX_HITS << " exceeded, "
+                << hits.size() - hitscount << " hits discarded."
+                << G4endl;
+      }
+      for (int ih=0; ih < hitscount; ++ih) {
+         hddm_s::FcalTruthHitList thit = block(0).addFcalTruthHits(1);
+         thit(0).setE(hits[ih].E_GeV);
+         thit(0).setT(hits[ih].t_ns);
       }
    }
 

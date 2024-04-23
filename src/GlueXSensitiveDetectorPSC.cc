@@ -21,7 +21,7 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per counter
 int GlueXSensitiveDetectorPSC::MAX_HITS = 100;
 
 // Minimum hit time difference for two hits on the same paddle
@@ -204,23 +204,24 @@ G4bool GlueXSensitiveDetectorPSC::ProcessHits(G4Step* step,
          }
       }
       if (merge_hit) {
-         // Add the charge, do energy-weighted time averaging
-         hiter->t_ns = (hiter->t_ns * hiter->dE_GeV + t/ns * dEsum/GeV) /
-                       (hiter->dE_GeV + dEsum/GeV);
+         // Add the charge, do energy-weighted time averaging --disabled for bad behavior
+         //hiter->t_ns = (hiter->t_ns * hiter->dE_GeV + t/ns * dEsum/GeV) /
+         //              (hiter->dE_GeV + dEsum/GeV);
+         //hiter->dE_GeV += dEsum/GeV;
+ 
+         // Use the time from the earlier hit but add the charge
          hiter->dE_GeV += dEsum/GeV;
+         if (hiter->t_ns*ns > t) {
+             hiter->t_ns = t/ns;
+         }
       }
-      else if ((int)paddle->hits.size() < MAX_HITS)	{
+      else {
          // create new hit 
          hiter = paddle->hits.insert(hiter, GlueXHitPSCpaddle::hitinfo_t());
          hiter->dE_GeV = dEsum/GeV;
          hiter->t_ns = t/ns;
          hiter->itrack_ = itrack;
          hiter->ptype_G3 = g3type;
-      }
-      else {
-         G4cerr << "GlueXSensitiveDetectorPSC::ProcessHits error: "
-             << "max hit count " << MAX_HITS << " exceeded, truncating!"
-             << G4endl;
       }
    }
    return true;
@@ -286,7 +287,15 @@ void GlueXSensitiveDetectorPSC::EndOfEvent(G4HCofThisEvent*)
          hddm_s::PscPaddleList paddle = psc.addPscPaddles(1);
          paddle(0).setArm(siter->second->arm_);
          paddle(0).setModule(siter->second->module_);
-         for (int ih=0; ih < (int)hits.size(); ++ih) {
+         int hitscount = hits.size();
+         if (hitscount > MAX_HITS) {
+            hitscount = MAX_HITS;
+            G4cerr << "GlueXSensitiveDetectorPSC::EndOfEvent warning: "
+                   << "max hit count " << MAX_HITS << " exceeded, "
+                   << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::PscTruthHitList thit = paddle(0).addPscTruthHits(1);
             thit(0).setDE(hits[ih].dE_GeV);
             thit(0).setT(hits[ih].t_ns);

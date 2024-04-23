@@ -21,7 +21,7 @@
 
 #include <JANA/JApplication.h>
 
-// Cutoff on the total number of allowed hits
+// Cutoff on the number of allowed hits per block
 int GlueXSensitiveDetectorCCAL::MAX_HITS = 100;
 
 // Geometry constants for the CCal
@@ -212,16 +212,11 @@ G4bool GlueXSensitiveDetectorCCAL::ProcessHits(G4Step* step,
             hiter->t_ns = tcorr/ns;
          }
       }
-      else if ((int)block->hits.size() < MAX_HITS) {
+      else {
          // create new hit 
           hiter = block->hits.insert(hiter, GlueXHitCCALblock::hitinfo_t());
          hiter->E_GeV = dEcorr/GeV;
          hiter->t_ns = tcorr/ns;
-      }
-      else {
-         G4cerr << "GlueXSensitiveDetectorCCAL::ProcessHits error: "
-             << "max hit count " << MAX_HITS << " exceeded, truncating!"
-             << G4endl;
       }
    }
    return true;
@@ -288,7 +283,15 @@ void GlueXSensitiveDetectorCCAL::EndOfEvent(G4HCofThisEvent*)
          hddm_s::CcalBlockList block = comptonEMcal.addCcalBlocks(1);
          block(0).setColumn(biter->second->column_);
          block(0).setRow(biter->second->row_);
-         for (int ih=0; ih < (int)hits.size(); ++ih) {
+         int hitscount = hits.size();
+         if (hitscount > MAX_HITS) {
+            hitscount = MAX_HITS;
+            G4cerr << "GlueXSensitiveDetectorCCAL::EndOfEvent warning: "
+                   << "max hit count " << MAX_HITS << " exceeded, "
+                   << hits.size() - hitscount << " hits discarded."
+                   << G4endl;
+         }
+         for (int ih=0; ih < hitscount; ++ih) {
             hddm_s::CcalTruthHitList thit = block(0).addCcalTruthHits(1);
             thit(0).setE(hits[ih].E_GeV);
             thit(0).setT(hits[ih].t_ns);

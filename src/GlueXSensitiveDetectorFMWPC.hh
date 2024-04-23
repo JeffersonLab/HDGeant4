@@ -45,6 +45,10 @@ class GlueXSensitiveDetectorFMWPC : public G4VSensitiveDetector
    static double THRESH_KEV;
    static double WIRE_OFFSET;
    static double WIRE_PITCH;
+   static const double ELECTRON_CHARGE;
+   static double GAS_GAIN;
+   static double W_EFF_PER_ION;
+   static double N_SECOND_PER_PRIMARY;
 
    static int instanceCount;
    static G4Mutex fMutex;
