@@ -17,6 +17,7 @@
 #include "GlueXSensitiveDetectorFCALinsert.hh"
 #include "GlueXSensitiveDetectorGCAL.hh"
 #include "GlueXSensitiveDetectorCCAL.hh"
+#include "GlueXSensitiveDetectorECAL.hh"
 #include "GlueXSensitiveDetectorFTOF.hh"
 #include "GlueXSensitiveDetectorDIRC.hh"
 #include "GlueXSensitiveDetectorCERE.hh"
@@ -280,6 +281,7 @@ void GlueXDetectorConstruction::ConstructSDandField()
    GlueXSensitiveDetectorFCALinsert* fcalInsertHandler = 0;
    GlueXSensitiveDetectorGCAL* gcalHandler = 0;
    GlueXSensitiveDetectorCCAL* ccalHandler = 0;
+   GlueXSensitiveDetectorECAL* ecalHandler = 0;
    GlueXSensitiveDetectorFTOF* ftofHandler = 0;
    GlueXSensitiveDetectorDIRC* dircHandler = 0;
    GlueXSensitiveDetectorCERE* cereHandler = 0;
@@ -376,6 +378,13 @@ void GlueXDetectorConstruction::ConstructSDandField()
             SDman->AddNewDetector(ccalHandler);
          }
          iter->second->SetSensitiveDetector(ccalHandler);
+      }
+      else if (volname == "XTBL") {
+         if (ecalHandler == 0) {
+            ecalHandler = new GlueXSensitiveDetectorECAL("ecal");
+            SDman->AddNewDetector(ecalHandler);
+         }
+         iter->second->SetSensitiveDetector(ecalHandler);
       }
       else if (volname == "FTOC" || volname == "FTOX" || 
                volname == "FTOH" || volname == "FTOL")
