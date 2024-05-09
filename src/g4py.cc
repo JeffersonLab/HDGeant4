@@ -126,7 +126,7 @@ BOOST_PYTHON_MODULE(libhdgeant4)
           "singleton class holding configuration data for current run, "
           "part of the standard jana framework",
           boost::python::init<>())
-      .def("Init", &DApplication::Init)
+      .def("Init", &JApplication::Initialize)
    ;
 
    enum_<jerror_t>("jerror_t")
