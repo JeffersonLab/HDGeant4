@@ -20,6 +20,8 @@
 #include "G4ios.hh"
 
 #include <JANA/JApplication.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
+
 
 // Cutoff on the number of allowed hits per bar
 int GlueXSensitiveDetectorCTOF::MAX_HITS_PER_BAR = 25;
@@ -60,7 +62,7 @@ GlueXSensitiveDetectorCTOF::GlueXSensitiveDetectorCTOF(const G4String& name)
    G4AutoLock barrier(&fMutex);
    if (instanceCount++ == 0) {
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
                 << "jana global DApplication object not set, "
@@ -68,7 +70,7 @@ GlueXSensitiveDetectorCTOF::GlueXSensitiveDetectorCTOF(const G4String& name)
          exit(-1);
       }
       
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       std::map<string, float> tof_parms;
       jcalib->Get("TOF/tof_parms", tof_parms);
       ATTENUATION_LENGTH = tof_parms.at("TOF_ATTEN_LENGTH")*cm;
