@@ -20,6 +20,7 @@
 #include "G4ios.hh"
 
 #include <JANA/JApplication.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
 
 // Scale factors to match reconstructed to generated
 double GlueXSensitiveDetectorFCAL::SHOWER_ENERGY_SCALE_FACTOR =  1.0;
@@ -64,14 +65,14 @@ GlueXSensitiveDetectorFCAL::GlueXSensitiveDetectorFCAL(const G4String& name)
    G4AutoLock barrier(&fMutex);
    if (instanceCount++ == 0) {
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
                 << "jana global DApplication object not set, "
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       std::map<string, float> fcal_parms;
       jcalib->Get("FCAL/fcal_parms", fcal_parms);
       ATTENUATION_LENGTH = fcal_parms.at("FCAL_ATTEN_LENGTH")*cm;

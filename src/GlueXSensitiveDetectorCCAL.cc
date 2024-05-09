@@ -20,6 +20,8 @@
 #include "G4ios.hh"
 
 #include <JANA/JApplication.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
+
 
 // Cutoff on the number of allowed hits per block
 int GlueXSensitiveDetectorCCAL::MAX_HITS = 100;
@@ -59,14 +61,14 @@ GlueXSensitiveDetectorCCAL::GlueXSensitiveDetectorCCAL(const G4String& name)
    G4AutoLock barrier(&fMutex);
    if (instanceCount++ == 0) {
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
                 << "jana global DApplication object not set, "
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       if (japp == 0) {    // dummy
          jcalib = 0;
          G4cout << "CCAL: ALL parameters loaded from ccdb" << G4endl;

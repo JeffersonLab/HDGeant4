@@ -16,7 +16,8 @@
 #include "HddmOutput.hh"
 
 #include <JANA/JApplication.h>
-#include <JANA/JCalibration.h>
+#include <JANA/Calibrations/JCalibration.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
 
 #include <HDGEOMETRY/DMagneticFieldMapFineMesh.h>
 #include <HDGEOMETRY/DMagneticFieldMapNoField.h>
@@ -514,14 +515,14 @@ void GlueXComputedMagField::SetFunction(std::string function)
    // correct field map key as an input option, eg. through the
    // control.in file.
 
-   extern jana::JApplication *japp;
+   extern JApplication *japp;
    if (japp == 0) {
       G4cerr << "Error in GlueXComputedMagField::SetFunction - "
              << "jana global DApplication object not set, "
              << "cannot continue." << G4endl;
       exit(-1);
    }
-   jana::JParameterManager *jpars = japp->GetJParameterManager();
+   JParameterManager *jpars = japp->GetJParameterManager();
    if (jpars == 0) {
       G4cerr << "Error in GlueXComputedMagField::SetFunction - "
              << "jana global DApplication object returns null "
@@ -537,7 +538,7 @@ void GlueXComputedMagField::SetFunction(std::string function)
    }
 
    int run_number = HddmOutput::getRunNo();
-   jana::JCalibration *jcalib = japp->GetJCalibration(run_number);
+   JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(run_number);
 
    if (function == "gufld_db(r,B)") {
 

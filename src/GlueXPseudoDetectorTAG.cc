@@ -12,6 +12,8 @@
 #include "G4SystemOfUnits.hh"
 
 #include <JANA/JApplication.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
+
 
 // Place limits on the number of hits per counter or column per event
 int GlueXPseudoDetectorTAG::HODO_MAX_HITS = 5000;
@@ -65,14 +67,14 @@ inline void GlueXPseudoDetectorTAG::setRunNo(int runno)
 {
    fRunNo = runno;
    G4AutoLock barrier(&fMutex);
-   extern jana::JApplication *japp;
+   extern JApplication *japp;
    if (japp == 0) {
       G4cerr << "Error in GlueXPseudoDetectorTAG constructor - "
              << "jana global DApplication object not set, "
              << "cannot continue." << G4endl;
       exit(-1);
    }
-   jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+   JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
    std::map<string, float> beam_parms;
    jcalib->Get("PHOTON_BEAM/endpoint_energy", beam_parms);
    double endpoint_energy = beam_parms.at("PHOTON_BEAM_ENDPOINT_ENERGY")*GeV;

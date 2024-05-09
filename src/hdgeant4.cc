@@ -64,8 +64,8 @@ int main(int argc,char** argv)
 {
    // Initialize the jana framework
    DApplication dapp(argc, argv);
-   dapp.create_event_buffer_thread = false;
-   dapp.Init();
+   auto app = dapp.GetJApp();
+   app->Initialize();
 
    // Interpret special command-line arguments
    int use_visualization = 0;

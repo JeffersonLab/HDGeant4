@@ -10,12 +10,12 @@
 #ifndef _HDDSGEOMETRYXML_
 #define _HDDSGEOMETRYXML_
 
-#include <JANA/JGeometryXML.h>
+#include <JANA/Compatibility/JGeometryXML.h>
 
-class HddsGeometryXML : public jana::JGeometryXML
+class HddsGeometryXML : public JGeometryXML
 {
  public:
-   HddsGeometryXML(std::string url, int run) : jana::JGeometryXML(url, run, "") {}
+   HddsGeometryXML(std::string url, int run) : JGeometryXML(url, run, "") {}
    ~HddsGeometryXML() {}
 
    DOMDocument *getDocument() { return doc; }

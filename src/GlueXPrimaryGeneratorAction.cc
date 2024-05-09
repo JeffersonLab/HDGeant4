@@ -17,6 +17,10 @@
 #include "G4IonTable.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
+#include <JANA/Compatibility/JGeometryManager.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
+
+
 
 typedef GlueXPrimaryGeneratorAction::source_type_t source_type_t;
 typedef GlueXPrimaryGeneratorAction::single_particle_gun_t particle_gun_t;
@@ -110,14 +114,14 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
    if (user_opts->Find("DIRCLUT", dirclutpars)) {
       
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
            << "jana global DApplication object not set, "
            << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JGeometry *jgeom = japp->GetJGeometry(runno);
+      JGeometry *jgeom = japp->GetService<JGeometryManager>()->GetJGeometry(runno);
       if (japp == 0) {   // dummy
          jgeom = 0;
          G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
@@ -191,14 +195,14 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
 
    if (user_opts->Find("DIRCLED", dircledpars)) {
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
            << "jana global DApplication object not set, "
            << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JGeometry *jgeom = japp->GetJGeometry(runno);
+      JGeometry *jgeom = japp->GetService<JGeometryManager>()->GetJGeometry(runno);
       if (japp == 0) {   // dummy
          jgeom = 0;
          G4cout << "DIRC: ALL parameters loaded from ccdb" << G4endl;
@@ -446,7 +450,7 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
    }
    else {  // look up beam properties in the ccdb based on run number
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXPrimaryGeneratorAction constructor - "
                 << "jana global DApplication object not set, "
@@ -454,7 +458,7 @@ GlueXPrimaryGeneratorAction::GlueXPrimaryGeneratorAction()
          exit(-1);
       }
       std::map<string, float> beam_parms;
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       jcalib->Get("PHOTON_BEAM/endpoint_energy", beam_parms);
       fBeamEndpointEnergy = beam_parms.at("PHOTON_BEAM_ENDPOINT_ENERGY")*GeV;
       std::map<string, float> coherent_parms;
@@ -1337,14 +1341,14 @@ void GlueXPrimaryGeneratorAction::configure_beam_vertex()
    const char *spec = vertex_spec[1].c_str();
    if (sscanf(spec, "beam_spot(ccdb) * %lf", &fBeamvertex.length)) {
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXPrimaryGeneratorAction::configure_beam_vertex"
                 << " - jana global DApplication object not set, "
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       std::map<string, float> beam_spot_params;
       jcalib->Get("/PHOTON_BEAM/beam_spot", beam_spot_params);
       fBeamvertex.x = beam_spot_params.at("x") * cm;

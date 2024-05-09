@@ -20,6 +20,8 @@
 #include "G4ios.hh"
 
 #include <JANA/JApplication.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
+
 
 // Geant3-style particle index for optical photon
 #define OPTICAL_PHOTON 50
@@ -52,14 +54,14 @@ GlueXSensitiveDetectorCERE::GlueXSensitiveDetectorCERE(const G4String& name)
    G4AutoLock tuberier(&fMutex);
    if (instanceCount++ == 0) {
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
                 << "jana global DApplication object not set, "
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       if (japp == 0) {   // dummy
          jcalib = 0;
          G4cout << "CERE: ALL parameters loaded from ccdb" << G4endl;

@@ -24,6 +24,8 @@
 #include "G4ios.hh"
 
 #include <JANA/JApplication.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
+
 
 #include <stdlib.h>
 #include <math.h>
@@ -117,14 +119,14 @@ GlueXSensitiveDetectorFDC::GlueXSensitiveDetectorFDC(const G4String& name)
    G4AutoLock barrier(&fMutex);
    if (instanceCount++ == 0) {
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
                 << "jana global DApplication object not set, "
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       std::map<string, float> fdc_parms;
       jcalib->Get("FDC/fdc_parms", fdc_parms);
       DRIFT_SPEED = fdc_parms.at("FDC_DRIFT_SPEED")*cm/ns;
