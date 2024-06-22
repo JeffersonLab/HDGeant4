@@ -139,6 +139,8 @@ void GlueXPrimaryGenerator::GeneratePrimaryVertex(G4Event *event)
          double pz = momentum.getPz() * GeV;
          double Etot = momentum.getE() * GeV;
          G4PrimaryParticle *pp = new G4PrimaryParticle(part, px, py, pz, Etot);
+         hddm_s::Polarization &polar = it_product->getPolarization();
+         pp->SetPolarization(polar.getPx(), polar.getPy(), polar.getPz());
          vertex->SetPrimary(pp);
          event_info->SetGlueXTrackID(++Nprimaries, trackId);
          double mass = part->GetPDGMass();
