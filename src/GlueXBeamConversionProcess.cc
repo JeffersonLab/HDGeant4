@@ -1054,7 +1054,7 @@ void GlueXBeamConversionProcess::GenerateBeamPairConversion(const G4Step &step)
    
          // Compute the differential cross section (barnes/GeV^4)
          // returned as d(sigma)/(dE+ dphi+ d^3qR)
-         if (rockange != 0) {
+         if (rockangle != 0) {
             q1.Rotate(rockaxis, rockangle);
             q2.Rotate(rockaxis, rockangle);
          }
@@ -1705,7 +1705,6 @@ void GlueXBeamConversionProcess::GenerateTripletProcess(const G4Step &step)
    // rotated at the end into the final spatial direction.
    TThreeVectorReal rockaxis(mom0);
    rockaxis.Cross(TThreeVectorReal(0,0,1));
-   rockaxis /= rockaxis.Length();
    double rockangle(0);
    if (mom0.Length() > 0) {
       rockangle = asin(rockaxis.Length() / mom0.Length());
