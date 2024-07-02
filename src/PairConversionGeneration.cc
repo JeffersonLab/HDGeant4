@@ -93,7 +93,7 @@ LDouble_t PairConversionGeneration::FFatomic(LDouble_t qRecoil)
       LDouble_t bcoeff[] = {43.6427, 1.8623, 103.483, 0.5420};
       LDouble_t ccoeff[] = {0.0385};
       LDouble_t q_invA = qRecoil / 1.97327e-6;
-      LDouble_t ff = ccoeff[0];
+      ff = ccoeff[0];
       for (int i=0; i < 4; ++i) {
          ff += acoeff[i] * exp(-bcoeff[i] * pow(q_invA / (4 * M_PI), 2));
       }
