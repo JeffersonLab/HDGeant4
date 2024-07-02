@@ -494,7 +494,8 @@ G4double GlueXBeamConversionProcess::PostStepGetPhysicalInteractionLength(
    {
       fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
                              track, previousStepSize, condition);
-      setConverterMaterial(1, 1);
+      //setConverterMaterial(1, 1);
+      setConverterMaterial(4, 9);
       *condition = Forced;
       return 100*cm;
    }
@@ -1316,9 +1317,70 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
          throw std::runtime_error("positron energy less than its rest mass.");
       }
 
+      // Solve for the initial state target kinematics
       LDouble_t Etarget(mRecoil);
-      if (Etarget < nuclearMass_GeV())
+      TFourVectorReal q0(Etarget, 0, 0, 0);
+      if (Etarget < nuclearMass_GeV()) {
+         double fermiMomentum = nuclearFermiMomentum_GeV() / sqrt(3);
+         if (fermiMomentum > 0) {
+            q0[1] = G4RandGauss::shoot(0, fermiMomentum);
+            q0[2] = G4RandGauss::shoot(0, fermiMomentum);
+            q0[3] = G4RandGauss::shoot(0, fermiMomentum);
+         }
          Etarget -= nuclearBindingEnergy_GeV();
+         q0[0] = Etarget;
+      }
+      LDouble_t q02 = q0.LengthSqr();
+
+      // Solve for the recoil particle kinematics
+      LDouble_t nu = sqrt(sqr(mRecoil) + qR2 + q02) - Etarget;
+      LDouble_t costhetaR = (2 * kin * nu + qR2 + sqr(Mpair) - sqr(nu))
+                            / (2 * qR * kin);
+      for (int i=0; i < 999999999; ++i) {
+         LDouble_t q0dotqR;
+         if (fabs(costhetaR) <= 1) {
+            LDouble_t sinthetaR = sqrt(1 - sqr(costhetaR));
+            q0dotqR = q0[1] * qR * sinthetaR * cos(phiR) +
+                      q0[2] * qR * sinthetaR * sin(phiR) +
+                      q0[3] * qR * costhetaR;
+         }
+         else if (costhetaR > 1) {
+            q0dotqR = -q0.Length() * qR;
+         }
+         else {
+            throw std::runtime_error("no kinematic solution because costhetaR < -1");
+         }
+         nu = sqrt(sqr(mRecoil) + qR2 + q02 + 2 * q0dotqR) - Etarget;
+         LDouble_t last_costhetaR = costhetaR;
+         costhetaR = (2 * kin * nu + qR2 + sqr(Mpair) - sqr(nu))
+                     / (2 * qR * kin);
+         if (costhetaR > 1) {
+            throw std::runtime_error("no kinematic solution because costhetaR > 1");
+         }
+         else if (fabs(costhetaR - last_costhetaR) < 1e-10) {
+            break;
+         }
+         else if (i > 99) {
+            std::cerr << "GlueXBeamConversionProcess::GenerateBetheHeitlerProcess"
+                      << " error - no kinematic solution because costhetaR"
+                      << " iterative solver failed to converge" << std::endl;
+            throw std::runtime_error("no kinematic solution because costhetaR"
+                                     " iterative solver failed to converge");
+         }
+      }
+      TFourVectorReal q3;
+      LDouble_t sinthetaR = sqrt(1 - sqr(costhetaR));
+      q3[1] = q0[1] + qR * sinthetaR * cos(phiR);
+      q3[2] = q0[2] + qR * sinthetaR * sin(phiR);
+      q3[3] = q0[3] + qR * costhetaR;
+      q3[0] = sqrt(q3.LengthSqr() + sqr(mRecoil));
+      LDouble_t Erecoil(Etarget + nu);
+      if (fabs(Erecoil - q3[0]) > 1e-10) {
+         std::cerr << "GlueXBeamConversionProcess::GenerateBetheHeitlerProcess"
+                   << " error - kinematics consistency check #1 failed,"
+                   << " dropping this event" << std::endl;
+         throw std::runtime_error("no kinematic solution because Erecoil != q3[0]");
+      }
 
       // Solve for the c.m. momentum of e+ in the pair 1,2 rest frame
       LDouble_t k12star2 = sqr(Mpair / 2) - sqr(mLepton);
@@ -1326,7 +1388,6 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
          throw std::runtime_error("no kinematic solution because k12star2 < 0");
       }
       LDouble_t k12star = sqrt(k12star2);
-      LDouble_t Erecoil = sqrt(qR2 + sqr(mRecoil));
       LDouble_t E12 = kin + Etarget - Erecoil;
       if (E12 < Mpair) {
          throw std::runtime_error("no kinematic solution because E12 < Mpair");
@@ -1338,46 +1399,6 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
       }
       else if (fabs(costhetastar) > 1) {
          throw std::runtime_error("no kinematic solution because |costhetastar| > 1");
-      }
-
-      // Solve for the initial state target kinematics
-      TFourVectorReal q0(Etarget, 0, 0, 0);
-      if (Etarget < nuclearMass_GeV()) {
-         double fermiMomentum = nuclearFermiMomentum_GeV() / sqrt(3);
-         if (fermiMomentum > 0) {
-            q0[1] = G4RandGauss::shoot(0, fermiMomentum);
-            q0[2] = G4RandGauss::shoot(0, fermiMomentum);
-            q0[3] = G4RandGauss::shoot(0, fermiMomentum);
-         }
-      }
-
-      // Solve for the recoil target kinematics
-      TFourVectorReal q3(Erecoil, 0, 0, 0);
-      LDouble_t q3dotq0(0);
-      LDouble_t qRkin(qR * kin);
-      LDouble_t mTarget(Etarget);
-      if (q0.Length() > 0) {
-         mTarget = q0.Invariant();
-      }
-      LDouble_t costhetaR = (sqr(Mpair) / 2 - sqr(mRecoil - mTarget) / 2
-                             + kin * (Erecoil - Etarget + q0[3])
-                             + Etarget * (Erecoil - mRecoil)
-                             + mRecoil * (Etarget - mTarget)
-                             - q3dotq0
-                            ) / qRkin;
-      for (int i=0; i < 99; ++i) {
-         if (fabs(costhetaR) > 1) {
-            throw std::runtime_error("no kinematic solution because |costhetaR| > 1");
-         }
-         LDouble_t sinthetaR = sqrt(1 - sqr(costhetaR));
-         q3[1] = qR * sinthetaR * cos(phiR);
-         q3[2] = qR * sinthetaR * sin(phiR),
-         q3[3] = qR * costhetaR;
-         LDouble_t delta = q3.Dot(q0) - q3dotq0;
-         if (fabs(delta) < qRkin * 1e-15)
-            break;
-         costhetaR -= delta / qRkin;
-         q3dotq0 += delta;
       }
 
       // Boost the pair momenta into the lab
@@ -1443,6 +1464,7 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
          fPairsGeneration->SetConverterZ(fTargetZ);
          diffXS *= sqr(1 - fPairsGeneration->FFatomic(qR));
          diffXS *= sqr(fTargetZ * nuclearFormFactor(-t));
+         weight /= ELASTIC_NUCLEAR_FRACTION;
       }
       else if (mRecoil == mProton) {
          LDouble_t F1_timelike;
@@ -1494,7 +1516,7 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
          else {
             G4cerr << "GlueXBeamConversionProcess::GenerateBetheHeitlerProcess"
                    << " error: Unsupported nucleon form factor option" 
-                    << ", cannot continue!" << G4endl;
+                   << ", cannot continue!" << G4endl;
 		    exit(89);
          }
          diffXS = TCrossSection::BetheHeitlerNucleon(gIn, nIn,
@@ -1508,7 +1530,9 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
             diffXS *= sqr(1 - fPairsGeneration->FFatomic(qR));
          }
          else {
+            //diffXS *= fTargetZ * exp(-fTargetA * sqr(nuclearFormFactor(-t)));
             diffXS *= fTargetZ * (1 - sqr(nuclearFormFactor(-t)));
+            weight /= QUASIELASTIC_PROTON_FRACTION;
          }
       }
       else if (mRecoil == mNeutron) {
@@ -1522,13 +1546,16 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
                                                      F2_spacelike,
                                                      F1_timelike,
                                                      F2_timelike);
-         if (fTargetA > 1)
+         if (fTargetA > 1) {
+            //diffXS *= (fTargetA - fTargetZ) * exp(-fTargetA * sqr(nuclearFormFactor(-t)));
             diffXS *= (fTargetA - fTargetZ) * (1 - sqr(nuclearFormFactor(-t)));
+            weight /= QUASIELASTIC_NEUTRON_FRACTION;
+         }
       }
       else {
          G4cerr << "GlueXBeamConversionProcess::GenerateBetheHeitlerProcess error:"
                 << "  Unknown recoil particle of mass " << mRecoil
-                 << ", cannot continue!" << G4endl;
+                << ", cannot continue!" << G4endl;
 		 exit(82);
       }
 #if USE_ADAPTIVE_SAMPLER
@@ -1844,7 +1871,8 @@ void GlueXBeamConversionProcess::GenerateTripletProcess(const G4Step &step)
       // returned as d(sigma)/(dE+ dphi+ d^3qR)
       diffXS = TCrossSection::TripletProduction(gIn, eIn, pOut, eOut, eOut3);
       fPairsGeneration->SetConverterZ(fTargetZ);
-      diffXS *= 1 - sqr(fPairsGeneration->FFatomic(qR));
+      //diffXS *= fTargetZ * exp(-fTargetZ * sqr(fPairsGeneration->FFatomic(qR)));
+      diffXS *= fTargetZ * (1 - sqr(fPairsGeneration->FFatomic(qR)));
 #if USE_ADAPTIVE_SAMPLER
       fAdaptiveSampler->feedback(u, weight * diffXS);
 #endif
