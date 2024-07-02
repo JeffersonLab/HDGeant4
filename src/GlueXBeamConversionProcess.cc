@@ -494,8 +494,7 @@ G4double GlueXBeamConversionProcess::PostStepGetPhysicalInteractionLength(
    {
       fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
                              track, previousStepSize, condition);
-      //setConverterMaterial(1, 1);
-      setConverterMaterial(4, 9);
+      setConverterMaterial(1, 1);
       *condition = Forced;
       return 100*cm;
    }
