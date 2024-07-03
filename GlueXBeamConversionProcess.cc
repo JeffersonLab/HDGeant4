@@ -134,8 +134,7 @@ GlueXBeamConversionProcess::GlueXBeamConversionProcess(const G4String &name,
    fAdaptiveSampler(0),
    isInitialised(false),
    fTargetZ(0),
-   fTargetA(0),
-   fTargetPol{{0,0,0},{0,0,0}}
+   fTargetA(0)
 {
    verboseLevel = 0;
 
@@ -495,7 +494,8 @@ G4double GlueXBeamConversionProcess::PostStepGetPhysicalInteractionLength(
    {
       fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
                              track, previousStepSize, condition);
-      setConverterMaterial(1, 1);
+      //setConverterMaterial(1, 1);
+      setConverterMaterial(4, 9);
       *condition = Forced;
       return 100*cm;
    }
@@ -1215,9 +1215,7 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
    pOut.AllPol();
    nOut.AllPol();
    const TThreeVectorReal zero3vector(0,0,0);
-   nIn.SetPol(TThreeVectorReal(fTargetPol.nucl[0],
-                               fTargetPol.nucl[1],
-                               fTargetPol.nucl[2]));
+   nIn.SetPol(TThreeVectorReal(zero3vector));
    nIn.SetMom(TThreeVectorReal(zero3vector));
    const G4Track *track = step.GetTrack();
    LDouble_t kin = track->GetKineticEnergy()/GeV;
@@ -1350,22 +1348,24 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
             q0dotqR = -q0.Length() * qR;
          }
          else {
+std::cerr << "no kinematic solution because costhetaR < -1" << std::endl;
             throw std::runtime_error("no kinematic solution because costhetaR < -1");
          }
          nu = sqrt(sqr(mRecoil) + qR2 + q02 + 2 * q0dotqR) - Etarget;
+std::cerr << "nu=" << nu << ", qR=" << qR << ", q0=" << sqr(q02) << ", Etarget=" << Etarget << std::endl;
          LDouble_t last_costhetaR = costhetaR;
          costhetaR = (2 * kin * nu + qR2 + sqr(Mpair) - sqr(nu))
                      / (2 * qR * kin);
          if (costhetaR > 1) {
+std::cerr << "no kinematic solution because costhetaR > 1" << std::endl;
             throw std::runtime_error("no kinematic solution because costhetaR > 1");
          }
-         else if (fabs(costhetaR - last_costhetaR) < 1e-10) {
+         else if (fabs(costhetaR - last_costhetaR) < 1e-9) {
+std::cerr << "costhetaR iterative solver converged at i=" << i << std::endl;
             break;
          }
          else if (i > 99) {
-            std::cerr << "GlueXBeamConversionProcess::GenerateBetheHeitlerProcess"
-                      << " error - no kinematic solution because costhetaR"
-                      << " iterative solver failed to converge" << std::endl;
+std::cerr << "no kinematic solution because costhetaR iterative solver failed to converge" << std::endl;
             throw std::runtime_error("no kinematic solution because costhetaR"
                                      " iterative solver failed to converge");
          }
@@ -1377,10 +1377,9 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
       q3[3] = q0[3] + qR * costhetaR;
       q3[0] = sqrt(q3.LengthSqr() + sqr(mRecoil));
       LDouble_t Erecoil(Etarget + nu);
-      if (fabs(Erecoil - q3[0]) > 1e-10) {
-         std::cerr << "GlueXBeamConversionProcess::GenerateBetheHeitlerProcess"
-                   << " error - kinematics consistency check #1 failed,"
-                   << " dropping this event" << std::endl;
+      if (fabs(Erecoil - q3[0]) > 1e-6) {
+std::cerr << "kinematics consistency check failed, cannot continue!!!" << std::endl;
+std::cerr << "mRecoil=" << mRecoil << ", Etarget=" << Etarget << ", Erecoil=" << Erecoil << ", q3[0]=" << q3[0] << std::endl;
          throw std::runtime_error("no kinematic solution because Erecoil != q3[0]");
       }
 
@@ -1392,14 +1391,17 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
       LDouble_t k12star = sqrt(k12star2);
       LDouble_t E12 = kin + Etarget - Erecoil;
       if (E12 < Mpair) {
+std::cerr << "throw up #1 with mRecoil=" << mRecoil << std::endl;
          throw std::runtime_error("no kinematic solution because E12 < Mpair");
       }
       LDouble_t q12mag = sqrt(sqr(E12) - sqr(Mpair));
       LDouble_t costhetastar = (Epos - E12 / 2) * Mpair / (k12star * q12mag);
       if (Epos > E12 - mLepton) {
+std::cerr << "throw up #2 with mRecoil=" << mRecoil << std::endl;
          throw std::runtime_error("no kinematic solution because Epos > E12 - mLepton");
       }
       else if (fabs(costhetastar) > 1) {
+std::cerr << "throw up #3 with mRecoil=" << mRecoil << std::endl;
          throw std::runtime_error("no kinematic solution because |costhetastar| > 1");
       }
 
@@ -1532,8 +1534,7 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
             diffXS *= sqr(1 - fPairsGeneration->FFatomic(qR));
          }
          else {
-            //diffXS *= fTargetZ * exp(-fTargetA * sqr(nuclearFormFactor(-t)));
-            diffXS *= fTargetZ * (1 - sqr(nuclearFormFactor(-t)));
+            diffXS *= fTargetZ * exp(-fTargetA * sqr(nuclearFormFactor(-t)));
             weight /= QUASIELASTIC_PROTON_FRACTION;
          }
       }
@@ -1549,8 +1550,7 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
                                                      F1_timelike,
                                                      F2_timelike);
          if (fTargetA > 1) {
-            //diffXS *= (fTargetA - fTargetZ) * exp(-fTargetA * sqr(nuclearFormFactor(-t)));
-            diffXS *= (fTargetA - fTargetZ) * (1 - sqr(nuclearFormFactor(-t)));
+            diffXS *= (fTargetA - fTargetZ) * exp(-fTargetA * sqr(nuclearFormFactor(-t)));
             weight /= QUASIELASTIC_NEUTRON_FRACTION;
          }
       }
@@ -1569,6 +1569,7 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
       // These events have no cross section, but do not discard
       // them because they are needed to get the right MC integral.
  
+std::cerr << "catching throw up with mRecoil=" << mRecoil << std::endl;
       nOut.SetMom(TThreeVectorReal(0,0,1e-12));
       eOut.SetMom(TThreeVectorReal(0,0,1e-12));
       pOut.SetMom(TThreeVectorReal(0,0,1e-12));
@@ -1709,9 +1710,7 @@ void GlueXBeamConversionProcess::GenerateTripletProcess(const G4Step &step)
    pOut.AllPol();
    eOut3.AllPol();
    const TThreeVectorReal zero3vector(0,0,0);
-   eIn.SetPol(TThreeVectorReal(fTargetPol.elec[0],
-                               fTargetPol.elec[1],
-                               fTargetPol.elec[2]));
+   eIn.SetPol(TThreeVectorReal(zero3vector));
    eIn.SetMom(TThreeVectorReal(zero3vector));
    const G4Track *track = step.GetTrack();
    LDouble_t kin = track->GetKineticEnergy()/GeV;
@@ -1875,8 +1874,7 @@ void GlueXBeamConversionProcess::GenerateTripletProcess(const G4Step &step)
       // returned as d(sigma)/(dE+ dphi+ d^3qR)
       diffXS = TCrossSection::TripletProduction(gIn, eIn, pOut, eOut, eOut3);
       fPairsGeneration->SetConverterZ(fTargetZ);
-      //diffXS *= fTargetZ * exp(-fTargetZ * sqr(fPairsGeneration->FFatomic(qR)));
-      diffXS *= fTargetZ * (1 - sqr(fPairsGeneration->FFatomic(qR)));
+      diffXS *= fTargetZ * exp(-fTargetZ * sqr(fPairsGeneration->FFatomic(qR)));
 #if USE_ADAPTIVE_SAMPLER
       fAdaptiveSampler->feedback(u, weight * diffXS);
 #endif

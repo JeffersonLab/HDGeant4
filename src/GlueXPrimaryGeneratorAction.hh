@@ -59,7 +59,7 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    static double GetMassPDG(int PDGtype);
    static double GetMass(int Geant3Type);
  
-   const CobremsGeneration* GetCobremsGeneration() const;
+   const CobremsGeneration* GetCobremsGeneration();
 
  private:
    static std::ifstream *fHDDMinfile;

@@ -62,6 +62,8 @@ const double CobremsGeneration::me = 0.510998910e-3;
 const double CobremsGeneration::alpha = 7.2973525698e-3;
 const double CobremsGeneration::hbarc = 0.1973269718e-15;
 
+std::map<CobremsGeneration*, int> CobremsGeneration::CobremsGenerators;
+
 CobremsGeneration::CobremsGeneration(double Emax_GeV, double Epeak_GeV)
 {
    // Unique constructor for this class, initialize for the given
@@ -91,6 +93,8 @@ CobremsGeneration::CobremsGeneration(double Emax_GeV, double Epeak_GeV)
              << " primary coherent edge: " << Epeak_GeV << " GeV"
              << std::endl;
 #endif
+
+   CobremsGenerators[this] = 1;
 }
 
 void CobremsGeneration::updateTargetOrientation()
@@ -468,7 +472,10 @@ CobremsGeneration &CobremsGeneration::operator=(const CobremsGeneration &src)
    return *this;
 }
 
-CobremsGeneration::~CobremsGeneration() { }
+CobremsGeneration::~CobremsGeneration()
+{
+   CobremsGenerators.erase(this);
+}
 
 double CobremsGeneration::CoherentEnhancement(double x)
 {
