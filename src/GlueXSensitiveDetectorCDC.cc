@@ -107,7 +107,7 @@ GlueXSensitiveDetectorCDC::GlueXSensitiveDetectorCDC(const G4String& name)
       // whether or not a magnetic field is present.
  
       G4ThreeVector B = GlueXDetectorConstruction::GetInstance()
-                        ->GetMagneticField(G4ThreeVector(0, 0, 65), tesla);
+                        ->GetMagneticField(G4ThreeVector(0, 0, 65*cm), tesla);
       if (B.mag() > 1e-3) {
          int nvalues = CDC_DRIFT_TABLE_LEN;
          std::vector< std::map<std::string, float> > values;
