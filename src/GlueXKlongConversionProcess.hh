@@ -54,6 +54,8 @@ class GlueXKlongConversionProcess: public G4VEmProcess
 
    G4double fPIL;
 
+   static int fStopBeamAfterConverter;
+
  private:
    GlueXKlongConversionProcess operator=(GlueXKlongConversionProcess &src) = delete;
    GlueXKlongConversionProcess(GlueXKlongConversionProcess &src) = delete;
