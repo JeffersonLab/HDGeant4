@@ -1,4 +1,5 @@
 //
+//
 // class implementation for GlueXKlongConversionProcess
 //
 // author: richard.t.jones at uconn.edu
@@ -63,6 +64,14 @@ double gammaPhiXS_ub[220] = {
 };
 double gammaPhiXS_tslope_GeV2(6.2);
 double gammaPhiXS_Emin_GeV(1.9);
+double gammaPhiXS_Emax_GeV(22.0);
+double gammaPhiXS_scale_factor(1000);
+double neutralKaonPhi_bratio(0.342);
+double massTargetNucleon = 0.938*GeV;
+double massPhiMeson = 1.020*GeV;
+double massK0Meson = 0.497.6*GeV;
+double NAvagadro(6.023e23);
+double cm2_ub(1e-30);
 
 // conversion target material properties
 double beryllium_A(9)
@@ -71,7 +80,6 @@ double tungesten_A(0.9 * 183.8 + 0.1 * 63.5);
 double tungesten_density_gcm3(1 / ((0.9 / 19.38) + (0.1 / 8.96)));
 
 G4Mutex GlueXKlongConversionProcess::fMutex = G4MUTEX_INITIALIZER;
-int GlueXKLongConversionProcess::fStopBeamAfterConverter = 0;
 int GlueXKlongConversionProcess::fConfigured = 0;
 
 GlueXKlongConversionProcess::GlueXKlongConversionProcess(
@@ -80,7 +88,6 @@ GlueXKlongConversionProcess::GlueXKlongConversionProcess(
  : G4VEmProcess(name, aType),
    isInitialised(false)
 {
-   SetMinKinEnergy(gammaPhiXS_Emin_GeV*GeV);
    SetProcessSubType(fGammaConversion);
    SetStartFromNullFlag(true);
    SetBuildTableFlag(true);
@@ -112,7 +119,7 @@ GlueXKlongConversionProcess::GlueXKlongConversionProcess(
                genbeampars[1] == "KL_gen" ||
                genbeampars[1] == "klong_gen" ))
       {
-         fStopBeamAfterConverter = 1;
+         //fStopBeamAfterConverter = 1;
       }
    }
 
@@ -138,7 +145,7 @@ void GlueXKlongConversionProcess::InitialiseProcess(const G4ParticleDefinition*)
    if (!isInitialised) {
       isInitialised = true;
       G4EmParameters* param = G4EmParameters::Instance();
-      G4double emin = std::max(param->MinKinEnergy(), 2*electron_mass_c2);
+      G4double emin = gammaPhiXS_Emin_GeV*GeV;
       G4double emax = param->MaxKinEnergy();
 
       SetMinKinEnergy(emin);
@@ -155,7 +162,7 @@ void GlueXKlongConversionProcess::InitialiseProcess(const G4ParticleDefinition*)
 G4double GlueXKlongConversionProcess::MinPrimaryEnergy(const G4ParticleDefinition*,
                                                          const G4Material*)
 {
-  return 2*electron_mass_c2;
+  return gammaPhiXS_Emin_GeV*GeV;
 }
 
 void GlueXKlongConversionProcess::PrintInfo()
@@ -182,55 +189,21 @@ G4double GlueXKlongConversionProcess::PostStepGetPhysicalInteractionLength(
                                         G4ForceCondition *condition)
 {
    const G4Step *step = G4ParallelWorldProcess::GetHyperStep();
+   double KE_GeV = step->GetPostStepPoint()->GetKineticEnergy()*GeV;
+   int iEbin = (KE_GeV < gammaPhiXS_Emax_GeV)?
+                KE_GeV / gammaPhiXS_dE_GeV :
+                gammaPhiXS_Emax_GeV / gammaPhiXS_dE_GeV;
    G4VPhysicalVolume *pvol = step->GetPostStepPoint()->GetPhysicalVolume();
-   if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "PTAR" &&
-       (FORCED_PTAR_PAIR_CONVERSION || 
-        fStopBeamBeforeConverter ||
-        fStopBeamAfterConverter ))
-   {
-      fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
-                             track, previousStepSize, condition);
-      *condition = Forced;
-      return 100*cm;
+   if (pvol && pvol->GetName() == "KLFT") {
+      fPIL = cm / (gammaPhiXS_ub[iEbin] * neutralKaonPhi_bratio *
+                   cm2_ub * beryllium_density_gcm3 * NAvagadro);
    }
-   else if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "LIH2" &&
-       (FORCED_LIH2_PAIR_CONVERSION || 
-        fStopBeamAfterTarget ))
-   {
-      fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
-                             track, previousStepSize, condition);
-      *condition = Forced;
-      return 100*cm;
-   }
-   else if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "TGT0" &&
-       (FORCED_TGT0_PAIR_CONVERSION || 
-        fStopBeamAfterTarget ))
-   {
-      fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
-                             track, previousStepSize, condition);
-      *condition = Forced;
-      return 100*cm;
-   }
-   else if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "BETG" &&
-       (FORCED_BETG_PAIR_CONVERSION || 
-        fStopBeamAfterTarget ))
-   {
-      fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
-                             track, previousStepSize, condition);
-      *condition = Forced;
-      return 100*cm;
-   }
-   else if (track.GetTrackID() == 1 && pvol && pvol->GetName() == "LIHE" &&
-       (FORCED_LIHE_PAIR_CONVERSION || 
-        fStopBeamAfterTarget ))
-   {
-      fPIL = G4VEmProcess::PostStepGetPhysicalInteractionLength(
-                             track, previousStepSize, condition);
-      *condition = Forced;
-      return 100*cm;
+   else if (pvol && pvol->GetName() == "KLFW") {
+      fPIL = cm / (gammaPhiXS_ub[iEbin] * neutralKaonPhi_bratio *
+                   cm2_ub * tungsten_density_gcm3 * NAvagadro);
    }
    *condition = NotForced;
-   return 1e99;
+   return fPIL / gammaPhiXS_scale_factor;
 }
 
 G4VParticleChange *GlueXKlongConversionProcess::PostStepDoIt(
@@ -241,55 +214,12 @@ G4VParticleChange *GlueXKlongConversionProcess::PostStepDoIt(
    GlueXUserEventInformation *eventinfo;
    const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
    eventinfo = (GlueXUserEventInformation*)event->GetUserInformation();
-   if (fStopBeamBeforeConverter) {
-      double tvtx = step.GetPreStepPoint()->GetGlobalTime();
-      G4ThreeVector vtx = step.GetPreStepPoint()->GetPosition();
-      G4ThreeVector mom = step.GetPreStepPoint()->GetMomentum();
-      G4ThreeVector pol = step.GetPreStepPoint()->GetPolarization();
-      G4PrimaryVertex* vertex = new G4PrimaryVertex(vtx, tvtx);
-      G4PrimaryParticle* photon = new G4PrimaryParticle(G4Gamma::Definition(),
-                                                        mom[0], mom[1], mom[2]);
-      photon->SetPolarization(pol);
-      vertex->SetPrimary(photon);
-      eventinfo->AddPrimaryVertex(*vertex);
-      eventinfo->AddBeamParticle(1, tvtx, vtx, mom, pol);
-
-      if (verboseLevel > 0) {
-         G4cout << "GlueXKlongConversionProcess: beam particle stopped"
-                << " before converter, stored in ouptut primary vertex."
-                << G4endl;
-      }
-   }
-   else if (fStopBeamAfterConverter) {
-      double tvtx = step.GetPreStepPoint()->GetGlobalTime();
-      G4ThreeVector vtx = step.GetPreStepPoint()->GetPosition();
-      G4ThreeVector mom = step.GetPreStepPoint()->GetMomentum();
-      G4ThreeVector pol = step.GetPreStepPoint()->GetPolarization();
-      eventinfo->AddBeamParticle(1, tvtx, vtx, mom, pol);
-      GenerateConversionVertex(track, step);
-
-      if (verboseLevel > 0) {
-         G4cout << "GlueXKlongConversionProcess: beam particle stopped"
-                << " at converter exit, pair conversion forced."
-                << G4endl;
-      }
-   }
-   else if (fStopBeamAfterTarget) {
-      double tvtx = step.GetPreStepPoint()->GetGlobalTime();
-      G4ThreeVector vtx = step.GetPreStepPoint()->GetPosition();
-      G4ThreeVector mom = step.GetPreStepPoint()->GetMomentum();
-      G4ThreeVector pol = step.GetPreStepPoint()->GetPolarization();
-      eventinfo->AddBeamParticle(1, tvtx, vtx, mom, pol);
-      GenerateConversionVertex(track, step);
-   }
-   else {
-      G4VEmProcess::PostStepDoIt(track, step);
-      if (verboseLevel > 0) {
-         G4cout << "GlueXKlongConversionProcess: beam particle stopped"
-                << " unexpectedly, pair conversion forced. But WHY?"
-                << G4endl;
-      }
-   }
+   double tvtx = step.GetPreStepPoint()->GetGlobalTime();
+   G4ThreeVector vtx = step.GetPreStepPoint()->GetPosition();
+   G4ThreeVector mom = step.GetPreStepPoint()->GetMomentum();
+   G4ThreeVector pol = step.GetPreStepPoint()->GetPolarization();
+   eventinfo->AddBeamParticle(1, tvtx, vtx, mom, pol);
+   GenerateConversionVertex(track, step);
    pParticleChange->ProposeTrackStatus(fStopAndKill);
    eventinfo->SetKeepEvent(1);
    return pParticleChange;
@@ -298,19 +228,9 @@ G4VParticleChange *GlueXKlongConversionProcess::PostStepDoIt(
 void GlueXKlongConversionProcess::GenerateConversionVertex(const G4Track &track,
                                                              const G4Step &step)
 {
-   G4ThreeVector pol = step.GetPreStepPoint()->GetPolarization();
-   double pmag = pol.mag();
-   if (G4UniformRand() > pmag) {
-      G4Track *mtrack = (G4Track*)&track;
-      mtrack->SetPolarization(G4ThreeVector(0,0,0));
-   }
-   else {
-      G4Track *mtrack = (G4Track*)&track;
-      mtrack->SetPolarization(pol / pmag); 
-   }
    G4VParticleChange *pchange = G4VEmProcess::PostStepDoIt(track, step);
 
-   // Generate a new vertex for the pair
+   // Generate a new vertex for the klong,kshort pair
    double beamVelocity = GlueXPhotonBeamGenerator::getBeamVelocity();
    double steplength = pParticleChange->GetTrueStepLength();
    G4ThreeVector direction(track.GetMomentumDirection());
@@ -322,48 +242,98 @@ void GlueXKlongConversionProcess::GenerateConversionVertex(const G4Track &track,
    t0 -= lvtx / beamVelocity;
    G4PrimaryVertex vertex(x0, t0);
 
-   G4TrackVector secondaries;
-   GlueXUserEventInformation *event_info;
-   const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
-   event_info = (GlueXUserEventInformation*)event->GetUserInformation();
-   for (int s=0; s < pchange->GetNumberOfSecondaries(); ++s) {
-      GlueXUserTrackInformation *trackinfo = new GlueXUserTrackInformation();
-      if (event_info) {
-         trackinfo->SetGlueXTrackID(event_info->AssignNextGlueXTrackID());
-      }
-      pchange->GetSecondary(s)->SetPosition(x0);
-      pchange->GetSecondary(s)->SetGlobalTime(t0);
-      pchange->GetSecondary(s)->SetUserInformation(trackinfo);
-      pchange->GetSecondary(s)->SetTrackStatus(fStopAndKill);
-      secondaries.push_back(pchange->GetSecondary(s));
+   // Compute the phi kinematics in the gamma,N rest frame
+   double KE_GeV = track.GetKineticEnergy()*GeV;
+   double mandelS = sqr(KE_GeV + massTargetNucleon) - sqr(KE_GeV);
+   double mandelT = log(G4UniformRand() + 1e-99) / gammaPhiXS_tslope_GeV2;
+   double EstarPhi = (mandelS + sqr(massPhiMeson) - sqr(massTargetNucleon)) /
+                     sqrt((2 * mandelS);
+   if (EstarPhi < massPhiMeson) {
+      G4cerr << "Error in GlueXKlongConversionProcess::GenerateConversionVertex - "
+             << "phi meson production attempted below threshold, "
+             << "cannot continue." << G4endl;
+      exit(-1);
+   }
+   double qstarPhi = sqrt(sqr(EstarPhi) - sqr(massPhiMeson));
+   double qstarInc = sqrt(sqr(MandelS - sqr(massTargetNucleon)) / (2 * mandelS));
+   double costhetastarPhi = (mandelT - sqr(qstarInc - EstarPhi) +
+                             sqr(qstarInc) + sqr(qstarPhi)) /
+                             (2 * qstarInc * qstarPhi);
+   double phistarPhi = 2 * M_PI * G4UniformRand();
+   if (fabs(costhetastarPhi) > 1)
+      costhetastarPhi /= fabs(costhetastarPhi);
+   double sinthetastarPhi = sqrt(1 - sqr(costhetastarPhi));
+ 
+   // Compute the klong kinematics in the phi rest frame
+   double EstarKL = massPhiMeson / 2;
+   double qstarKL = sqrt(sqr(EstarKL) - sqr(massK0Meson));
+   double costhetastarKL = 2 * (G4UniformRand() - 0.5);
+   double phithetastarKL = 2 * M_PI * G4UniformRand();
+   if (fabs(costhetastarKL) > 1)
+      costhetastarKL /= fabs(costhetastarKL);
+   double sinthetastarKL = sqrt(1 - sqr(costhetastarKL));
+   G4LorentzVector klong_p(qstarKL/GeV * sinthetastarKL * cos(phithetastarKL),
+                           qstarKL/GeV * sinthetastarKL * sin(phithetastarKL),
+                           qstarKL/GeV * costhetastarKL, EstarKL/GeV);
+   G4LorentzVector kshort_p(-qstarKL/GeV * sinthetastarKL * cos(phithetastarKL),
+                            -qstarKL/GeV * sinthetastarKL * sin(phithetastarKL),
+                            -qstarKL/GeV * costhetastarKL, EstarKL/GeV);
+
+   // Boost kaons into the gamma,N rest frame
+   G4ThreeVector vPhi_reaction(
+                 qstarPhi * sinthetastarPhi * cos(phistarPhi) / EstarPhi,
+                 qstarPhi * sinthetastarPhi * sin(phistarPhi) / EstarPhi,
+                 qstarPhi * costhetastarPhi / EstarPhi);
+   G4ThreeVector vReaction_lab(track.GetMomentum()*GeV / 
+                               (KE_GeV + massNucleonTarget);
+   klong_p.boost(vPhi_reaction);
+   klong_p.boost(vReaction_lab);
+   kshort_p.boost(vPhi_reaction);
+   kshort_p.boost(vReaction_lab);
+   
+#ifdef CHECK_KINEMATICS
+   // Check that the results make sense
+   pPhi = klong_p + kshort_p;
+   mPhi = pPhi.m();
+   if (fabs(mPhi - massPhiMeson) > 1*MeV) {
+      std::cerr << "Warning in GlueXKlongConversionProcess::GenerateConversionVertex - "
+                << " phi mass mismatch, mPhi=" << mPhi 
+                << ", massPhiMeson=" << massPhiMeson
+                << std::endl;
+   }
+   G4LorentzVector beam(track.GetMomentum(), track.GetKineticEnergy());
+   pxfer = pPhi - beam;
+   if (fabs(pxfer.m2() - mandelT) > 1e-3) {
+      std::cerr << "Warning in GlueXKlongConversionProcess::GenerateConversionVertex - "
+                << " generated t mismatch, pxfer.m2()" << pxfer.m2() 
+                <<", mandelT=" << mandelT
+                << std::endl;
    }
 
    // append secondary vertex to MC record
+   G4TrackVector secondaries;
+   G4Track *kaon01 = new G4Track(G4DynamicParticle(G4KaonZeroLong, klong_p), t0, x0);
+   GlueXUserTrackInformation *trackinfo = new GlueXUserTrackInformation();
+   trackinfo->SetGlueXTrackID(event_info->AssignNextGlueXTrackID());
+   kaon01->SetUserInformation(trackinfo);
+   //kaon01->SetTrackStatus(fStopAndKill);
+   secondaries.push_back(kaon01);
+   G4Track *kaon02 = new G4Track(G4DynamicParticle(G4KaonZeroShort, kshort_p), t0, x0);
+   GlueXUserTrackInformation *trackinfo = new GlueXUserTrackInformation();
+   trackinfo->SetGlueXTrackID(event_info->AssignNextGlueXTrackID());
+   kaon02->SetUserInformation(trackinfo);
+   //kaon02->SetTrackStatus(fStopAndKill);
+   secondaries.push_back(kaon02);
+
    if (event_info) {
       int mech[2];
       char *cmech = (char*)mech;
-      snprintf(cmech, 5, "%c%c%c%c", 'B', 'E', 'R', 'N');
+      snprintf(cmech, 5, "%c%c%c%c", 'K', 'L', 'K', 'S');
       event_info->AddSecondaryVertex(secondaries, 1, mech[0]);
       hddm_s::ReactionList rea = event_info->getOutputRecord()->getReactions();
       if (rea.size() > 0) {
-         rea(0).setType(221); // Bethe-Heitler process
+         rea(0).setType(372); // peripheral phi production into Kl,Ks
          rea(0).setWeight(1.0);
       }
    }
-}
-
-G4ParticleDefinition *GlueXKlongConversionProcess::GetLepton(int charge) {
-   if (fLeptonPairFamily == 0) {
-      if (charge > 0)
-         return G4Positron::Definition();
-      else
-         return G4Electron::Definition();
-   }
-   else if (fLeptonPairFamily == 1) {
-      if (charge > 0)
-         return G4MuonPlus::Definition();
-      else
-         return G4MuonMinus::Definition();
-   }
-   return 0;
 }
