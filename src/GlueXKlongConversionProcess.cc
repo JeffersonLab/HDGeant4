@@ -21,6 +21,8 @@
 
 #include <G4SystemOfUnits.hh>
 #include "G4PhysicalConstants.hh"
+#include "G4KaonZeroLong.hh"
+#include "G4KaonZeroShort.hh"
 #include "G4Gamma.hh"
 #include "G4Positron.hh"
 #include "G4Electron.hh"
@@ -34,10 +36,12 @@
 #include <stdio.h>
 #include <iomanip>
 
+#define CHECK_KINEMATICS 1
+
 // Phi photoproduction total cross section as function of photon energy,
 // digitized from Fig. 3 in Wang et al, arXiv:2208.10289 (22 Aug 2022).
 
-double gammaPhiXS_dE_GeV(0.1);
+double gammaPhiXS_dE(0.1*GeV);
 double gammaPhiXS_ub[220] = {
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.079,
@@ -62,22 +66,22 @@ double gammaPhiXS_ub[220] = {
 0.656, 0.656, 0.656, 0.657, 0.657, 0.657, 0.658, 0.658, 0.658, 0.659,
 0.659, 0.659, 0.66, 0.66, 0.66, 0.661, 0.661, 0.661, 0.662, 0.662,
 };
-double gammaPhiXS_tslope_GeV2(6.2);
-double gammaPhiXS_Emin_GeV(1.9);
-double gammaPhiXS_Emax_GeV(22.0);
-double gammaPhiXS_scale_factor(1000);
+double gammaPhiXS_scale_factor(1e3);
+double gammaPhiXS_tslope(6.2/(GeV*GeV));
+double gammaPhiXS_Emin(1.9*GeV);
+double gammaPhiXS_Emax(22.0*GeV);
 double neutralKaonPhi_bratio(0.342);
-double massTargetNucleon = 0.938*GeV;
-double massPhiMeson = 1.020*GeV;
-double massK0Meson = 0.497.6*GeV;
+double massTargetNucleon(0.938*GeV);
+double massPhiMeson(1.020*GeV);
+double massK0Meson(0.4976*GeV);
 double NAvagadro(6.023e23);
 double cm2_ub(1e-30);
 
 // conversion target material properties
-double beryllium_A(9)
+double beryllium_A(9);
 double beryllium_density_gcm3(1.85);
-double tungesten_A(0.9 * 183.8 + 0.1 * 63.5);
-double tungesten_density_gcm3(1 / ((0.9 / 19.38) + (0.1 / 8.96)));
+double tungsten_A(0.9 * 183.8 + 0.1 * 63.5);
+double tungsten_density_gcm3(1 / ((0.9 / 19.38) + (0.1 / 8.96)));
 
 G4Mutex GlueXKlongConversionProcess::fMutex = G4MUTEX_INITIALIZER;
 int GlueXKlongConversionProcess::fConfigured = 0;
@@ -126,9 +130,7 @@ GlueXKlongConversionProcess::GlueXKlongConversionProcess(
    fConfigured = 1;
 
    if (verboseLevel > 0) {
-       G4cout << GetProcessName() << " is created " << G4endl
-              << "    Stop beam after converter? "
-              << (fStopBeamAfterConverter? "yes" : "no") << G4endl
+       G4cout << GetProcessName() << " is created " << G4endl;
    }
 }
 
@@ -145,7 +147,7 @@ void GlueXKlongConversionProcess::InitialiseProcess(const G4ParticleDefinition*)
    if (!isInitialised) {
       isInitialised = true;
       G4EmParameters* param = G4EmParameters::Instance();
-      G4double emin = gammaPhiXS_Emin_GeV*GeV;
+      G4double emin = gammaPhiXS_Emin;
       G4double emax = param->MaxKinEnergy();
 
       SetMinKinEnergy(emin);
@@ -162,7 +164,7 @@ void GlueXKlongConversionProcess::InitialiseProcess(const G4ParticleDefinition*)
 G4double GlueXKlongConversionProcess::MinPrimaryEnergy(const G4ParticleDefinition*,
                                                          const G4Material*)
 {
-  return gammaPhiXS_Emin_GeV*GeV;
+  return gammaPhiXS_Emin;
 }
 
 void GlueXKlongConversionProcess::PrintInfo()
@@ -188,11 +190,31 @@ G4double GlueXKlongConversionProcess::PostStepGetPhysicalInteractionLength(
                                         G4double previousStepSize,
                                         G4ForceCondition *condition)
 {
+   // Use of this process precludes use of the tagger
+   GlueXUserEventInformation *event_info;
+   const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
+   event_info = (GlueXUserEventInformation*)event->GetUserInformation();
+   if (event_info) {
+      hddm_s::ReactionList rea = event_info->getOutputRecord()->getReactions();
+      if (rea.size() > 0) {
+         hddm_s::VertexList ver = rea(0).getVertices();
+         if (ver.size() > 0) {
+            hddm_s::ProductList pro = ver(0).getProducts();
+            if (pro.size() == 1)
+               rea(0).deleteVertices(1);
+         }
+      }
+      hddm_s::HitViewList vie = event_info->getOutputRecord()->getHitViews();
+      if (vie.size() > 0) {
+         vie(0).deleteTaggers();
+      }
+   }
+
    const G4Step *step = G4ParallelWorldProcess::GetHyperStep();
-   double KE_GeV = step->GetPostStepPoint()->GetKineticEnergy()*GeV;
-   int iEbin = (KE_GeV < gammaPhiXS_Emax_GeV)?
-                KE_GeV / gammaPhiXS_dE_GeV :
-                gammaPhiXS_Emax_GeV / gammaPhiXS_dE_GeV;
+   double KE = step->GetPostStepPoint()->GetKineticEnergy();
+   int iEbin = (KE < gammaPhiXS_Emax)?
+                KE / (gammaPhiXS_dE) :
+                gammaPhiXS_Emax / gammaPhiXS_dE;
    G4VPhysicalVolume *pvol = step->GetPostStepPoint()->GetPhysicalVolume();
    if (pvol && pvol->GetName() == "KLFT") {
       fPIL = cm / (gammaPhiXS_ub[iEbin] * neutralKaonPhi_bratio *
@@ -202,8 +224,11 @@ G4double GlueXKlongConversionProcess::PostStepGetPhysicalInteractionLength(
       fPIL = cm / (gammaPhiXS_ub[iEbin] * neutralKaonPhi_bratio *
                    cm2_ub * tungsten_density_gcm3 * NAvagadro);
    }
+   else {
+      fPIL = 1e99;
+   }
    *condition = NotForced;
-   return fPIL / gammaPhiXS_scale_factor;
+   return -log(G4UniformRand()) * fPIL / gammaPhiXS_scale_factor;
 }
 
 G4VParticleChange *GlueXKlongConversionProcess::PostStepDoIt(
@@ -228,7 +253,8 @@ G4VParticleChange *GlueXKlongConversionProcess::PostStepDoIt(
 void GlueXKlongConversionProcess::GenerateConversionVertex(const G4Track &track,
                                                              const G4Step &step)
 {
-   G4VParticleChange *pchange = G4VEmProcess::PostStepDoIt(track, step);
+   G4ThreeVector mom = step.GetPreStepPoint()->GetMomentum();
+   G4ThreeVector pol = step.GetPreStepPoint()->GetPolarization();
 
    // Generate a new vertex for the klong,kshort pair
    double beamVelocity = GlueXPhotonBeamGenerator::getBeamVelocity();
@@ -240,100 +266,126 @@ void GlueXKlongConversionProcess::GenerateConversionVertex(const G4Track &track,
    double lvtx = steplength + fPIL * log(1 - uvtx * (1 - exp(-steplength / fPIL)));
    x0 -= lvtx * direction;
    t0 -= lvtx / beamVelocity;
-   G4PrimaryVertex vertex(x0, t0);
+   G4PrimaryVertex* vertex = new G4PrimaryVertex(x0, t0);
 
    // Compute the phi kinematics in the gamma,N rest frame
-   double KE_GeV = track.GetKineticEnergy()*GeV;
-   double mandelS = sqr(KE_GeV + massTargetNucleon) - sqr(KE_GeV);
-   double mandelT = log(G4UniformRand() + 1e-99) / gammaPhiXS_tslope_GeV2;
+   double KE = track.GetKineticEnergy();
+   double mandelS = sqr(KE + massTargetNucleon) - sqr(KE);
+   double mandelT = log(G4UniformRand() + 1e-99) / (gammaPhiXS_tslope);
    double EstarPhi = (mandelS + sqr(massPhiMeson) - sqr(massTargetNucleon)) /
-                     sqrt((2 * mandelS);
+                     sqrt(4 * mandelS);
    if (EstarPhi < massPhiMeson) {
-      G4cerr << "Error in GlueXKlongConversionProcess::GenerateConversionVertex - "
-             << "phi meson production attempted below threshold, "
-             << "cannot continue." << G4endl;
-      exit(-1);
+      //G4cerr << "Warning in GlueXKlongConversionProcess::GenerateConversionVertex - "
+      //       << "phi meson production attempted below threshold, "
+      //       << "cannot continue." << G4endl;
+      return;
    }
    double qstarPhi = sqrt(sqr(EstarPhi) - sqr(massPhiMeson));
-   double qstarInc = sqrt(sqr(MandelS - sqr(massTargetNucleon)) / (2 * mandelS));
+   double qstarInc = sqrt(sqr(mandelS - sqr(massTargetNucleon)) / (4 * mandelS));
    double costhetastarPhi = (mandelT - sqr(qstarInc - EstarPhi) +
                              sqr(qstarInc) + sqr(qstarPhi)) /
                              (2 * qstarInc * qstarPhi);
    double phistarPhi = 2 * M_PI * G4UniformRand();
-   if (fabs(costhetastarPhi) > 1)
+   if (fabs(costhetastarPhi) > 1) {
       costhetastarPhi /= fabs(costhetastarPhi);
+      mandelT = sqr(qstarInc - EstarPhi) - sqr(qstarInc - qstarPhi);
+   }
    double sinthetastarPhi = sqrt(1 - sqr(costhetastarPhi));
  
    // Compute the klong kinematics in the phi rest frame
    double EstarKL = massPhiMeson / 2;
    double qstarKL = sqrt(sqr(EstarKL) - sqr(massK0Meson));
    double costhetastarKL = 2 * (G4UniformRand() - 0.5);
-   double phithetastarKL = 2 * M_PI * G4UniformRand();
-   if (fabs(costhetastarKL) > 1)
+   double phistarKL = 2 * M_PI * G4UniformRand();
+   if (fabs(costhetastarKL) > 1) {
       costhetastarKL /= fabs(costhetastarKL);
+   }
    double sinthetastarKL = sqrt(1 - sqr(costhetastarKL));
-   G4LorentzVector klong_p(qstarKL/GeV * sinthetastarKL * cos(phithetastarKL),
-                           qstarKL/GeV * sinthetastarKL * sin(phithetastarKL),
-                           qstarKL/GeV * costhetastarKL, EstarKL/GeV);
-   G4LorentzVector kshort_p(-qstarKL/GeV * sinthetastarKL * cos(phithetastarKL),
-                            -qstarKL/GeV * sinthetastarKL * sin(phithetastarKL),
-                            -qstarKL/GeV * costhetastarKL, EstarKL/GeV);
+   G4LorentzVector klong_p(qstarKL * sinthetastarKL * cos(phistarKL),
+                           qstarKL * sinthetastarKL * sin(phistarKL),
+                           qstarKL * costhetastarKL, EstarKL);
+   G4LorentzVector kshort_p(-qstarKL * sinthetastarKL * cos(phistarKL),
+                            -qstarKL * sinthetastarKL * sin(phistarKL),
+                            -qstarKL * costhetastarKL, EstarKL);
 
    // Boost kaons into the gamma,N rest frame
    G4ThreeVector vPhi_reaction(
                  qstarPhi * sinthetastarPhi * cos(phistarPhi) / EstarPhi,
                  qstarPhi * sinthetastarPhi * sin(phistarPhi) / EstarPhi,
                  qstarPhi * costhetastarPhi / EstarPhi);
-   G4ThreeVector vReaction_lab(track.GetMomentum()*GeV / 
-                               (KE_GeV + massNucleonTarget);
    klong_p.boost(vPhi_reaction);
-   klong_p.boost(vReaction_lab);
    kshort_p.boost(vPhi_reaction);
+
+   // Boost back into the lab frame, then rotate to the align lab axes
+   double labbeta = KE / (KE + massTargetNucleon);
+   G4ThreeVector vReaction_lab(0, 0, labbeta);
+   G4LorentzVector kphoton(0, 0, qstarInc, qstarInc);
+   klong_p.boost(vReaction_lab);
    kshort_p.boost(vReaction_lab);
+   kphoton.boost(vReaction_lab);
+   G4ThreeVector axis = direction.cross(vReaction_lab);
+   double alpha = -asin(axis.mag() / labbeta);
+   axis /= axis.mag();
+   klong_p.rotate(alpha, axis);
+   kshort_p.rotate(alpha, axis);
+   kphoton.rotate(alpha, axis);
    
 #ifdef CHECK_KINEMATICS
    // Check that the results make sense
-   pPhi = klong_p + kshort_p;
-   mPhi = pPhi.m();
-   if (fabs(mPhi - massPhiMeson) > 1*MeV) {
+   G4ThreeVector dphoton = kphoton - mom;
+   if (fabs(dphoton.mag()) > 1e-3*GeV) {
+      std::cerr << "Warning in GlueXKlongConversionProcess::GenerateConversionVertex - "
+                << " transform from phi rest frame to lab failed, gamma momentum=" << mom
+                << ", boosted and rotated copy=" << kphoton
+                << std::endl;
+   }
+   G4LorentzVector pPhi = klong_p + kshort_p;
+   double mPhi = pPhi.m();
+   if (fabs(mPhi - massPhiMeson) > 1e-3*GeV) {
       std::cerr << "Warning in GlueXKlongConversionProcess::GenerateConversionVertex - "
                 << " phi mass mismatch, mPhi=" << mPhi 
                 << ", massPhiMeson=" << massPhiMeson
                 << std::endl;
    }
-   G4LorentzVector beam(track.GetMomentum(), track.GetKineticEnergy());
-   pxfer = pPhi - beam;
-   if (fabs(pxfer.m2() - mandelT) > 1e-3) {
+   G4LorentzVector pbeam(track.GetMomentum(), track.GetKineticEnergy());
+   G4LorentzVector pxfer = pPhi - pbeam;
+   if (fabs(pxfer.m2() - mandelT) > 1e-3*GeV*GeV) {
       std::cerr << "Warning in GlueXKlongConversionProcess::GenerateConversionVertex - "
-                << " generated t mismatch, pxfer.m2()" << pxfer.m2() 
+                << " generated t mismatch, pxfer.m2()=" << pxfer.m2() 
                 <<", mandelT=" << mandelT
                 << std::endl;
    }
+#endif
 
    // append secondary vertex to MC record
-   G4TrackVector secondaries;
-   G4Track *kaon01 = new G4Track(G4DynamicParticle(G4KaonZeroLong, klong_p), t0, x0);
-   GlueXUserTrackInformation *trackinfo = new GlueXUserTrackInformation();
-   trackinfo->SetGlueXTrackID(event_info->AssignNextGlueXTrackID());
-   kaon01->SetUserInformation(trackinfo);
-   //kaon01->SetTrackStatus(fStopAndKill);
-   secondaries.push_back(kaon01);
-   G4Track *kaon02 = new G4Track(G4DynamicParticle(G4KaonZeroShort, kshort_p), t0, x0);
-   GlueXUserTrackInformation *trackinfo = new GlueXUserTrackInformation();
-   trackinfo->SetGlueXTrackID(event_info->AssignNextGlueXTrackID());
-   kaon02->SetUserInformation(trackinfo);
-   //kaon02->SetTrackStatus(fStopAndKill);
-   secondaries.push_back(kaon02);
+   G4ParticleDefinition *klong_type = G4KaonZeroLong::Definition();
+   G4PrimaryParticle *klong_instance = new G4PrimaryParticle(klong_type,
+                      klong_p.px(), klong_p.py(), klong_p.pz(), klong_p.e());
+   vertex->SetPrimary(klong_instance);
+   G4ParticleDefinition *kshort_type = G4KaonZeroShort::Definition();
+   G4PrimaryParticle *kshort_instance = new G4PrimaryParticle(kshort_type,
+                      kshort_p.px(), kshort_p.py(), kshort_p.pz(), kshort_p.e());
+   vertex->SetPrimary(kshort_instance);
 
+   // create secondaries to continue tracking products
+   auto pchange = dynamic_cast<G4ParticleChangeForGamma*>(pParticleChange);
+   pchange->InitializeForPostStep(track);
+   pchange->AddSecondary(new G4DynamicParticle(klong_type, klong_p));
+   pchange->AddSecondary(new G4DynamicParticle(kshort_type, kshort_p));
+
+   GlueXUserEventInformation *event_info;
+   const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
+   event_info = (GlueXUserEventInformation*)event->GetUserInformation();
    if (event_info) {
       int mech[2];
       char *cmech = (char*)mech;
       snprintf(cmech, 5, "%c%c%c%c", 'K', 'L', 'K', 'S');
-      event_info->AddSecondaryVertex(secondaries, 1, mech[0]);
       hddm_s::ReactionList rea = event_info->getOutputRecord()->getReactions();
       if (rea.size() > 0) {
          rea(0).setType(372); // peripheral phi production into Kl,Ks
          rea(0).setWeight(1.0);
       }
+      event_info->AddPrimaryVertex(*vertex);
+      event_info->AddBeamParticle(1, t0, x0, mom, pol);
    }
 }

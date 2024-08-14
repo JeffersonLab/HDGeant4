@@ -55,6 +55,7 @@ class GlueXPhysicsList: public G4VModularPhysicsList
 
    G4VEmProcess *getBeamConversionProcess() const;
    G4VEmProcess *getBernardConversionProcess() const;
+   G4VEmProcess *getKlongConversionProcess() const;
    G4OpticalPhysics *getOpticalPhysicsProcess() const;
 
  protected:
@@ -62,6 +63,7 @@ class GlueXPhysicsList: public G4VModularPhysicsList
 
    G4VEmProcess *fBeamConversion;
    G4VEmProcess *fBernardConversion;
+   G4VEmProcess *fKlongConversion;
    G4OpticalPhysics *fOpticalPhysics;
 
 #if G4VERSION_NUMBER < 1030
@@ -84,6 +86,11 @@ inline G4VEmProcess *GlueXPhysicsList::getBeamConversionProcess() const
 inline G4VEmProcess *GlueXPhysicsList::getBernardConversionProcess() const
 {
    return fBernardConversion;
+}
+
+inline G4VEmProcess *GlueXPhysicsList::getKlongConversionProcess() const
+{
+   return fKlongConversion;
 }
 
 inline G4OpticalPhysics *GlueXPhysicsList::getOpticalPhysicsProcess() const

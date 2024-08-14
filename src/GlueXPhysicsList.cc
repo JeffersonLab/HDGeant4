@@ -41,12 +41,14 @@
 
 #include <GlueXBeamConversionProcess.hh>
 #include <GlueXBernardConversionProcess.hh>
+#include <GlueXKlongConversionProcess.hh>
 
 GlueXPhysicsList::GlueXPhysicsList(const GlueXDetectorConstruction *geometry,
                                    G4int verbosity)
  : G4VModularPhysicsList(),
    fBeamConversion(0),
    fBernardConversion(0),
+   fKlongConversion(0),
    fOpticalPhysics(0)
 {
    if (geometry == 0) {
@@ -144,6 +146,8 @@ GlueXPhysicsList::~GlueXPhysicsList()
       delete fBeamConversion;
    if (fBernardConversion)
       delete fBernardConversion;
+   if (fKlongConversion)
+      delete fKlongConversion;
 }
 
 
@@ -211,6 +215,7 @@ void GlueXPhysicsList::ConstructProcess()
 #if USING_BERNARD
    fBernardConversion = new GlueXBernardConversionProcess("BernardConversion");
 #endif
+   fKlongConversion = new GlueXKlongConversionProcess("KlongConversion");
 
    // create the special cuts processes and register them
    GetParticleIterator()->reset();
@@ -252,6 +257,16 @@ void GlueXPhysicsList::ConstructProcess()
                    << "cannot continue." << G4endl;
             exit(1);
 #endif
+         }
+         if (fKlongConversion) {
+            mgr->AddDiscreteProcess(fKlongConversion);
+         }
+         else {
+            G4cerr << "Error in GlueXPhysicsList::ConstructProcess - "
+                   << "KlongConversion process requested, but build "
+                   << "was made without Klong conversion process support, "
+                   << "cannot continue." << G4endl;
+            exit(1);
          }
          if (KEcut_gamma > 0) {
             G4UserLimits *glimits = new G4UserLimits();
