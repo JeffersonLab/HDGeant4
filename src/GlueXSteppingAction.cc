@@ -20,7 +20,7 @@
 #include <exception>
 #include <map>
 
-//#define BACKGROUND_PROFILING 1
+#define BACKGROUND_PROFILING 1
 #if BACKGROUND_PROFILING
 #include <TFile.h>
 #include <TTree.h>
@@ -163,6 +163,7 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
 
    struct profiler_row_t {
       float totE;
+      float time;
       float x[7];
       float ppol;
       float xspot[2];
@@ -248,6 +249,7 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       int pdgcode = track->GetDynamicParticle()->GetPDGcode();
       int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgcode);
       prow[0].totE = Etot/GeV;
+      prow[0].time = point->GetGlobalTime()/ns;
       prow[0].x[0] = pos[0]/cm;
       prow[0].x[1] = pos[1]/cm;
       prow[0].x[2] = pos[2]/cm;
