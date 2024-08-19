@@ -231,6 +231,7 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
          titles << "hits in virtual detector " << det;
          proftree = new TTree(names.str().c_str(), titles.str().c_str());
          proftree->Branch("totE", &prow[0].totE, "totE/F");
+         proftree->Branch("time", &prow[0].time, "time/F");
          proftree->Branch("x", &prow[0].x[0], "x[7]/F");
          proftree->Branch("ppol", &prow[0].ppol, "ppol/F");
          proftree->Branch("xspot", &prow[0].xspot[0], "xspot[2]/F");
