@@ -146,6 +146,33 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       }
    }
  
+   // Post new vertices to the MC record for Klong conversions
+   if (trackinfo) {
+      const G4VProcess* process;
+      process = step->GetPostStepPoint()->GetProcessDefinedStep();
+      if (process && process->GetProcessName() == "KlongConversion") {
+         G4TrackVector &secondary = *(G4TrackVector*)
+                                     step->GetSecondaryInCurrentStep();
+         G4TrackVector::iterator iter;
+         G4TrackVector decaySecondaries;
+         for (iter = secondary.begin(); iter != secondary.end(); ++iter) {
+            int newID = eventinfo->AssignNextGlueXTrackID();
+            trackinfo = new GlueXUserTrackInformation();
+            if (eventinfo) {
+               trackinfo->SetGlueXTrackID(newID);
+            }
+            (*iter)->SetUserInformation(trackinfo);
+            decaySecondaries.push_back(*iter);
+         }
+         if (eventinfo and decaySecondaries.size() > 0) {
+            int mech[2];
+            char *cmech = (char*)mech;
+            snprintf(cmech, 5, "%c%c%c%c", 'C', 'O', 'N', 'V');
+            eventinfo->AddSecondaryVertex(decaySecondaries, 1, mech[0]);
+         }
+      }
+   }
+ 
    // Save mc trajectory information if requested
    if (fSaveTrajectories) {
       eventinfo->AddMCtrajectoryPoint(*step, fSaveTrajectories);
