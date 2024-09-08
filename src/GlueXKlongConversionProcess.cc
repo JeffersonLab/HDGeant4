@@ -53,7 +53,7 @@ double gammaPhiXS_ub[220] = {
 0.656, 0.656, 0.656, 0.657, 0.657, 0.657, 0.658, 0.658, 0.658, 0.659,
 0.659, 0.659, 0.66, 0.66, 0.66, 0.661, 0.661, 0.661, 0.662, 0.662,
 };
-double gammaPhiXS_scale_factor(1e3);
+double gammaPhiXS_scale_factor(1e5);
 double gammaPhiXS_tslope(6.2/(GeV*GeV));
 double gammaPhiXS_Emin(1.9*GeV);
 double gammaPhiXS_Emax(22.0*GeV);
@@ -71,8 +71,8 @@ double beryllium_Z(4);
 double beryllium_A(9);
 double beryllium_density_gcm3(1.85);
 double tungsten_Z(74);
-double tungsten_A(0.9 * 183.8 + 0.1 * 63.5); // 90% tungsten + 10% copper
-double tungsten_density_gcm3(1 / ((0.9 / 19.38) + (0.1 / 8.96)));
+double tungsten_A(0.85 * 183.8 + 0.15 * 63.5); // 85% tungsten + 15% copper
+double tungsten_density_gcm3(1 / ((0.85 / 19.38) + (0.15 / 8.96)));
 
 GlueXKlongConversionProcess::GlueXKlongConversionProcess(
                                        const G4String &name, 
