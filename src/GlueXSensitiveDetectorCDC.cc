@@ -297,7 +297,7 @@ G4bool GlueXSensitiveDetectorCDC::ProcessHits(G4Step* step,
    G4int itrack = trackinfo->GetGlueXTrackID();
    int pdgtype = track->GetDynamicParticle()->GetPDGcode();
    int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgtype);
-   if (trackinfo->GetGlueXHistory() == 0 && itrack > 0) {
+   if (trackinfo->GetGlueXHistory() == 0) {
       G4int key = fPointsMap->entries();
       GlueXHitCDCpoint* lastPoint = (*fPointsMap)[key - 1];
       // No more than one truth point per ring in the cdc

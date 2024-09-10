@@ -430,7 +430,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
    GlueXUserTrackInformation *trackinfo = (GlueXUserTrackInformation*)
                                           track->GetUserInformation();
    int itrack = trackinfo->GetGlueXTrackID();
-   if (trackinfo->GetGlueXHistory() == 0 && itrack > 0) {
+   if (trackinfo->GetGlueXHistory() == 0) {
       G4int key = (chamber << 20) + fPointsMap->entries();
       GlueXHitFDCpoint* lastPoint = (*fPointsMap)[key - 1];
       // Limit fdc truthPoints to one per chamber
