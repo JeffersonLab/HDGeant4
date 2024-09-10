@@ -53,7 +53,7 @@ double gammaPhiXS_ub[220] = {
 0.656, 0.656, 0.656, 0.657, 0.657, 0.657, 0.658, 0.658, 0.658, 0.659,
 0.659, 0.659, 0.66, 0.66, 0.66, 0.661, 0.661, 0.661, 0.662, 0.662,
 };
-double gammaPhiXS_scale_factor(1e5);
+double gammaPhiXS_scale_factor(1);
 double gammaPhiXS_tslope(6.2/(GeV*GeV));
 double gammaPhiXS_Emin(1.9*GeV);
 double gammaPhiXS_Emax(22.0*GeV);
