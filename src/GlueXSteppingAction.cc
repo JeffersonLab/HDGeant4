@@ -242,7 +242,7 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       int mint;                  // interaction history depth
       float xint[mint_max][3];   // x,y,z of ancestor birthplace (cm)
       float tint[mint_max];      // global time of ancestor birth (ns)
-      float pint[mint_max];      // particle type of ancestor (G3 code)
+      int pint[mint_max];        // particle type of ancestor (G3 code)
    };
    static struct profiler_row_t prow[256];
 
@@ -250,7 +250,7 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       int parent_id;
       float xint[3];
       float tint;
-      float pint;
+      int pint;
    };
    static std::map<int, struct parent_history_t> parent_history[256];
 
