@@ -28,9 +28,9 @@ void GlueXEventAction::EndOfEventAction(const G4Event* evt)
       while (tens * 10 <= event_id)
          tens *= 10;
       if (event_id % tens == 0)
-         G4cout << event_id << " events simulated" << G4endl;
+         G4cout << event_id + 1 << " events simulated" << G4endl;
    }
    else if (event_id % fProgressStep == 0) {
-      G4cout << event_id << " events simulated" << G4endl;
+      G4cout << event_id + 1 << " events simulated" << G4endl;
    }
 }
