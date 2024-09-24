@@ -77,6 +77,13 @@ class GlueXKlongConversionModel : public G4VEmModel
 
    G4ParticleChangeForGamma* fParticleChange;
  
+ public:
+   static double gammaPhiXS_dE;
+   static double gammaPhiXS_ub[220];
+   static double gammaPhiXS_scale_factor;
+   static double gammaPhiXS_tslope;
+   static double gammaPhiXS_Emin;
+   static double gammaPhiXS_Emax;
 };
 
 #endif

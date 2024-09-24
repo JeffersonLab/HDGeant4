@@ -19,6 +19,7 @@
 #include "G4ParallelWorldProcess.hh"
 
 #include <GlueXUserEventInformation.hh>
+#include "GlueXUserOptions.hh"
 
 #include <stdio.h>
 #include <iomanip>
@@ -28,8 +29,8 @@
 // Phi photoproduction total cross section as function of photon energy,
 // digitized from Fig. 3 in Wang et al, arXiv:2208.10289 (22 Aug 2022).
 
-double gammaPhiXS_dE(0.1*GeV);
-double gammaPhiXS_ub[220] = {
+double GlueXKlongConversionModel::gammaPhiXS_dE(0.1*GeV);
+double GlueXKlongConversionModel::gammaPhiXS_ub[220] = {
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.079,
 0.185, 0.24, 0.291, 0.314, 0.337, 0.36, 0.383, 0.395, 0.403, 0.411,
@@ -53,10 +54,11 @@ double gammaPhiXS_ub[220] = {
 0.656, 0.656, 0.656, 0.657, 0.657, 0.657, 0.658, 0.658, 0.658, 0.659,
 0.659, 0.659, 0.66, 0.66, 0.66, 0.661, 0.661, 0.661, 0.662, 0.662,
 };
-double gammaPhiXS_scale_factor(1);
-double gammaPhiXS_tslope(6.2/(GeV*GeV));
-double gammaPhiXS_Emin(1.9*GeV);
-double gammaPhiXS_Emax(22.0*GeV);
+double GlueXKlongConversionModel::gammaPhiXS_scale_factor(1);
+double GlueXKlongConversionModel::gammaPhiXS_tslope(6.2/(GeV*GeV));
+double GlueXKlongConversionModel::gammaPhiXS_Emin(1.9*GeV);
+double GlueXKlongConversionModel::gammaPhiXS_Emax(22.0*GeV);
+
 double neutralKaonPhi_bratio(0.342);
 double chargedKaonPhi_bratio(0.492);
 double massTargetNucleon(0.938*GeV);
@@ -83,12 +85,10 @@ GlueXKlongConversionProcess::GlueXKlongConversionProcess(
    SetStartFromNullFlag(false);
    SetBuildTableFlag(true);
    SetProcessSubType(fGammaConversion);
-   SetMinKinEnergy(gammaPhiXS_Emin);
-   SetMaxKinEnergy(gammaPhiXS_Emax);
    SetSplineFlag(false);
 
    verboseLevel = 0;
-   // Verbosity scale for debugging purposes:
+   // Verbosity for debugging purposes:
    // 0 = nothing 
    // 1 = calculation of cross sections, file openings...
    // 2 = entering in methods
@@ -115,6 +115,8 @@ void GlueXKlongConversionProcess::InitialiseProcess(const G4ParticleDefinition*)
       }
       AddEmModel(1, EmModel());
    } 
+   SetMinKinEnergy(GlueXKlongConversionModel::gammaPhiXS_Emin);
+   SetMaxKinEnergy(GlueXKlongConversionModel::gammaPhiXS_Emax);
 }
 
 void GlueXKlongConversionProcess::PrintInfo()
@@ -126,10 +128,31 @@ GlueXKlongConversionModel::GlueXKlongConversionModel()
  : G4VEmModel("KlongTargetConversion"),
    isInitialised(false)
 {
+   GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
+   if (user_opts == 0) {
+      G4cerr << "Error in GlueXBeamConversionProcess constructor - "
+             << "GlueXUserOptions::GetInstance() returns null, "
+             << "cannot continue." << G4endl;
+      exit(-1);
+   }
+
+   std::map<int,double> gphi1020pars;
+   if (user_opts->Find("GPHI", gphi1020pars))
+   {
+      if (gphi1020pars.find(1) != gphi1020pars.end())
+         gammaPhiXS_scale_factor = gphi1020pars[1];
+      if (gphi1020pars.find(2) != gphi1020pars.end())
+         gammaPhiXS_tslope = gphi1020pars[2];
+      if (gphi1020pars.find(3) != gphi1020pars.end())
+         gammaPhiXS_Emin = gphi1020pars[3];
+      if (gphi1020pars.find(4) != gphi1020pars.end())
+         gammaPhiXS_Emax = gphi1020pars[4];
+   }
+
    fParticleChange = 0;
 
    verboseLevel= 0;
-   // Verbosity scale for debugging purposes:
+   // Verbosity for debugging purposes:
    // 0 = nothing 
    // 1 = calculation of cross sections, file openings...
    // 2 = entering in methods
@@ -190,7 +213,7 @@ G4double GlueXKlongConversionProcess::PostStepGetPhysicalInteractionLength(
 
    double pil = DBL_MAX;
    double kinE = track.GetKineticEnergy();
-   if (kinE > gammaPhiXS_Emin) {
+   if (kinE > GlueXKlongConversionModel::gammaPhiXS_Emin) {
       pil = G4VEmProcess::PostStepGetPhysicalInteractionLength(track, previousStepSize, condition);
    }
    else {
