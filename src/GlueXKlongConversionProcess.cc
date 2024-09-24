@@ -136,6 +136,14 @@ GlueXKlongConversionModel::GlueXKlongConversionModel()
       exit(-1);
    }
 
+   fParticleChange = 0;
+
+   verboseLevel= 0;
+   // Verbosity for debugging purposes:
+   // 0 = nothing 
+   // 1 = calculation of cross sections, file openings...
+   // 2 = entering in methods
+ 
    std::map<int,double> gphi1020pars;
    if (user_opts->Find("GPHI", gphi1020pars))
    {
@@ -147,16 +155,10 @@ GlueXKlongConversionModel::GlueXKlongConversionModel()
          gammaPhiXS_Emin = gphi1020pars[3];
       if (gphi1020pars.find(4) != gphi1020pars.end())
          gammaPhiXS_Emax = gphi1020pars[4];
+      if (gphi1020pars.find(5) != gphi1020pars.end())
+         verboseLevel = gphi1020pars[5];
    }
 
-   fParticleChange = 0;
-
-   verboseLevel= 0;
-   // Verbosity for debugging purposes:
-   // 0 = nothing 
-   // 1 = calculation of cross sections, file openings...
-   // 2 = entering in methods
- 
    if (verboseLevel > 0) {
       G4cout << "GlueXKlongConversionModel is constructed " << G4endl;
    }
