@@ -158,9 +158,9 @@ GlueXKlongConversionModel::GlueXKlongConversionModel()
       if (gphi1020pars.find(2) != gphi1020pars.end())
          gammaPhiXS_tslope = gphi1020pars[2]/(GeV*GeV);
       if (gphi1020pars.find(3) != gphi1020pars.end())
-         gammaPhiXS_Emin = gphi1020pars[3]*GeV;
+         gammaPhiXS_Emin = std::max(gphi1020pars[3]*GeV, gammaPhiXS_ub_Emin);
       if (gphi1020pars.find(4) != gphi1020pars.end())
-         gammaPhiXS_Emax = gphi1020pars[4]*GeV;
+         gammaPhiXS_Emax = std::min(gphi1020pars[4]*GeV, gammaPhiXS_ub_Emax);
       if (gphi1020pars.find(5) != gphi1020pars.end())
          verboseLevel = gphi1020pars[5];
    }
@@ -180,14 +180,14 @@ void GlueXKlongConversionModel::Initialise(const G4ParticleDefinition* particle,
    SetHighEnergyLimit(gammaPhiXS_Emax);
    G4cout << "finished." << std::endl;
 
-   if (verboseLevel > 1) {
-      G4cout << "Calling Initialise() of GlueXKlongConversionModel." << G4endl
-             << "Energy range: "
+   if (verboseLevel > 0) {
+      G4cout << "Calling Initialise() on GlueXKlongConversionModel:" << G4endl
+             << "   Energy range: "
              << LowEnergyLimit() / GeV << " GeV - "
              << HighEnergyLimit() / GeV << " GeV" << G4endl
-             << "t-slope: " << gammaPhiXS_tslope * GeV*GeV << " /GeV^2" << G4endl
-             << "scale factor: " << gammaPhiXS_scale_factor << G4endl
-             << "verbose level: " << verboseLevel << G4endl;
+             << "   t-slope: " << gammaPhiXS_tslope * GeV*GeV << " /GeV^2" << G4endl
+             << "   scale factor: " << gammaPhiXS_scale_factor << G4endl
+             << "   verbose level: " << verboseLevel << G4endl;
    }
 
    if (isInitialised) {
@@ -233,7 +233,7 @@ G4double GlueXKlongConversionProcess::PostStepGetPhysicalInteractionLength(
       currentInteractionLength = DBL_MAX;
    }
  
-   if (verboseLevel > 0) {
+   if (verboseLevel > 1) {
        G4cout << "GlueXKlongConversionProcess::PostStepGetPhysicalInteractionLength"
               << " called with energy " << track.GetKineticEnergy() / GeV << " GeV"
               << " returns pil=" << pil / cm << " cm" << G4endl;
@@ -250,7 +250,7 @@ G4double GlueXKlongConversionModel::ComputeCrossSectionPerAtom(
                                     G4double cut,
                                     G4double emax)
 {
-   int iEbin = (kinEnergy < gammaPhiXS_ub_Emax)?  kinEnergy / (gammaPhiXS_dE) : 0;
+   int iEbin = (kinEnergy <= gammaPhiXS_ub_Emax)?  (kinEnergy - 1e-6) / (gammaPhiXS_dE) : 0;
    G4double xs_atom = 0;
    if (Z == beryllium_Z) {
       xs_atom = gammaPhiXS_ub[iEbin]*microbarn * beryllium_A;
@@ -262,7 +262,7 @@ G4double GlueXKlongConversionModel::ComputeCrossSectionPerAtom(
       xs_atom = gammaPhiXS_ub[iEbin]*microbarn * copper_A;
    }
 
-   if (verboseLevel > 0) {
+   if (verboseLevel > 1) {
        G4cout << "GlueXKlongConversionModel::ComputeCrossSectionPerAtom"
               << " called on material Z=" << Z << ", A=" << A
               << " with energy " << kinEnergy / GeV << " GeV"
