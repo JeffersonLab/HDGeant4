@@ -232,6 +232,8 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
 
    const int mint_max = 999;
    struct profiler_row_t {
+      int run;                   // run number
+      int event;                 // event number
       float totE;                // total energy (GeV)
       float time;                // global tracking time at det
       float x[7];                // x,y,z,p,px/p,py/y,pz/p (cm, GeV)
@@ -311,6 +313,8 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
          std::stringstream titles;
          titles << "hits in virtual detector " << det;
          proftree = new TTree(names.str().c_str(), titles.str().c_str());
+         proftree->Branch("run", &prow[0].run, "run/I");
+         proftree->Branch("event", &prow[0].event, "event/I");
          proftree->Branch("totE", &prow[0].totE, "totE/F");
          proftree->Branch("time", &prow[0].time, "time/F");
          proftree->Branch("x", &prow[0].x[0], "x[7]/F");
@@ -332,6 +336,8 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       double Etot = point->GetTotalEnergy();
       int pdgcode = track->GetDynamicParticle()->GetPDGcode();
       int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgcode);
+      prow[0].run = eventinfo->GetRunNo();
+      prow[0].event = eventinfo->GetEventNo();
       prow[0].totE = Etot/GeV;
       prow[0].time = point->GetGlobalTime()/ns;
       prow[0].x[0] = pos[0]/cm;
