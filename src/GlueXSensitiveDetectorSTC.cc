@@ -209,7 +209,7 @@ G4bool GlueXSensitiveDetectorSTC::ProcessHits(G4Step* step,
    GlueXUserTrackInformation *trackinfo = (GlueXUserTrackInformation*)
                                           track->GetUserInformation();
    int itrack = trackinfo->GetGlueXTrackID();
-   if (trackinfo->GetGlueXHistory() == 0 && itrack > 0) {
+   if (trackinfo->GetGlueXHistory() == 0) {
       G4int key = fPointsMap->entries();
       GlueXHitSTCpoint* lastPoint = (*fPointsMap)[key - 1];
       if (lastPoint == 0 || lastPoint->track_ != trackID ||

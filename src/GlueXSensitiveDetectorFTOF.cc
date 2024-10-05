@@ -167,7 +167,7 @@ G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step,
    GlueXUserTrackInformation *trackinfo = (GlueXUserTrackInformation*)
                                           track->GetUserInformation();
    int itrack = trackinfo->GetGlueXTrackID();
-   if (trackinfo->GetGlueXHistory() == 0 && itrack > 0 && plane == 0) {
+   if (trackinfo->GetGlueXHistory() == 0 && plane == 0) {
       G4int key = fPointsMap->entries();
       GlueXHitFTOFpoint* lastPoint = (*fPointsMap)[key - 1];
       if (lastPoint == 0 || lastPoint->track_ != trackID ||
