@@ -157,42 +157,58 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
 //  type, energy, position, polarization, and at what virtual detector the 
 //  particle passes through. These virtual detectors are filled with air
 //  and are called "DETx" where x is an index currently between 1 and 8,
-//  stored in the tree as integer element "det".  The xint[i][3] array
-//  records the records the vertices of the interaction sequence leading
-//  to the detected particle.
+//  stored in the tree as integer element "det".  The Xint[i] arrays
+//  contain the record of the vertices in the interaction sequence leading
+//  to the detected particle, where i=0 refers to the birth vertex of the
+//  ptype particle itself, i=1 to its immediate ancestor, and so on.
 
+   const int mint_max = 999;
    struct profiler_row_t {
-      float totE;
-      float x[7];
-      float ppol;
-      float xspot[2];
-      int ptype;
-      int det;
-      int mint;
-      float xint[9][3];
+      int run;                   // run number
+      int event;                 // event number
+      float totE;                // total energy (GeV)
+      float time;                // global tracking time at det
+      float x[7];                // x,y,z,p,px/p,py/y,pz/p (cm, GeV)
+      float ppol;                // polarization (if any)
+      float xspot[2];            // x,y of primary vertex (cm)
+      int ptype;                 // particle type (G3 code)
+      int det;                   // index of detected volume
+      int mint;                  // interaction history depth
+      float xint[mint_max][3];   // x,y,z of ancestor birthplace (cm)
+      float tint[mint_max];      // global time of ancestor birth (ns)
+      int pint[mint_max];        // particle type of ancestor (G3 code)
    };
-   const int mint_max = 9;
    static struct profiler_row_t prow[256];
+
+   struct parent_history_t {
+      int parent_id;
+      float xint[3];
+      float tint;
+      int pint;
+   };
+   static std::map<int, struct parent_history_t> parent_history[256];
+
    int id = G4Threading::G4GetThreadId() + 1;
    assert(id < 256);
 
    if (track->GetCurrentStepNumber() == 1) {
-      if (track->GetParentID() == 0) {
-         G4StepPoint *point = step->GetPostStepPoint();
-         const G4ThreeVector &pos = point->GetPosition();
+      int trackId = track->GetTrackID();
+      int parentId = track->GetParentID();
+      G4StepPoint *point = step->GetPreStepPoint();
+      const G4ThreeVector &pos = point->GetPosition();
+      if (parentId == 0) {
          prow[id].xspot[0] = pos[0]/cm;
          prow[id].xspot[1] = pos[1]/cm;
-         prow[id].mint = 0;
+         parent_history[id].clear();
       }
-      else {
-         G4StepPoint *point = step->GetPreStepPoint();
-         const G4ThreeVector &pos = point->GetPosition();
-         prow[id].xint[prow[id].mint][0] = pos[0]/cm;
-         prow[id].xint[prow[id].mint][1] = pos[1]/cm;
-         prow[id].xint[prow[id].mint][2] = pos[2]/cm;
-         if (prow[id].mint < mint_max - 1)
-            ++prow[id].mint;
-      }
+      parent_history[id][trackId].parent_id = parentId;
+      parent_history[id][trackId].xint[0] = pos[0]/cm;
+      parent_history[id][trackId].xint[1] = pos[1]/cm;
+      parent_history[id][trackId].xint[2] = pos[2]/cm;
+      parent_history[id][trackId].tint = point->GetGlobalTime()/ns;
+      int pdgcode = track->GetDynamicParticle()->GetPDGcode();
+      int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgcode);
+      parent_history[id][trackId].pint = g3type;
    }
 
    int det=0;
@@ -229,7 +245,10 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
          std::stringstream titles;
          titles << "hits in virtual detector " << det;
          proftree = new TTree(names.str().c_str(), titles.str().c_str());
+         proftree->Branch("run", &prow[0].run, "run/I");
+         proftree->Branch("event", &prow[0].event, "event/I");
          proftree->Branch("totE", &prow[0].totE, "totE/F");
+         proftree->Branch("time", &prow[0].time, "time/F");
          proftree->Branch("x", &prow[0].x[0], "x[7]/F");
          proftree->Branch("ppol", &prow[0].ppol, "ppol/F");
          proftree->Branch("xspot", &prow[0].xspot[0], "xspot[2]/F");
@@ -237,6 +256,8 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
          proftree->Branch("det", &prow[0].det, "det/I");
          proftree->Branch("mint", &prow[0].mint, "mint/I");
          proftree->Branch("xint", &prow[0].xint[0][0], "xint[mint][3]/F");
+         proftree->Branch("tint", &prow[0].tint[0], "tint[mint]/F");
+         proftree->Branch("pint", &prow[0].pint[0], "pint[mint]/I");
          bgprofiles[det] = proftree;
       }
       G4StepPoint *point = step->GetPostStepPoint();
@@ -247,7 +268,10 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       double Etot = point->GetTotalEnergy();
       int pdgcode = track->GetDynamicParticle()->GetPDGcode();
       int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgcode);
+      prow[0].run = eventinfo->GetRunNo();
+      prow[0].event = eventinfo->GetEventNo();
       prow[0].totE = Etot/GeV;
+      prow[0].time = point->GetGlobalTime()/ns;
       prow[0].x[0] = pos[0]/cm;
       prow[0].x[1] = pos[1]/cm;
       prow[0].x[2] = pos[2]/cm;
@@ -260,11 +284,17 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       prow[0].xspot[1] = prow[id].xspot[1];
       prow[0].ptype = g3type;
       prow[0].det = det;
-      prow[0].mint = prow[id].mint;
-      for (int i=0; i < prow[0].mint; ++i) {
-         prow[0].xint[i][0] = prow[id].xint[i][0];
-         prow[0].xint[i][1] = prow[id].xint[i][1];
-         prow[0].xint[i][2] = prow[id].xint[i][2];
+      int trackId = track->GetTrackID();
+      for (int i=0; i < mint_max; ++i) {
+         prow[0].xint[i][0] = parent_history[id][trackId].xint[0];
+         prow[0].xint[i][1] = parent_history[id][trackId].xint[1];
+         prow[0].xint[i][2] = parent_history[id][trackId].xint[2];
+         prow[0].tint[i] = parent_history[id][trackId].tint;
+         prow[0].pint[i] = parent_history[id][trackId].pint;
+         prow[0].mint = i + 1;
+         trackId = parent_history[id][trackId].parent_id;
+         if (trackId == 0)
+            break;
       }
       proftree->Fill();
    }
