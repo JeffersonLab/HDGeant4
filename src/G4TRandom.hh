@@ -14,7 +14,7 @@
 
 #include <TRandom.h>
 #include <Randomize.hh>
-#include <G4Version.hh>
+#include <RVersion.h>
 
 class G4TRandom : public TRandom {
  public:
@@ -28,7 +28,7 @@ class G4TRandom : public TRandom {
    virtual  UInt_t   GetSeed() const;
    virtual  UInt_t   Integer(UInt_t imax);
    virtual  Double_t Landau(Double_t mean=0, Double_t sigma=1);
-#if G4VERSION_NUMBER >= 1070
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6, 32, 0)
    virtual  ULong64_t Poisson(Double_t mean);
 #else
    virtual  Int_t    Poisson(Double_t mean);
@@ -84,7 +84,7 @@ inline Double_t G4TRandom::Landau(Double_t mean, Double_t sigma) {
    return CLHEP::RandLandau::shoot() * sigma + mean;
 }
 
-#if G4VERSION_NUMBER >= 1070
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6, 32, 0)
 inline ULong64_t G4TRandom::Poisson(Double_t mean) {
 #else
 inline Int_t G4TRandom::Poisson(Double_t mean) {
