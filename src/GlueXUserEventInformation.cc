@@ -671,3 +671,26 @@ void GlueXUserEventInformation::Dlog(std::string msg, bool rewind)
       *((ofstream*)fDlogfile[logfile.str()]) << msg << std::endl;
    }
 }
+
+void GlueXUserEventInformation::SetParentHistory(int trackId,
+	                                         int parentId,
+                                                 int g3type,
+                                                 double x0[3],
+						 double t0)
+{
+   parent_history[trackId].parent_id = parentId;
+   parent_history[trackId].g3type = g3type;
+   parent_history[trackId].x0[0] = x0[0]/cm;
+   parent_history[trackId].x0[1] = x0[1]/cm;
+   parent_history[trackId].x0[2] = x0[2]/cm;
+   parent_history[trackId].t0 = t0/ns;
+}
+
+const GlueXUserEventInformation::parent_history_t*
+GlueXUserEventInformation::GetParentHistory(int trackId) const
+{
+   if (parent_history.find(trackId) != parent_history.end())
+      return &parent_history.at(trackId);
+   else
+      return 0;
+}

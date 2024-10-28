@@ -505,6 +505,7 @@ void GlueXSensitiveDetectorFTOF::EndOfEvent(G4HCofThisEvent*)
    }
 
    // Collect and output the ftofTruthPoints
+   GlueXUserEventInformation* eventinfo = (GlueXUserEventInformation*)info;
    for (piter = points->begin(); piter != points->end(); ++piter) {
       hddm_s::FtofTruthPointList point = forwardTOF.addFtofTruthPoints(1);
       point(0).setPrimary(piter->second->primary_);
@@ -520,6 +521,18 @@ void GlueXSensitiveDetectorFTOF::EndOfEvent(G4HCofThisEvent*)
       point(0).setTrack(piter->second->track_);
       hddm_s::TrackIDList tid = point(0).addTrackIDs();
       tid(0).setItrack(piter->second->trackID_);
+      int itrack = piter->second->track_;
+      const GlueXUserEventInformation::parent_history_t *parent_history;
+      while ((parent_history = eventinfo->GetParentHistory(itrack))) {
+         hddm_s::TrackOriginList origin = point(0).addTrackOrigins(1);
+	 origin(0).setItrack(parent_history->parent_id);
+	 origin(0).setPtype(parent_history->g3type);
+	 origin(0).setX(parent_history->x0[0]);
+	 origin(0).setY(parent_history->x0[1]);
+	 origin(0).setZ(parent_history->x0[2]);
+	 origin(0).setT(parent_history->t0);
+	 itrack = parent_history->parent_id;
+      }
    }
 }
 

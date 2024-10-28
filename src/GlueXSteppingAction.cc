@@ -248,14 +248,6 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
    };
    static struct profiler_row_t prow[256];
 
-   struct parent_history_t {
-      int parent_id;
-      float xint[3];
-      float tint;
-      int pint;
-   };
-   static std::map<int, struct parent_history_t> parent_history[256];
-
    int id = G4Threading::G4GetThreadId() + 1;
    assert(id < 256);
 
@@ -267,16 +259,12 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       if (parentId == 0) {
          prow[id].xspot[0] = pos[0]/cm;
          prow[id].xspot[1] = pos[1]/cm;
-         parent_history[id].clear();
       }
-      parent_history[id][trackId].parent_id = parentId;
-      parent_history[id][trackId].xint[0] = pos[0]/cm;
-      parent_history[id][trackId].xint[1] = pos[1]/cm;
-      parent_history[id][trackId].xint[2] = pos[2]/cm;
-      parent_history[id][trackId].tint = point->GetGlobalTime()/ns;
+      double t0 = point->GetGlobalTime()/ns;
+      double x0[3] = {pos[0], pos[1]/cm, pos[2]/cm};
       int pdgcode = track->GetDynamicParticle()->GetPDGcode();
       int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgcode);
-      parent_history[id][trackId].pint = g3type;
+      eventinfo->SetParentHistory(trackId, parentId, g3type, x0, t0);
    }
 
    int det=0;
@@ -354,15 +342,17 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       prow[0].det = det;
       int trackId = track->GetTrackID();
       for (int i=0; i < mint_max; ++i) {
-         prow[0].xint[i][0] = parent_history[id][trackId].xint[0];
-         prow[0].xint[i][1] = parent_history[id][trackId].xint[1];
-         prow[0].xint[i][2] = parent_history[id][trackId].xint[2];
-         prow[0].tint[i] = parent_history[id][trackId].tint;
-         prow[0].pint[i] = parent_history[id][trackId].pint;
-         prow[0].mint = i + 1;
-         trackId = parent_history[id][trackId].parent_id;
-         if (trackId == 0)
+         const struct GlueXUserEventInformation::parent_history_t*
+                      history = eventinfo->GetParentHistory(trackId);
+	 if (history == 0)
             break;
+         prow[0].pint[i] = history->g3type;
+         prow[0].xint[i][0] = history->x0[0]/cm;
+         prow[0].xint[i][1] = history->x0[1]/cm;
+         prow[0].xint[i][2] = history->x0[2]/cm;
+         prow[0].tint[i] = history->t0/ns;
+         prow[0].mint = i + 1;
+         trackId = history->parent_id;
       }
       proftree->Fill();
    }

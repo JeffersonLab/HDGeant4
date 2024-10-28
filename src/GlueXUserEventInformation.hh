@@ -82,6 +82,15 @@ class GlueXUserEventInformation: public G4VUserEventInformation
       return fTrackingVerboseLevel;
    }
 
+   struct parent_history_t {
+      int parent_id;
+      double x0[3];
+      double t0;
+      int g3type;
+   };
+   void SetParentHistory(int trackId, int parentId, int g3type, double x0[3], double t0);
+   const parent_history_t* GetParentHistory(int trackId) const;
+
  protected:
    hddm_s::HDDM *fOutputRecord;
    bool fKeepEvent;
@@ -92,6 +101,8 @@ class GlueXUserEventInformation: public G4VUserEventInformation
 
    static int fWriteNoHitEvents;
    static long int *fStartingSeeds;
+
+   std::map<int, struct parent_history_t> parent_history;
 
  private:
    GlueXUserEventInformation(const GlueXUserEventInformation &src);
