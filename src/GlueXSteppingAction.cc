@@ -261,7 +261,7 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
          prow[id].xspot[1] = pos[1]/cm;
       }
       double t0 = point->GetGlobalTime()/ns;
-      double x0[3] = {pos[0], pos[1]/cm, pos[2]/cm};
+      double x0[3] = {pos[0], pos[1], pos[2]};
       int pdgcode = track->GetDynamicParticle()->GetPDGcode();
       int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgcode);
       eventinfo->SetParentHistory(trackId, parentId, g3type, x0, t0);

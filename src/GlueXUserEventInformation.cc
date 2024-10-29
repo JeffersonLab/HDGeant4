@@ -680,10 +680,10 @@ void GlueXUserEventInformation::SetParentHistory(int trackId,
 {
    parent_history[trackId].parent_id = parentId;
    parent_history[trackId].g3type = g3type;
-   parent_history[trackId].x0[0] = x0[0]/cm;
-   parent_history[trackId].x0[1] = x0[1]/cm;
-   parent_history[trackId].x0[2] = x0[2]/cm;
-   parent_history[trackId].t0 = t0/ns;
+   parent_history[trackId].x0[0] = x0[0];
+   parent_history[trackId].x0[1] = x0[1];
+   parent_history[trackId].x0[2] = x0[2];
+   parent_history[trackId].t0 = t0;
 }
 
 const GlueXUserEventInformation::parent_history_t*

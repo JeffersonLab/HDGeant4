@@ -405,10 +405,10 @@ void GlueXSensitiveDetectorCTOF::EndOfEvent(G4HCofThisEvent*)
          hddm_s::TrackOriginList origin = point(0).addTrackOrigins(1);
 	 origin(0).setItrack(parent_history->parent_id);
 	 origin(0).setPtype(parent_history->g3type);
-	 origin(0).setX(parent_history->x0[0]);
-	 origin(0).setY(parent_history->x0[1]);
-	 origin(0).setZ(parent_history->x0[2]);
-	 origin(0).setT(parent_history->t0);
+	 origin(0).setX(parent_history->x0[0]/cm);
+	 origin(0).setY(parent_history->x0[1]/cm);
+	 origin(0).setZ(parent_history->x0[2]/cm);
+	 origin(0).setT(parent_history->t0/ns);
 	 itrack = parent_history->parent_id;
       }
    }
