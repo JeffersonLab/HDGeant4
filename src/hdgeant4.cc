@@ -62,8 +62,28 @@ void describe(G4SmartVoxelHeader *vox, std::string mother, int level=0);
 
 int main(int argc,char** argv)
 {
+   // Loop through all provided arguments, filtering out any input file names.
+   // This prevents input files from being passed to JANA, ensuring no event sources
+   // are loaded for those files. This approach replicates the behavior of 
+   // `dapp.create_event_buffer_thread=false` in JANA1, which disables automatic
+   // event source loading based on input files.
+   std::vector<std::string> filtered_args;
+   for (int i = 1; i < argc; ++i) {
+      std::string arg = argv[i];
+
+      // Check if the argument starts with a '-'
+      if (!arg.empty() && arg[0] == '-') {
+         filtered_args.push_back(arg);
+      }
+   }
+   // Convert filtered_args to argc and argv format
+   int filtered_argc = filtered_args.size();
+   char* filtered_argv[filtered_argc];
+   for (int i = 0; i < filtered_argc; ++i) {
+      filtered_argv[i] = const_cast<char*>(filtered_args[i].c_str());
+   }
    // Initialize the jana framework
-   DApplication dapp(argc, argv);
+   DApplication dapp(filtered_argc, filtered_argv);
    auto app = dapp.GetJApp();
    app->Initialize();
 
