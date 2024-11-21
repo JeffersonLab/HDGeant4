@@ -251,7 +251,10 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
    int id = G4Threading::G4GetThreadId() + 1;
    assert(id < 256);
 
-   if (track->GetCurrentStepNumber() == 1) {
+   std::string pname;
+   pname = step->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
+   std::cout << "pname is \'" << pname << "\'" << std::endl;
+   if (track->GetCurrentStepNumber() == 1 || pname == "compt") {
       int trackId = track->GetTrackID();
       int parentId = track->GetParentID();
       G4StepPoint *point = step->GetPreStepPoint();
@@ -264,6 +267,14 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
       double x0[3] = {pos[0], pos[1], pos[2]};
       int pdgcode = track->GetDynamicParticle()->GetPDGcode();
       int g3type = GlueXPrimaryGeneratorAction::ConvertPdgToGeant3(pdgcode);
+      int nstep = track->GetCurrentStepNumber();
+      if (nstep > 1) {
+	 parentId = trackId * 10000 + nstep;
+         const GlueXUserEventInformation::parent_history_t *ph;
+         ph = eventinfo->GetParentHistory(trackId);
+         eventinfo->SetParentHistory(parentId, ph->parent_id, 
+			             ph->g3type, (double*)ph->x0, ph->t0);
+      }
       eventinfo->SetParentHistory(trackId, parentId, g3type, x0, t0);
    }
 
