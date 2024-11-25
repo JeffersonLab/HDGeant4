@@ -27,7 +27,7 @@ ifdef DIRACXX_DIR
     endif
 endif
 
-PYTHON_CONFIG = python-config
+PYTHON_CONFIG = python3-config
 
 CPPFLAGS += -I$(HDDS_HOME) -I./src -I./src/G4fixes
 CPPFLAGS += -I./src/G4debug
@@ -72,7 +72,7 @@ HDDS_sources := $(HDDS_HOME)/XString.cpp $(HDDS_HOME)/XParsers.cpp $(HDDS_HOME)/
 
 ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer
 ifeq ($(shell test -s $(ROOTSYS)/lib/libtbb.so && echo -n yes),yes)
-    ROOTLIBS += $(ROOTSYS)/lib/libtbb.so.2
+    ROOTLIBS += $(ROOTSYS)/lib/libtbb.so
 endif
 ifeq ($(shell test -s $(VDTHOME)/lib/libvdt.so && echo -n yes),yes)
     ROOTLIBS += -L$(VDTHOME)/lib -lvdt
@@ -104,9 +104,15 @@ DANALIBS += -L$(ETROOT)/lib -let -let_remote
 endif
 
 G4shared_libs := $(wildcard $(G4ROOT)/lib64/*.so)
+BOOST169_EXISTS = $(shell [ -d /usr/lib64/boost169 ] && echo true || echo false)
 ifeq ($(PYTHON_GE_3), true)
-  BOOST_PYTHON_LIB = -lboost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION) -lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-  CPPFLAGS += -DBOOST_NO_AUTO_PTR -DBOOST_BIND_GLOBAL_PLACEHOLDERS
+  ifeq ($(BOOST169_EXISTS), true)
+    BOOST_PYTHON_LIB = -L /usr/lib64/boost169 -lboost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION) -lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)m
+    CPPFLAGS += -I/usr/include/boost169 -DBOOST_NO_AUTO_PTR -DBOOST_BIND_GLOBAL_PLACEHOLDERS
+  else
+    BOOST_PYTHON_LIB = -lboost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION) -lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+    CPPFLAGS += -DBOOST_NO_AUTO_PTR -DBOOST_BIND_GLOBAL_PLACEHOLDERS
+  endif
 else
   BOOST_PYTHON_LIB = -lboost_python
 endif
