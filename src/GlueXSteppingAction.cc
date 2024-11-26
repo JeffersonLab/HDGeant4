@@ -253,7 +253,6 @@ void GlueXSteppingAction::UserSteppingAction(const G4Step* step)
 
    std::string pname;
    pname = step->GetPostStepPoint()->GetProcessDefinedStep()->GetProcessName();
-   std::cout << "pname is \'" << pname << "\'" << std::endl;
    if (track->GetCurrentStepNumber() == 1 || pname == "compt") {
       int trackId = track->GetTrackID();
       int parentId = track->GetParentID();
