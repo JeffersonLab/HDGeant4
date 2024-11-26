@@ -71,7 +71,9 @@ G4debug_sources := $(wildcard src/G4debug/*.cc)
 HDDS_sources := $(HDDS_HOME)/XString.cpp $(HDDS_HOME)/XParsers.cpp $(HDDS_HOME)/hddsCommon.cpp
 
 ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer
-ifeq ($(shell test -s $(ROOTSYS)/lib/libtbb.so && echo -n yes),yes)
+ifeq ($(shell test -s $(ROOTSYS)/lib/libtbb.so.2 && echo -n yes),yes)
+    ROOTLIBS += $(ROOTSYS)/lib/libtbb.so.2
+else
     ROOTLIBS += $(ROOTSYS)/lib/libtbb.so
 endif
 ifeq ($(shell test -s $(VDTHOME)/lib/libvdt.so && echo -n yes),yes)
@@ -117,9 +119,14 @@ else
   BOOST_PYTHON_LIB = -lboost_python
 endif
 
+HDF5CPP_EXISTS = $(shell [ -f $(HDF5ROOT)/lib/libhdf5_cpp.a ] && echo true || echo false)
 ifdef HDF5ROOT
-CPPFLAGS += -DHDF5_SUPPORT -I ${HDF5ROOT}/include
-DANALIBS +=	-L $(HDF5ROOT)/lib -lhdf5_cpp -lhdf5_hl -lhdf5 -lsz -lz -lbz2 -ldl 
+  CPPFLAGS += -DHDF5_SUPPORT -I ${HDF5ROOT}/include
+  ifeq ($(HDF5CPP_EXISTS), true)
+    DANALIBS +=	-L $(HDF5ROOT)/lib -lhdf5_cpp -lhdf5_hl -lhdf5 -lsz -lz -lbz2 -ldl 
+  else
+    DANALIBS +=	-L $(HDF5ROOT)/lib -lhdf5_hl -lhdf5 -lsz -lz -lbz2 -ldl 
+  endif
 endif
 
 INTYLIBS += -Wl,--whole-archive $(DANALIBS) -Wl,--no-whole-archive
