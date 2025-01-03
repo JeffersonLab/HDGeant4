@@ -7,6 +7,7 @@
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
+#include "DANA/DEvent.h"
 #include <DANA/DApplication.h>
 #include <GlueXUserOptions.hh>
 #include <GlueXDetectorConstruction.hh>
