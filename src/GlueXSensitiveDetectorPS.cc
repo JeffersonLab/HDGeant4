@@ -204,10 +204,16 @@ G4bool GlueXSensitiveDetectorPS::ProcessHits(G4Step* step,
          }
       }
       if (merge_hit) {
-         // Add the charge, do energy-weighted time averaging
-         hiter->t_ns = (hiter->t_ns * hiter->dE_GeV + t/ns * dEsum/GeV) /
-                       (hiter->dE_GeV + dEsum/GeV);
+         // Add the charge, do energy-weighted time averaging --disabled for bad behavior --rtj
+         //hiter->t_ns = (hiter->t_ns * hiter->dE_GeV + t/ns * dEsum/GeV) /
+         //              (hiter->dE_GeV + dEsum/GeV);
+         //hiter->dE_GeV += dEsum/GeV;
+ 
+         // Use the time from the earlier hit but add the charge
          hiter->dE_GeV += dEsum/GeV;
+         if (hiter->t_ns*ns > t) {
+            hiter->t_ns = t/ns;
+         }
       }
       else {
          // create new hit 

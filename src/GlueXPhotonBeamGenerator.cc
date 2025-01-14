@@ -210,6 +210,22 @@ void GlueXPhotonBeamGenerator::prepareImportanceSamplingPDFs()
 
    // apply a correction based on endpoint energy
    fIncoherentPDFy.Pcut *= 12*GeV / Emax;
+
+   // allow user to override the Pcut parameters in control.in
+   GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
+   if (user_opts == 0) {
+      G4cerr << "Error in GlueXPhotonBeamGenerator constructor - "
+             << "GlueXUserOptions::GetInstance() returns null, "
+             << "cannot continue." << G4endl;
+      exit(-1);
+   }
+   std::map<int,double> beampars;
+   if (user_opts->Find("BEAM", beampars)) {
+      if (beampars[11] > 0)
+         fCoherentPDFx.Pcut = beampars[11];
+      if (beampars[12] > 0)
+         fIncoherentPDFy.Pcut = beampars[12];
+   }
 }
 
 void GlueXPhotonBeamGenerator::GeneratePrimaryVertex(G4Event* anEvent)
@@ -353,19 +369,25 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
          double dNcdxPDF = (ui - u_i) / dx;
          double dNcdx = fCobrems->Rate_dNcdx(x);
          double Pfactor = dNcdx / dNcdxPDF;
-         if (Pfactor > fCoherentPDFx.Pmax)
-            fCoherentPDFx.Pmax = Pfactor;
-         if (Pfactor > fCoherentPDFx.Pcut) {
-            G4cout << "Warning in GenerateBeamPhoton - Pfactor " << Pfactor
-                   << " exceeds fCoherentPDFx.Pcut = " << fCoherentPDFx.Pcut
-                   << G4endl
-                   << "  present x = " << x << G4endl
-                   << "  present maximum Pfactor = "
-                   << fCoherentPDFx.Pmax << G4endl
-                   << "  current generator efficiency = "
-                   << fCoherentPDFx.Npassed /
-                      (fCoherentPDFx.Ntested + 1e-99)
-                   << G4endl;
+         // At very low x, the Born approximation for coherent bremsstrahlung
+         // diverges, allow the generator to cut off the distribution at low
+         // x without generating a warning, this is where the model fails and
+         // nobody will believe this coherent model in channeling kinematics.
+         if (x > 0.05) {
+            if (Pfactor > fCoherentPDFx.Pmax)
+               fCoherentPDFx.Pmax = Pfactor;
+            if (Pfactor > fCoherentPDFx.Pcut) {
+               G4cout << "Warning in GenerateBeamPhoton - Pfactor " << Pfactor
+                      << " exceeds fCoherentPDFx.Pcut = " << fCoherentPDFx.Pcut
+                      << G4endl
+                      << "  present x = " << x << G4endl
+                      << "  present maximum Pfactor = "
+                      << fCoherentPDFx.Pmax << G4endl
+                      << "  current generator efficiency = "
+                      << fCoherentPDFx.Npassed /
+                         (fCoherentPDFx.Ntested + 1e-99)
+                      << G4endl;
+            }
          }
          ++fCoherentPDFx.Psum += Pfactor;
          if (G4UniformRand() * fCoherentPDFx.Pcut > Pfactor) {

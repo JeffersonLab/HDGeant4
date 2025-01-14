@@ -24,6 +24,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #if BOOST_PYTHON_WRAPPING
 #include <boost/python.hpp>
@@ -35,6 +36,8 @@ class CobremsGeneration {
    CobremsGeneration(const CobremsGeneration &src);
    CobremsGeneration &operator=(const CobremsGeneration &src);
    ~CobremsGeneration();
+
+   static std::map<CobremsGeneration*, int> CobremsGenerators;
 
    void setBeamEnergy(double Ebeam_GeV);
    void setBeamErms(double Erms_GeV);
@@ -274,8 +277,8 @@ inline void CobremsGeneration::setTargetThetaz(double thetaz) {
 }
 
 inline void CobremsGeneration::setTargetOrientation(double thetax,
-                                                   double thetay,
-                                                   double thetaz) {
+                                                    double thetay,
+                                                    double thetaz) {
    fTargetThetax = thetax;
    fTargetThetay = thetay;
    fTargetThetaz = thetaz;

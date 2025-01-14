@@ -85,6 +85,11 @@ class GlueXBeamConversionProcess: public G4VEmProcess
    void prepareAdaptiveSampler();
 
    void setConverterMaterial(double Z, double A);
+   void getConverterMaterial(double &Z, double &A) const;
+
+ public:
+   void setTargetPolarization(double nucl[3], double elec[3]);
+   void getTargetPolarization(double nucl[3], double elec[3]) const;
 
  private:
    GlueXBeamConversionProcess() = delete;
@@ -101,12 +106,44 @@ class GlueXBeamConversionProcess: public G4VEmProcess
 
    double fTargetZ;
    double fTargetA;
+   struct target_polarization_t {
+      double nucl[3];
+      double elec[3];
+   } fTargetPol;
 };
+
+inline void GlueXBeamConversionProcess::getConverterMaterial(double &Z, double &A) const
+{
+   Z = fTargetZ;
+   A = fTargetA;
+}
 
 inline void GlueXBeamConversionProcess::setConverterMaterial(double Z, double A)
 {
    fTargetZ = Z;
    fTargetA = A;
+}
+
+inline void GlueXBeamConversionProcess::getTargetPolarization(double nucl[3],
+                                                              double elec[3]) const
+{
+   nucl[0] = fTargetPol.nucl[0];
+   nucl[1] = fTargetPol.nucl[1];
+   nucl[2] = fTargetPol.nucl[2];
+   elec[0] = fTargetPol.elec[0];
+   elec[1] = fTargetPol.elec[1];
+   elec[2] = fTargetPol.elec[2];
+}
+
+inline void GlueXBeamConversionProcess::setTargetPolarization(double nucl[3],
+                                                              double elec[3])
+{
+   fTargetPol.nucl[0] = nucl[0];
+   fTargetPol.nucl[1] = nucl[1];
+   fTargetPol.nucl[2] = nucl[2];
+   fTargetPol.elec[0] = elec[0];
+   fTargetPol.elec[1] = elec[1];
+   fTargetPol.elec[2] = elec[2];
 }
 
 #endif

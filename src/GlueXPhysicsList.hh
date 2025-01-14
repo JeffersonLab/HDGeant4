@@ -53,6 +53,10 @@ class GlueXPhysicsList: public G4VModularPhysicsList
    virtual void DoProcessReordering();
    virtual void CheckProcessOrdering();
 
+   G4VEmProcess *getBeamConversionProcess() const;
+   G4VEmProcess *getBernardConversionProcess() const;
+   G4OpticalPhysics *getOpticalPhysicsProcess() const;
+
  protected:
    GlueXUserOptions *fOptions;
 
@@ -71,5 +75,20 @@ class GlueXPhysicsList: public G4VModularPhysicsList
    }
 #endif
 };
+
+inline G4VEmProcess *GlueXPhysicsList::getBeamConversionProcess() const
+{
+   return fBeamConversion;
+}
+
+inline G4VEmProcess *GlueXPhysicsList::getBernardConversionProcess() const
+{
+   return fBernardConversion;
+}
+
+inline G4OpticalPhysics *GlueXPhysicsList::getOpticalPhysicsProcess() const
+{
+   return fOpticalPhysics;
+}
 
 #endif

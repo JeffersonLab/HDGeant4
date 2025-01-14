@@ -569,7 +569,7 @@ GlueXPrimaryGeneratorAction::~GlueXPrimaryGeneratorAction()
    }
 }
 
-const CobremsGeneration *GlueXPrimaryGeneratorAction::GetCobremsGeneration() const
+const CobremsGeneration *GlueXPrimaryGeneratorAction::GetCobremsGeneration()
 {
    return fCobremsGeneration;
 }
