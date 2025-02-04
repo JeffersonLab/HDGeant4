@@ -121,7 +121,7 @@ void GlueXKlongConversionProcess::InitialiseProcess(const G4ParticleDefinition*)
    SetMinKinEnergy(GlueXKlongConversionModel::gammaPhiXS_Emin);
    SetMaxKinEnergy(GlueXKlongConversionModel::gammaPhiXS_Emax);
 
-   G4cout << "GlueXBeamConversionProcess::InitialiseProcess:" << std::endl
+   G4cout << "GlueXKlongConversionProcess::InitialiseProcess:" << std::endl
          << "   Setting up cross section tables, please wait..." << std::flush;
 }
 
@@ -136,7 +136,7 @@ GlueXKlongConversionModel::GlueXKlongConversionModel()
 {
    GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
    if (user_opts == 0) {
-      G4cerr << "Error in GlueXBeamConversionProcess constructor - "
+      G4cerr << "Error in GlueXKlongConversionProcess constructor - "
              << "GlueXUserOptions::GetInstance() returns null, "
              << "cannot continue." << G4endl;
       exit(-1);
@@ -207,15 +207,6 @@ G4double GlueXKlongConversionProcess::PostStepGetPhysicalInteractionLength(
    const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
    event_info = (GlueXUserEventInformation*)event->GetUserInformation();
    if (event_info) {
-      hddm_s::ReactionList rea = event_info->getOutputRecord()->getReactions();
-      if (rea.size() > 0) {
-         hddm_s::VertexList ver = rea(0).getVertices();
-         if (ver.size() > 0) {
-            hddm_s::ProductList pro = ver(0).getProducts();
-            if (pro.size() == 1)
-               rea(0).deleteVertices(1);
-         }
-      }
       hddm_s::HitViewList vie = event_info->getOutputRecord()->getHitViews();
       if (vie.size() > 0) {
          vie(0).deleteTaggers();
