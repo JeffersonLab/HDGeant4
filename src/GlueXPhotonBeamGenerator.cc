@@ -16,6 +16,9 @@
 #include <JANA/JApplication.h>
 #include <JANA/JCalibration.h>
 
+#define MULTIPLE_BEAM_GAMMAS_PER_ELECTRON 1
+#define RADIATOR_MATERIAL "copper"
+
 // This flag allows HDGeant4 to be used as a Monte Carlo event
 // generator of a coherent bremsstrahlung beam. When running in
 // "generate not simulate" mode, the output hddm file is filled
@@ -57,6 +60,7 @@ GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
  : fCobrems(gen),
    fTagger(0)
 {
+   fCobrems->setTargetCrystal(RADIATOR_MATERIAL);
    GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
    if (user_opts == 0) {
       G4cerr << "Error in GlueXPhotonBeamGenerator constructor - "
@@ -128,8 +132,12 @@ void GlueXPhotonBeamGenerator::prepareImportanceSamplingPDFs()
    // importance-sampling the coherent bremsstrahlung kinematics.
 
    const int Ndim = 500;
-   double Emin = fCobrems->getPhotonEnergyMin() * GeV;
    double Emax = fCobrems->getBeamEnergy() * GeV;
+#ifdef MULTIPLE_BEAM_GAMMAS_PER_ELECTRON
+   double Emin = fCobrems->getBeamErms() * GeV;
+#else
+   double Emin = fCobrems->getPhotonEnergyMin() * GeV;
+#endif //MULTIPLE_BEAM_GAMMAS_PER_ELECTRON
 
    // Compute approximate PDF for dNc/dx
    double xmin = Emin / Emax;
@@ -163,12 +171,14 @@ void GlueXPhotonBeamGenerator::prepareImportanceSamplingPDFs()
    double dlogx = -logxmin / Ndim;
    double dNidlogx;
    double qsum = 0;
+   double xsum = 0;
    for (int i=0; i < Ndim; ++i) {
       double logx = logxmin + (i + 0.5) * dlogx;
       double x = exp(logx);
       dNidlogx = fCobrems->Rate_dNidxdt2(x, 0) * x;
       dNidlogx = (dNidlogx > 0)? dNidlogx : 0;
       qsum += dNidlogx;
+      xsum += dNidlogx * exp(logx);
       fIncoherentPDFlogx.randvar.push_back(logx);
       fIncoherentPDFlogx.density.push_back(dNidlogx);
       fIncoherentPDFlogx.integral.push_back(qsum);
@@ -177,6 +187,7 @@ void GlueXPhotonBeamGenerator::prepareImportanceSamplingPDFs()
       fIncoherentPDFlogx.density[i] /= qsum * dlogx;
       fIncoherentPDFlogx.integral[i] /= qsum;
    }
+   fIncoherentPDFmeanx = xsum / qsum;
    fIncoherentPDFlogx.Pcut = qsum / Ndim;
  
    // Compute approximate PDF for dNi/dy
@@ -226,11 +237,109 @@ void GlueXPhotonBeamGenerator::prepareImportanceSamplingPDFs()
       if (beampars[12] > 0)
          fIncoherentPDFy.Pcut = beampars[12];
    }
+
+#ifdef MULTIPLE_BEAM_GAMMAS_PER_ELECTRON
+   fIncoherentPDFy.Pcut *= 10;
+#endif
 }
 
 void GlueXPhotonBeamGenerator::GeneratePrimaryVertex(G4Event* anEvent)
 {
+#ifdef MULTIPLE_BEAM_GAMMAS_PER_ELECTRON
+   double endpoint_GeV = fCobrems->getBeamEnergy();
+   double Emin = fCobrems->getPhotonEnergyMin();
+   double emittance_mrad = fCobrems->getBeamEmittance();
+   double spotsize_m = fCobrems->getCollimatorSpotrms();
+   double raddz_m = fCobrems->getTargetThickness();
+   int ngammas = CLHEP::RandPoisson::shoot(1 / fIncoherentPDFmeanx);
+   std::vector<double> uz;
+   for (int i=0; i < ngammas; ++i)
+      uz.push_back(G4RandFlat::shoot(1.0));
+   std::sort(uz.begin(), uz.end());
+   double t0(0);
+   double Ebeam(endpoint_GeV);
+   double emit(emittance_mrad);
+   for (int igamma=0; igamma < ngammas; ++igamma) {
+      double dz = (igamma > 0)? uz[igamma] - uz[igamma-1] : uz[igamma];
+      fCobrems->setTargetThickness(raddz_m * dz);
+      GenerateBeamPhoton(anEvent, t0);
+      int nvertex = anEvent->GetNumberOfPrimaryVertex();
+      G4PrimaryVertex *vertex = anEvent->GetPrimaryVertex(nvertex - 1);
+      t0 = vertex->GetT0();
+      int nprimary = vertex->GetNumberOfParticle();
+      G4PrimaryParticle *gamma = vertex->GetPrimary(nprimary - 1);
+      Ebeam -= gamma->GetTotalEnergy() / GeV;
+      fCobrems->setBeamEnergy(Ebeam);
+      double sigma2ms = fCobrems->Sigma2MS(raddz_m * dz);
+      emit = sqrt(emit*emit + spotsize_m*spotsize_m*sigma2ms);
+      fCobrems->setBeamEmittance(emit);
+   }
+   GlueXUserEventInformation *event_info;
+   event_info = (GlueXUserEventInformation*)anEvent->GetUserInformation();
+   hddm_s::HDDM *record = event_info->getOutputRecord();
+   hddm_s::BeamList beams = record->getBeams();
+   hddm_s::ReactionList reactions = record->getReactions();
+   hddm_s::VertexList vertices = reactions(0).getVertices();
+   t0 = 0;
+   for (int iv=0; iv < vertices.size();) {
+      int electron_count = 0;
+      int gamma_count = 0;
+      hddm_s::ProductList prods = vertices(iv).getProducts();
+      for (int ip=0; ip < prods.size(); ++ip) {
+         if (prods(ip).getType() == 3) { // electron
+            if (iv == 0) {
+               hddm_s::MomentumList pmom = prods(ip).getMomenta();
+               hddm_s::MomentumList bmom = beams(0).getMomenta();
+               hddm_s::PropertiesList bpro = beams(0).getPropertiesList();
+               beams(0).setType(prods(ip).getType());
+               bmom(0).setPx(pmom(0).getPx());
+               bmom(0).setPy(pmom(0).getPy());
+               bmom(0).setPz(pmom(0).getPz());
+               bmom(0).setE(pmom(0).getE());
+               bpro(0).setCharge(-1);
+               bpro(0).setMass(electron_mass_c2);
+            }
+            ++electron_count;
+         }
+         else if (prods(ip).getType() == 1) { // gamma
+	    ++gamma_count;
+         }
+      }
+      if (electron_count > 0) {
+         reactions(0).deleteVertices(1, iv);
+         vertices = reactions(0).getVertices();
+      }
+      else if (gamma_count > 0) {
+         hddm_s::OriginList orig = vertices(iv).getOrigins();
+         if (t0 == 0) {
+            t0 = orig(0).getT();
+         }
+         else {
+            orig(0).setT(t0);
+         }
+	 hddm_s::MomentumList mom = prods(0).getMomenta();
+	 if (mom(0).getE() > Emin) {
+            vertices(iv).getProduct(0).setId(iv + 1);
+            ++iv;
+	 }
+	 else {
+            reactions(0).deleteVertices(1, iv);
+            vertices = reactions(0).getVertices();
+	 }
+      }
+      else {
+         std::cerr << "GlueXPhotonBeamGenerator::GeneratePrimaryVertex error - "
+                      "vertex generated with neither gamma nor electron, "
+                      "something is badly messed up, quitting." << std::endl;
+         exit(-1);
+      }
+   }
+   fCobrems->setBeamEnergy(endpoint_GeV);
+   fCobrems->setBeamEmittance(emittance_mrad);
+   fCobrems->setTargetThickness(raddz_m);
+#else
    GenerateBeamPhoton(anEvent, 0);
+#endif //MULTIPLE_BEAM_GAMMAS_PER_ELECTRON
 }
 
 void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
@@ -352,6 +461,10 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
    double polarization_phi = 0;
    double coherent_fraction = fCoherentPDFx.Pcut;
    coherent_fraction /= fCoherentPDFx.Pcut + fIncoherentPDFy.Pcut;
+ 
+   // For the KLong Facility CPS, the coherent fraction is zero.
+   coherent_fraction = 0;
+
    while (true) {
       double splitrand = G4UniformRand();
       if (splitrand < coherent_fraction) { // try coherent generation

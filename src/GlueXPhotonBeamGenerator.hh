@@ -51,6 +51,7 @@ class GlueXPhotonBeamGenerator: public G4VPrimaryGenerator
    ImportanceSampler fIncoherentPDFlogx;
    ImportanceSampler fIncoherentPDFy;
    double fIncoherentPDFtheta02;
+   double fIncoherentPDFmeanx;
 
    void prepareImportanceSamplingPDFs();
 
