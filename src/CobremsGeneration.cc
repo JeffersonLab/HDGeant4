@@ -20,7 +20,7 @@
 //    * spot on radiator: gaussian model, cylindrical symmetry
 //    * emittance: gaussian model, cylindrical symmetry
 // 2. crystal target
-//    * implemented for diamond, silicon
+//    * implemented for diamond, silicon, copper, aluminum
 //    * uniform thickness across beam spot
 //    * mosaic spread: gaussian model
 //    * dipole atomic form factor
@@ -126,6 +126,36 @@ void CobremsGeneration::setTargetCrystal(std::string crystal)
       fTargetCrystal.density = 2.320; // g/cm^3
       fTargetCrystal.lattice_constant = 5.431e-10; // m
       fTargetCrystal.Debye_Waller_const = 1.5e9; // 1/GeV^2
+   }
+   else if (crystal == "copper") {  // not a true crystal
+      fTargetCrystal.name = "copper";
+      fTargetCrystal.Z = 29;
+      fTargetCrystal.A = 63.546;
+      fTargetCrystal.density = 8.960; // g/cm^3
+      fTargetCrystal.lattice_constant = 2.275e-10; // m
+      fTargetCrystal.nsites = 1;
+      fTargetCrystal.ucell_site.clear();
+      fTargetCrystal.ucell_site.push_back(lattice_vector(0.0, 0.0, 0.0));
+      fTargetCrystal.Debye_Waller_const = getTargetDebyeWallerConstant(345, 293); // 1/GeV^2
+      fTargetCrystal.betaFF = 111 * pow(fTargetCrystal.Z, -1/3.) / me;
+      fTargetCrystal.mosaic_spread = 20e-6; // not used
+      fTargetCrystal.radiation_length = getTargetRadiationLength_Schiff();
+      return;
+   }
+   else if (crystal == "aluminum") {  // not a true crystal
+      fTargetCrystal.name = "aluminum";
+      fTargetCrystal.Z = 13;
+      fTargetCrystal.A = 26.982;
+      fTargetCrystal.density = 2.700; // g/cm^3
+      fTargetCrystal.lattice_constant = 8.505e-11; // m
+      fTargetCrystal.nsites = 1;
+      fTargetCrystal.ucell_site.clear();
+      fTargetCrystal.ucell_site.push_back(lattice_vector(0.0, 0.0, 0.0));
+      fTargetCrystal.Debye_Waller_const = getTargetDebyeWallerConstant(428, 293); // 1/GeV^2
+      fTargetCrystal.betaFF = 111 * pow(fTargetCrystal.Z, -1/3.) / me;
+      fTargetCrystal.mosaic_spread = 20e-6; // not used
+      fTargetCrystal.radiation_length = getTargetRadiationLength_Schiff();
+      return;
    }
    else {
       std::cerr << "Error in CobremsGeneration::setTargetCrystal - "
