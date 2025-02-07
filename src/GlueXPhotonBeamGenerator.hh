@@ -46,6 +46,7 @@ class GlueXPhotonBeamGenerator: public G4VPrimaryGenerator
    static double fBeamDiameter;
    static double fBeamVelocity;
    static double fBeamOffset[2];
+   static double fBeamOuterLimits[2];
 
    ImportanceSampler fCoherentPDFx; 
    ImportanceSampler fIncoherentPDFlogx;
