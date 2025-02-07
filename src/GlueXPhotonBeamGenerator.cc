@@ -252,7 +252,10 @@ void GlueXPhotonBeamGenerator::GeneratePrimaryVertex(G4Event* anEvent)
    double endpoint_GeV = fCobrems->getBeamEnergy();
    double Emin = fCobrems->getPhotonEnergyMin();
    double raddz_m = fCobrems->getTargetThickness();
-   int ngammas = CLHEP::RandPoisson::shoot(1 / fIncoherentPDFmeanx);
+   double raddz_radlen = raddz_m / fCobrems->getTargetCrystalRadiationLength();
+   int ngammas(0);
+   while (ngammas == 0)
+      ngammas = CLHEP::RandPoisson::shoot(raddz_radlen / fIncoherentPDFmeanx);
    std::vector<double> uz;
    for (int i=0; i < ngammas; ++i)
       uz.push_back(G4RandFlat::shoot(1.0));
