@@ -242,7 +242,7 @@ void GlueXPhotonBeamGenerator::prepareImportanceSamplingPDFs()
    }
 
 #ifdef MULTIPLE_BEAM_GAMMAS_PER_ELECTRON
-   fIncoherentPDFy.Pcut *= 10;
+   fIncoherentPDFy.Pcut *= 15;
 #endif
 }
 
@@ -260,7 +260,7 @@ void GlueXPhotonBeamGenerator::GeneratePrimaryVertex(G4Event* anEvent)
    double t0(0);
    double Ebeam(endpoint_GeV);
    for (int igamma=0; igamma < ngammas; ++igamma) {
-      fCobrems->setTargetThickness(raddz_m * uz[igamma] * 2);
+      fCobrems->setTargetThickness(raddz_m * uz[igamma]);
       GenerateBeamPhoton(anEvent, t0);
       int nvertex = anEvent->GetNumberOfPrimaryVertex();
       G4PrimaryVertex *vertex = anEvent->GetPrimaryVertex(nvertex - 1);
