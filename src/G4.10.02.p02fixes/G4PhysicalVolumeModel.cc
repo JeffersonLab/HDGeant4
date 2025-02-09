@@ -734,6 +734,18 @@ void G4PhysicalVolumeModel::DescribeSolid
         if (pars.Z_values[p] <= pars.Z_values[p-1])
           pars.Z_values[p] = pars.Z_values[p] + 1e-3;
       }
+      //
+      // Calculate conversion factor from G3 radius to G4 radius
+      //
+      G4double phiTotal = pars.Opening_angle;
+      G4double twopi = 2 * M_PI;
+      if ( (phiTotal <=0) || (phiTotal >= twopi*(1-DBL_EPSILON)) )
+         phiTotal = twopi;
+      G4double convertRad = std::cos(0.5*phiTotal/pars.numSide);
+      for (int iz=0; iz < pars.Num_z_planes; ++iz) {
+         pars.Rmin[iz] *= convertRad;
+         pars.Rmax[iz] *= convertRad;
+      }
       G4String visname(pSol->GetName() + "_visual");
       pSol = new G4Polyhedra(visname, pars.Start_angle, 
                                       pars.Opening_angle, 
