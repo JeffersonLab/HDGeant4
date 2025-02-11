@@ -7,6 +7,7 @@
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
+#include "DANA/DEvent.h"
 #include <DANA/DApplication.h>
 #include <GlueXUserOptions.hh>
 #include <GlueXDetectorConstruction.hh>
@@ -126,7 +127,7 @@ BOOST_PYTHON_MODULE(libhdgeant4)
           "singleton class holding configuration data for current run, "
           "part of the standard jana framework",
           boost::python::init<>())
-      .def("Init", &DApplication::Init)
+      .def("Init", &JApplication::Initialize)
    ;
 
    enum_<jerror_t>("jerror_t")
