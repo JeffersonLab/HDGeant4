@@ -128,7 +128,7 @@ G4bool GlueXSensitiveDetectorGEMTRD::ProcessHits(G4Step* step,
   G4ThreeVector x = (xin + xout) / 2;
   G4ThreeVector dx = xout - xin;
   double t = (tin + tout) / 2;
-  
+
   const G4VTouchable* touch = step->GetPreStepPoint()->GetTouchable();
   const G4AffineTransform &local_from_global = touch->GetHistory()
     ->GetTopTransform();
@@ -152,7 +152,7 @@ G4bool GlueXSensitiveDetectorGEMTRD::ProcessHits(G4Step* step,
   GlueXUserTrackInformation *trackinfo = (GlueXUserTrackInformation*)
     track->GetUserInformation();
   int itrack = trackinfo->GetGlueXTrackID();
-  if (trackinfo->GetGlueXHistory() == 0 && itrack > 0 && xin.dot(pin) > 0) {
+  if (trackinfo->GetGlueXHistory() == 0) {
     G4int key = fPointsMap->entries();
     GlueXHitGEMTRDpoint* lastPoint = (*fPointsMap)[key - 1];
     if (lastPoint == 0 || lastPoint->track_ != trackID ||
@@ -196,7 +196,7 @@ G4bool GlueXSensitiveDetectorGEMTRD::ProcessHits(G4Step* step,
     int n_p=CLHEP::RandPoisson::shoot(n_p_mean);
      
     // Add hits to the hits vector
-    std::vector<GlueXHitGEMTRDhit::hitinfo_t>::iterator hiter=counter->hits.end();
+    std::vector<GlueXHitGEMTRDhit::hitinfo_t>::iterator hiter=counter->hits.end();  
     for (int ip=0;ip<n_p;ip++){
       if ((int)counter->hits.size() < MAX_HITS) {
 	// create new hit 
@@ -278,7 +278,7 @@ void GlueXSensitiveDetectorGEMTRD::EndOfEvent(G4HCofThisEvent*)
      chamber(0).setLayer(siter->second->layer_);
     
      for (int ih=0; ih < (int)hits.size(); ++ih) {
-       // Position and direction at entry to gas volume
+       // Position in gas volume
        double x=hits[ih].x_cm;
        double y=hits[ih].y_cm;
        double d=hits[ih].d_cm;
