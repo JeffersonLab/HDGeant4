@@ -14,7 +14,9 @@
 #include <Randomize.hh>
 
 #include <JANA/JApplication.h>
-#include <JANA/JCalibration.h>
+#include <JANA/Calibrations/JCalibration.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
+
 
 #define MULTIPLE_BEAM_GAMMAS_PER_ELECTRON 1
 #define RADIATOR_MATERIAL "copper"
@@ -782,7 +784,7 @@ double GlueXPhotonBeamGenerator::getBeamBucketPeriod(int runno)
    // unless the user has already set the value by hand.
 
    if (runno > 0) {
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       G4cout << "JCalibration context: " << jcalib->GetContext()
              << G4endl;
       std::map<std::string, double> result;
@@ -814,7 +816,7 @@ double GlueXPhotonBeamGenerator::getRFreferencePlaneZ(int runno)
    double refZ = 65 * cm;
 
    if (runno > 0) {
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       G4cout << "JCalibration context: " << jcalib->GetContext()
              << G4endl;
       std::map<std::string, double> result;

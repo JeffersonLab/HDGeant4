@@ -20,6 +20,8 @@
 #include "G4ios.hh"
 
 #include <JANA/JApplication.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
+
 
 #define USE_ENERGY_WEIGHTED_TIMES 1
 
@@ -66,14 +68,14 @@ GlueXSensitiveDetectorBCAL::GlueXSensitiveDetectorBCAL(const G4String& name)
    G4AutoLock barrier(&fMutex);
    if (instanceCount++ == 0) {
       int runno = HddmOutput::getRunNo();
-      extern jana::JApplication *japp;
+      extern JApplication *japp;
       if (japp == 0) {
          G4cerr << "Error in GlueXSensitiveDetector constructor - "
                 << "jana global DApplication object not set, "
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      jana::JCalibration *jcalib = japp->GetJCalibration(runno);
+     JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       std::map<string, float> bcal_parms;
       jcalib->Get("BCAL/bcal_parms", bcal_parms);
       THRESH_MEV = bcal_parms.at("BCAL_THRESH_MEV");

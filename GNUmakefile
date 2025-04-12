@@ -98,7 +98,7 @@ DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -L$(SQLITECPP_HOME)/$(SQLITECPP_LIBDIR) -lSQLiteCpp -L$(SQLITE_HOME)/lib -Wl,-rpath=$(SQLITE_HOME)/lib -lsqlite3 \
            -lxstream -lbz2 -lz \
            -L/usr/lib64/mysql -lmysqlclient\
-           -L$(JANA_HOME)/lib -lJANA \
+           -Wl,-rpath,${JANA_HOME}/lib -L$(JANA_HOME)/lib -lJANA \
            -L$(CCDB_HOME)/lib -lccdb \
            -L$(EVIOROOT)/lib -levioxx -levio \
            -lpthread -ldl
