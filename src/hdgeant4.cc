@@ -78,12 +78,12 @@ int main(int argc,char** argv)
    }
    // Convert filtered_args to argc and argv format
    int filtered_argc = filtered_args.size();
-   char* filtered_argv[filtered_argc];
+   std::vector<char*> filtered_argv;
    for (int i = 0; i < filtered_argc; ++i) {
-      filtered_argv[i] = const_cast<char*>(filtered_args[i].c_str());
+      filtered_argv.push_back(const_cast<char*>(filtered_args[i].c_str()));
    }
    // Initialize the jana framework
-   DApplication dapp(filtered_argc, filtered_argv);
+   DApplication dapp(filtered_argc, filtered_argv.data());
    auto app = dapp.GetJApp();
    app->Initialize();
 
