@@ -98,10 +98,6 @@ DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -L$(CCDB_HOME)/lib -lccdb \
            -lpthread -ldl
 
-ifdef EVIOROOT
-DANALIBS += -L$(EVIOROOT)/lib -levioxx -levio
-endif
-
 ifdef ETROOT
 DANALIBS += -L$(ETROOT)/lib -let -let_remote
 endif
