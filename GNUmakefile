@@ -72,7 +72,7 @@ HDDS_sources := $(HDDS_HOME)/XString.cpp $(HDDS_HOME)/XParsers.cpp $(HDDS_HOME)/
 
 ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer
 ifeq ($(shell test -s $(ROOTSYS)/lib/libtbb.so && echo -n yes),yes)
-    ROOTLIBS += $(ROOTSYS)/lib/libtbb.so.2
+    ROOTLIBS += $(ROOTSYS)/lib/libtbb.so
 endif
 ifeq ($(shell test -s $(VDTHOME)/lib/libvdt.so && echo -n yes),yes)
     ROOTLIBS += -L$(VDTHOME)/lib -lvdt
@@ -96,8 +96,11 @@ DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -L/usr/lib64/mysql -lmysqlclient\
            -Wl,-rpath,${JANA_HOME}/lib -L$(JANA_HOME)/lib -lJANA \
            -L$(CCDB_HOME)/lib -lccdb \
-           -L$(EVIOROOT)/lib -levioxx -levio \
            -lpthread -ldl
+
+ifdef EVIOROOT
+DANALIBS += -L$(EVIOROOT)/lib -levioxx -levio
+endif
 
 ifdef ETROOT
 DANALIBS += -L$(ETROOT)/lib -let -let_remote

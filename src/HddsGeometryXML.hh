@@ -10,7 +10,7 @@
 #ifndef _HDDSGEOMETRYXML_
 #define _HDDSGEOMETRYXML_
 
-#include <JANA/Compatibility/JGeometryXML.h>
+#include <JANA/Geometry/JGeometryXML.h>
 
 class HddsGeometryXML : public JGeometryXML
 {
