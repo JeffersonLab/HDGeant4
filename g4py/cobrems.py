@@ -16,7 +16,7 @@
 import sys
 from array import array
 
-from ROOT import *
+import ROOT
 from Cobrems import *
 
 # set global variables to defaults
@@ -47,7 +47,7 @@ def usage():
    Print a brief summary of the internal configuration variables
    that regulate the behavior of the CobremsGeneration and exit.
    """
-   print """
+   print("""
    Usage: cobrems.init(key=value, ...)
      where key should be one of the following, [defaults in backets]:
       * Epeak - photon energy (GeV) of primary coherent edge [9]
@@ -68,7 +68,7 @@ def usage():
       * bElim1 - upper limit (GeV) of beam background integration window [2.04]
       * eElim0 - lower limit (GeV) of beam endpoint integration window [10.68]
       * eElim1 - upper limit (GeV) of beam endpoint integration window [11.70]
-   """
+   """)
 
 def init(**kwargs):
    """
@@ -150,14 +150,14 @@ def init(**kwargs):
 
    # plot the acceptance curve
    global acceptF1
-   acceptF1 = TF1("acceptF1", acceptance, 0, 2, 0)
+   acceptF1 = ROOT.TF1("acceptF1", acceptance, 0, 2, 0)
    acceptF1.SetTitle("\\mbox{acceptance vs }\\theta/\\theta_C")
 
    # plot the beam energy spectrum
    x0 = Emin / E0
    x1 = Emax / E0
    global dRtdxF1
-   dRtdxF1 = TF1("dRtdxF1", dRtdx, x0, x1, 0)
+   dRtdxF1 = ROOT.TF1("dRtdxF1", dRtdx, x0, x1, 0)
    dRtdxF1.SetTitle("\\mbox{photon beam spectrum vs }E_\\gamma\\,/E_0" +
                     "\\mbox{ (/GeV/s)}")
    dRtdxF1.SetNpx(nbins)
@@ -175,7 +175,7 @@ def init(**kwargs):
    dRtdkH1 = 0
    title = "\\mbox{photon beam spectrum vs }E_\\gamma" + \
            "\\mbox{ (/GeV/s)}"
-   dRtdkH1 = TH1D("dRtdkH1", title, nbins, Emin, Emax)
+   dRtdkH1 = ROOT.TH1D("dRtdkH1", title, nbins, Emin, Emax)
    dRtdkH1.GetXaxis().SetRangeUser(Emin + (Emax - Emin)/10., Emax)
    for i in range(0, nbins):
       dRtdkH1.Fill(xvals[i] * E0, yvals[i] / E0)
@@ -190,12 +190,12 @@ def init(**kwargs):
                             dRtdkH1.FindBin(bElim1) - 1) * persec
    erate = dRtdkH1.Integral(dRtdkH1.FindBin(eElim0),
                             dRtdkH1.FindBin(eElim1) - 1) * persec
-   print "beam rate in the peak window [" + str(pElim0) + "," + \
-         str(pElim1) + "] GeV = ", prate, "/s"
-   print "beam rate in the background window [" + str(bElim0) + "," + \
-         str(bElim1) + "] GeV =", brate, "/s"
-   print "beam rate in the endpoint window [" + str(eElim0) + "," + \
-         str(eElim1) + "] GeV =", erate, "/s"
+   print("beam rate in the peak window [" + str(pElim0) + "," + \
+         str(pElim1) + "] GeV = ", prate, "/s")
+   print("beam rate in the background window [" + str(bElim0) + "," + \
+         str(bElim1) + "] GeV =", brate, "/s")
+   print("beam rate in the endpoint window [" + str(eElim0) + "," + \
+         str(eElim1) + "] GeV =", erate, "/s")
 
 def plotCoherent(collimated=1):
    """
@@ -224,7 +224,7 @@ def plotCoherent(collimated=1):
       title = "collimated photon beam spectrum, coherent part only"
    else:
       title = "uncollimated photon beam spectrum, coherent part only"
-   dRcdkH1 = TH1D("dRcdkH1", title, nbins, Emin, Emax)
+   dRcdkH1 = ROOT.TH1D("dRcdkH1", title, nbins, Emin, Emax)
    for i in range(0, nbins):
       dRcdkH1.Fill(xvals[i] * E0, yvals[i] / E0)
    dRcdkH1.GetXaxis().SetTitle("E_{#gamma} (GeV)")
@@ -262,7 +262,7 @@ def plotEnhancement(collimated=1):
       title = "collimated photon beam spectrum, enhancement"
    else:
       title = "uncollimated photon beam spectrum, enhancement"
-   enhanH1 = TH1D("enhanH1", title, nbins, Emin, Emax)
+   enhanH1 = ROOT.TH1D("enhanH1", title, nbins, Emin, Emax)
    for i in range(0, nbins):
       enhanH1.Fill(xvals[i] * E0, yvals[i])
    enhanH1.GetXaxis().SetTitle("E_{#gamma} (GeV)")
@@ -299,7 +299,7 @@ def plotIncoherent(collimated=1):
       title = "collimated photon beam spectrum, incoherent part only"
    else:
       title = "uncollimated photon beam spectrum, incoherent part only"
-   dRidkH1 = TH1D("dRidkH1", title, nbins, Emin, Emax)
+   dRidkH1 = ROOT.TH1D("dRidkH1", title, nbins, Emin, Emax)
    dRidkH1.GetXaxis().SetRangeUser(Emin + (Emax - Emin)/10., Emax)
    for i in range(0, nbins):
       dRidkH1.Fill(xvals[i] * E0, yvals[i] / E0)
@@ -337,7 +337,7 @@ def plotTotal(collimated=1):
       title = "collimated photon beam spectrum"
    else:
       title = "uncollimated photon beam spectrum"
-   dRtdkH1 = TH1D("dRtdkH1", title, nbins, Emin, Emax)
+   dRtdkH1 = ROOT.TH1D("dRtdkH1", title, nbins, Emin, Emax)
    dRtdkH1.GetXaxis().SetRangeUser(Emin + (Emax - Emin)/10., Emax)
    for i in range(0, nbins):
       dRtdkH1.Fill(xvals[i] * E0, yvals[i] / E0)
@@ -379,7 +379,7 @@ def plotPolarization(collimated=1):
       title = "collimated photon beam polarization"
    else:
       title = "uncollimated photon beam polarization"
-   polarH1 = TH1D("polarH1", title, nbins, Emin, Emax)
+   polarH1 = ROOT.TH1D("polarH1", title, nbins, Emin, Emax)
    for i in range(0, nbins):
       polarH1.Fill(xvals[i] * E0, ypols[i] / yvals[i])
    polarH1.GetXaxis().SetTitle("E_{#gamma} (GeV)")
@@ -550,8 +550,8 @@ def plot_LPMfl(Emax):
    """
    Make a plot of the formation lengths vs photon energy.
    """
-   h0 = TH1D("h0", "bremsstrahlung formation lengths vs k",
-             100, 0, Emax * 1e3)
+   h0 = ROOT.TH1D("h0", "bremsstrahlung formation lengths vs k",
+                  100, 0, Emax * 1e3)
    h0.SetStats(0)
    h0.SetLineColor(1)
    h0.SetLineWidth(2)
