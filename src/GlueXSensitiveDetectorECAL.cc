@@ -127,7 +127,7 @@ G4bool GlueXSensitiveDetectorECAL::ProcessHits(G4Step* step,
    double tout = step->GetPostStepPoint()->GetGlobalTime();
    G4ThreeVector x = (xin + xout) / 2;
    double t = (tin + tout) / 2;
-
+   
    const G4VTouchable* touch = step->GetPreStepPoint()->GetTouchable();
    const G4AffineTransform &local_from_global = touch->GetHistory()
                                                      ->GetTopTransform();
@@ -191,7 +191,7 @@ G4bool GlueXSensitiveDetectorECAL::ProcessHits(G4Step* step,
       if (touch->GetVolume()->GetName() == "XTBL") {
          double dist = 0.5 * LENGTH_OF_BLOCK - xlocal[2];
          double dEcorr = dEsum * exp(-dist / ATTENUATION_LENGTH);
-         double tcorr = t + dist / C_EFFECTIVE;
+         double tcorr = t;// + dist / C_EFFECTIVE;
 
          // Add the hit to the hits vector, maintaining strict time ordering
 
@@ -282,6 +282,7 @@ void GlueXSensitiveDetectorECAL::EndOfEvent(G4HCofThisEvent*)
 	   --ih;
          }
       }
+      if (hits.size()==0) continue;
 
       hddm_s::EcalBlockList block = CrystalEcal.addEcalBlocks(1);
       block(0).setColumn(biter->second->column_);
