@@ -1087,8 +1087,8 @@ void CobremsGeneration::pyApplyBeamCrystalConvolution(int nbins, pyobject xarr,
    typedef boost::python::tuple pytuple;
    pytuple xtuple = extract<pytuple>(xarr.attr("buffer_info")());
    pytuple ytuple = extract<pytuple>(yarr.attr("buffer_info")());
-   double *xbuf = reinterpret_cast<double*>((int)extract<int>(xtuple[0]));
-   double *ybuf = reinterpret_cast<double*>((int)extract<int>(ytuple[0]));
+   double *xbuf = reinterpret_cast<double*>((uintptr_t)extract<long>(xtuple[0]));
+   double *ybuf = reinterpret_cast<double*>((uintptr_t)extract<long>(ytuple[0]));
    applyBeamCrystalConvolution(nbins, xbuf, ybuf);
 }
 
