@@ -32,7 +32,7 @@ int GlueXSensitiveDetectorECAL::CENTRAL_ROW = 24;
 
 // Light propagation parameters in forward calorimeter
 double GlueXSensitiveDetectorECAL::ATTENUATION_LENGTH = 100.*cm;
-double GlueXSensitiveDetectorECAL::C_EFFECTIVE = 15.*cm/ns;
+double GlueXSensitiveDetectorECAL::C_EFFECTIVE = 10.*cm/ns;
 
 // Minimum hit time difference for two hits on the same block
 double GlueXSensitiveDetectorECAL::TWO_HIT_TIME_RESOL = 75.*ns;
@@ -67,13 +67,13 @@ GlueXSensitiveDetectorECAL::GlueXSensitiveDetectorECAL(const G4String& name)
          exit(-1);
       }
       JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
-      std::map<string, float> fcal_parms;
-      jcalib->Get("FCAL/fcal_parms", fcal_parms);
-      ATTENUATION_LENGTH = fcal_parms.at("FCAL_ATTEN_LENGTH")*cm;
-      C_EFFECTIVE = fcal_parms.at("FCAL_C_EFFECTIVE")*cm/ns;
-      TWO_HIT_TIME_RESOL = fcal_parms.at("FCAL_TWO_HIT_RESOL")*ns;
-      MAX_HITS = fcal_parms.at("FCAL_MAX_HITS");
-      THRESH_MEV = fcal_parms.at("FCAL_THRESH_MEV");
+      std::map<string, float> ecal_parms;
+      jcalib->Get("ECAL/ecal_parms", ecal_parms);
+      ATTENUATION_LENGTH = ecal_parms.at("ECAL_ATTEN_LENGTH")*cm;
+      C_EFFECTIVE = ecal_parms.at("ECAL_C_EFFECTIVE")*cm/ns;
+      TWO_HIT_TIME_RESOL = ecal_parms.at("ECAL_TWO_HIT_RESOL")*ns;
+      MAX_HITS = ecal_parms.at("ECAL_MAX_HITS");
+      THRESH_MEV = ecal_parms.at("ECAL_THRESH_MEV");
 
       G4cout << "ECAL: ALL parameters loaded from ccdb" << G4endl;
    }
@@ -186,12 +186,12 @@ G4bool GlueXSensitiveDetectorECAL::ProcessHits(G4Step* step,
          block = (*fBlocksMap)[key];
       }
 
-      // Handle hits in the lead tungtate crystal
+      // Handle hits in the lead tungstate crystal
  
       if (touch->GetVolume()->GetName() == "XTBL") {
          double dist = 0.5 * LENGTH_OF_BLOCK - xlocal[2];
          double dEcorr = dEsum * exp(-dist / ATTENUATION_LENGTH);
-         double tcorr = t;// + dist / C_EFFECTIVE;
+         double tcorr = t + dist / C_EFFECTIVE;
 
          // Add the hit to the hits vector, maintaining strict time ordering
 
