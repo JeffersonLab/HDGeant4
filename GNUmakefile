@@ -138,6 +138,8 @@ EXTRALIBS += -lG4fixes -lGLU
 all: hdds cobrems G4fixes_symlink g4fixes sharedlib exe lib bin g4py
 
 include $(G4INSTALL)/config/binmake.gmk
+LOADLIBS := -lCLHEP -L/usr/lib64 -lexpat -lm -lstdc++
+GDMLLIBS := -L/usr/lib64 -lxerces-c
 
 cobrems: $(G4TMPDIR)/libcobrems.so
 hdds:  $(G4TMPDIR)/libhdds.so
