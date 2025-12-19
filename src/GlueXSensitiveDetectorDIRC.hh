@@ -48,7 +48,8 @@ class GlueXSensitiveDetectorDIRC : public G4VSensitiveDetector
    std::vector<GlueXHitDIRCPmt> fHitsPmt;
    int fLutId;
    bool fLED;
-   
+   static float fEFFIC_SCALE;
+
    std::map<G4LogicalVolume*, int> fVolumeTable;
    
    static int MAX_HITS;
@@ -61,6 +62,7 @@ class GlueXSensitiveDetectorDIRC : public G4VSensitiveDetector
  
    static TGraph *fDetEff;
    static void InitializeDetEff();
+   static bool PixelSort(GlueXHitDIRCPmt hit1, GlueXHitDIRCPmt hit2);
 };
 
 #endif
