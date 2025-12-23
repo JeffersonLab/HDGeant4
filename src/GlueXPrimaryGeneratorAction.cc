@@ -17,7 +17,7 @@
 #include "G4IonTable.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
-#include <JANA/Compatibility/JGeometryManager.h>
+#include <JANA/Geometry/JGeometryManager.h>
 #include <JANA/Calibrations/JCalibrationManager.h>
 
 
