@@ -392,30 +392,47 @@ int generate(int nevents)
       }
       for (int i=0; i < 4; ++i) {
          prods(i).addMomenta();
+         prods(0).getMomentum().addMomentum_doubles();
          prods(i).addPropertiesList();
       }
       prods(0).getMomentum().setE(lpOut.Mom()[0]);
       prods(0).getMomentum().setPx(lpOut.Mom()[1]);
       prods(0).getMomentum().setPy(lpOut.Mom()[2]);
       prods(0).getMomentum().setPz(lpOut.Mom()[3]);
+      prods(0).getMomentum().getMomentum_double().setE(lpOut.Mom()[0]);
+      prods(0).getMomentum().getMomentum_double().setPx(lpOut.Mom()[1]);
+      prods(0).getMomentum().getMomentum_double().setPy(lpOut.Mom()[2]);
+      prods(0).getMomentum().getMomentum_double().setPz(lpOut.Mom()[3]);
       prods(0).getProperties().setMass(mLepton);
       prods(0).getProperties().setCharge(1);
       prods(1).getMomentum().setE(lnOut.Mom()[0]);
       prods(1).getMomentum().setPx(lnOut.Mom()[1]);
       prods(1).getMomentum().setPy(lnOut.Mom()[2]);
       prods(1).getMomentum().setPz(lnOut.Mom()[3]);
+      prods(1).getMomentum().getMomentum_double().setE(lnOut.Mom()[0]);
+      prods(1).getMomentum().getMomemtum_double().setPx(lnOut.Mom()[1]);
+      prods(1).getMomentum().getMomentum_double().setPy(lnOut.Mom()[2]);
+      prods(1).getMomentum().getMomentum_double().setPz(lnOut.Mom()[3]);
       prods(1).getProperties().setMass(mLepton);
       prods(1).getProperties().setCharge(-1);
       prods(2).getMomentum().setE(eOut.Mom()[0]);
       prods(2).getMomentum().setPx(eOut.Mom()[1]);
       prods(2).getMomentum().setPy(eOut.Mom()[2]);
       prods(2).getMomentum().setPz(eOut.Mom()[3]);
+      prods(2).getMomentum().getMomentum_double().setE(eOut.Mom()[0]);
+      prods(2).getMomentum().getMomentum_double().setPx(eOut.Mom()[1]);
+      prods(2).getMomentum().getMomentum_double().setPy(eOut.Mom()[2]);
+      prods(2).getMomentum().getMomentum_double().setPz(eOut.Mom()[3]);
       prods(2).getProperties().setMass(mElectron);
       prods(2).getProperties().setCharge(-1);
       prods(3).getMomentum().setE(qRecoil[0]);
       prods(3).getMomentum().setPx(qRecoil[1]);
       prods(3).getMomentum().setPy(qRecoil[2]);
       prods(3).getMomentum().setPz(qRecoil[3]);
+      prods(3).getMomentum().getMomentum_double().setE(qRecoil[0]);
+      prods(3).getMomentum().getMomentum_double().setPx(qRecoil[1]);
+      prods(3).getMomentum().getMomentum_double().setPy(qRecoil[2]);
+      prods(3).getMomentum().getMomentum_double().setPz(qRecoil[3]);
       prods(3).getProperties().setMass(target_mass);
       if (target_mass == mElectron) {
          prods(3).getProperties().setCharge(-1);

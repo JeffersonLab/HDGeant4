@@ -138,6 +138,13 @@ void GlueXPrimaryGenerator::GeneratePrimaryVertex(G4Event *event)
          double py = momentum.getPy() * GeV;
          double pz = momentum.getPz() * GeV;
          double Etot = momentum.getE() * GeV;
+         hddm_s::Momentum_doubleList momentum_doubles = momentum.getMomentum_doubles();
+         if (momentum_doubles.size() > 0) {
+            px = momentum_doubles(0).getPx() * GeV;
+            py = momentum_doubles(0).getPy() * GeV;
+            pz = momentum_doubles(0).getPz() * GeV;
+            Etot = momentum_doubles(0).getE() * GeV;
+         }
          G4PrimaryParticle *pp = new G4PrimaryParticle(part, px, py, pz, Etot);
          hddm_s::PolarizationList polars = it_product->getPolarizations();
          if (polars.size() > 0) {

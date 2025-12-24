@@ -287,24 +287,37 @@ int generate(int nevents)
       prods(2).setType(Proton);
       for (int i=0; i < 3; ++i) {
          prods(i).addMomenta();
+         prods(i).getMomentum().addMomentum_doubles();
          prods(i).addPropertiesList();
       }
       prods(0).getMomentum().setE(pOut.Mom()[0]);
       prods(0).getMomentum().setPx(pOut.Mom()[1]);
       prods(0).getMomentum().setPy(pOut.Mom()[2]);
       prods(0).getMomentum().setPz(pOut.Mom()[3]);
+      prods(0).getMomentum().getMomentum_double().setE(pOut.Mom()[0]);
+      prods(0).getMomentum().getMomentum_double().setPx(pOut.Mom()[1]);
+      prods(0).getMomentum().getMomentum_double().setPy(pOut.Mom()[2]);
+      prods(0).getMomentum().getMomentum_double().setPz(pOut.Mom()[3]);
       prods(0).getProperties().setMass(mElectron);
       prods(0).getProperties().setCharge(1);
       prods(1).getMomentum().setE(eOut.Mom()[0]);
       prods(1).getMomentum().setPx(eOut.Mom()[1]);
       prods(1).getMomentum().setPy(eOut.Mom()[2]);
       prods(1).getMomentum().setPz(eOut.Mom()[3]);
+      prods(1).getMomentum().getMomentum_double().setE(eOut.Mom()[0]);
+      prods(1).getMomentum().getMomentum_double().setPx(eOut.Mom()[1]);
+      prods(1).getMomentum().getMomentum_double().setPy(eOut.Mom()[2]);
+      prods(1).getMomentum().getMomentum_double().setPz(eOut.Mom()[3]);
       prods(1).getProperties().setMass(mElectron);
       prods(1).getProperties().setCharge(-1);
       prods(2).getMomentum().setE(nOut.Mom()[0]);
       prods(2).getMomentum().setPx(nOut.Mom()[1]);
       prods(2).getMomentum().setPy(nOut.Mom()[2]);
       prods(2).getMomentum().setPz(nOut.Mom()[3]);
+      prods(2).getMomentum().getMomentum_double().setE(nOut.Mom()[0]);
+      prods(2).getMomentum().getMomentum_double().setPx(nOut.Mom()[1]);
+      prods(2).getMomentum().getMomentum_double().setPy(nOut.Mom()[2]);
+      prods(2).getMomentum().getMomentum_double().setPz(nOut.Mom()[3]);
       prods(2).getProperties().setMass(mProton);
       prods(2).getProperties().setCharge(+1);
       verts(0).addOrigins();
