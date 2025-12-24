@@ -148,7 +148,10 @@ g4fixes: $(G4TMPDIR)/libG4fixes.so
 CXXFLAGS = -g -O4 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
 
 GCCVERSION = $(shell gcc --version | awk -F'[. ]*' '/gcc/{print $$3}')
-ifeq ($(shell test $(GCCVERSION) -ge 8; echo $$?),0)
+ifeq ($(shell test $(GCCVERSION) -ge 11; echo $$?),0)
+    CPPFLAGS += -std=c++20
+    CXXFLAGS += -std=c++20
+else ifeq ($(shell test $(GCCVERSION) -ge 8; echo $$?),0)
     CPPFLAGS += -std=c++17
     CXXFLAGS += -std=c++17
 else ifeq ($(shell test $(GCCVERSION) -ge 5; echo $$?),0)
