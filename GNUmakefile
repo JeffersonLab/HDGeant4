@@ -45,7 +45,7 @@ CPPFLAGS += -DREDUCE_OPTIMIZATION_OF_CDC=1
 #CPPFLAGS += -DG4UI_USE_EXECUTIVE
 CPPFLAGS += -DG4VIS_BUILD_OPENGL_DRIVER
 CPPFLAGS += -DG4VIS_BUILD_OPENGLX_DRIVER
-#CPPFLAGS += -DG4MULTITHREADED
+CPPFLAGS += -DG4MULTITHREADED
 #CPPFLAGS += -DUSING_BERNARD
 #CPPFLAGS += -DMERGE_STEPS_BEFORE_HITS_GENERATION
 #CPPFLAGS += -DVERBOSE_RANDOMS=1
@@ -144,7 +144,7 @@ cobrems: $(G4TMPDIR)/libcobrems.so
 hdds:  $(G4TMPDIR)/libhdds.so
 g4fixes: $(G4TMPDIR)/libG4fixes.so
 
-CXXFLAGS = -g -O0 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
+CXXFLAGS = -g -O4 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
 
 GCCVERSION = $(shell gcc --version | awk -F'[. ]*' '/gcc/{print $$3}')
 ifeq ($(shell test $(GCCVERSION) -ge 11; echo $$?),0)
