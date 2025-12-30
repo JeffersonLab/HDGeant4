@@ -1,0 +1,127 @@
+cmake_minimum_required(VERSION 3.16)
+project(HDGeant4 VERSION 1.0 LANGUAGES CXX)
+
+# --- Standard C++ Detection (Matches your GCC logic) ---
+set(CMAKE_CXX_STANDARD 11)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11)
+        set(CMAKE_CXX_STANDARD 20)
+    elseif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8)
+        set(CMAKE_CXX_STANDARD 17)
+    elseif(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 5)
+        set(CMAKE_CXX_STANDARD 14)
+    endif()
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# --- Find Dependencies ---
+find_package(Geant4 REQUIRED ui_all vis_all gdml)
+include(${Geant4_USE_FILE})
+
+set(OLD_LOG_LEVEL ${CMAKE_MESSAGE_LOG_LEVEL})
+set(CMAKE_MESSAGE_LOG_LEVEL ERROR)
+find_package(ROOT REQUIRED COMPONENTS Geom TMVA TreePlayer)
+include(${ROOT_USE_FILE})
+set(CMAKE_MESSAGE_LOG_LEVEL ${OLD_LOG_LEVEL})
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(Boost REQUIRED COMPONENTS python)
+
+# For XERCES (required by HDDS and Geant4 GDML)
+find_package(XercesC REQUIRED)
+
+find_package(Diracxx REQUIRED)
+
+find_package(JANA REQUIRED)
+
+# Handle Manual/Environment-based Dependencies (DANA/HALLD)
+set(HALLD_RECON_HOME $ENV{HALLD_RECON_HOME})
+set(HDDS_HOME $ENV{HDDS_HOME})
+set(JANA_HOME $ENV{JANA_HOME})
+
+# --- Global Compiler Flags & Macros ---
+add_definitions(
+    -DUSING_DIRACXX 
+    -DUSE_SSE2 
+    -DBYPASS_DRAWING_CLIPPED_VOLUMES
+    -DLAYERED_GEOMETRY_PICKING_EXTENSIONS
+    -DREDUCE_OPTIMIZATION_OF_CDC=1
+    -DG4VIS_BUILD_OPENGL_DRIVER
+    -DG4VIS_BUILD_OPENGLX_DRIVER
+    -DG4MULTITHREADED
+    -DG4VIS_USE
+    -DG4UI_USE
+)
+
+# Conditional Macro for DIRC
+if(EXISTS "${HALLD_RECON_HOME}/src/libraries/DIRC/DDIRCPmtHit.cc")
+    add_definitions(-DDIRCTRUTHEXTRA)
+endif()
+
+# --- Include Directories ---
+include_directories(
+    src
+    src/G4fixes
+    src/G4debug
+    ${HDDS_HOME}
+    ${HALLD_RECON_HOME}/$ENV{BMS_OSNAME}/include
+    ${JANA_HOME}/include
+    ${XercesC_INCLUDE_DIRS}
+)
+
+# --- Define Libraries ---
+
+# 1. HDDS Library
+add_library(hdds SHARED 
+    ${HDDS_HOME}/XString.cpp 
+    ${HDDS_HOME}/XParsers.cpp 
+    ${HDDS_HOME}/hddsCommon.cpp
+)
+
+# 2. G4fixes Library
+file(GLOB G4FIXES_SRC "src/G4fixes/*.cc" "src/G4debug/*.cc")
+add_library(G4fixes SHARED src/G4fixes.cc ${G4FIXES_SRC})
+target_link_libraries(G4fixes ${Geant4_LIBRARIES} Boost::python Python3::Python)
+
+# 3. Cobrems Library
+file(GLOB COBREMS_SRC "src/Cobrems*.cc")
+add_library(cobrems SHARED ${COBREMS_SRC})
+target_link_libraries(cobrems ${Geant4_LIBRARIES} Boost::python Python3::Python)
+
+# 4. Main hdgeant4 Library
+file(GLOB HDGEANT4_SRC "src/*.cc")
+file(GLOB JANA2_LIBS "${JANA_HOME}/lib/lib*.so")
+list(REMOVE_ITEM HDGEANT4_SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/CobremsGeneration.cc" "${CMAKE_CURRENT_SOURCE_DIR}/src/G4fixes.cc")
+add_library(hdgeant4 SHARED ${HDGEANT4_SRC})
+target_link_directories(hdgeant4 PUBLIC 
+    "${HALLD_RECON_HOME}/$ENV{BMS_OSNAME}/lib"
+    "$ENV{EVIOROOT}/lib" 
+    "$ENV{SQLITECPP_HOME}/lib"
+    "$ENV{SQLITE_HOME}/lib"
+    "$ENV{CCDB_HOME}/lib"
+)
+target_link_libraries(hdgeant4 PUBLIC
+    hdds G4fixes cobrems
+    ${Geant4_LIBRARIES}
+    ${ROOT_LIBRARIES}
+    ${XercesC_LIBRARIES}
+    Diracxx::Dirac
+    JANA::jana2_shared_lib
+    BCAL CDC DANA DIRC ECAL FCAL FDC FMWPC CCAL ECAL
+    RF TAGGER PAIR_SPECTROMETER START_COUNTER TOF TRD
+    ANALYSIS HDGEOMETRY PID TAC TPOL TRIGGER CERE
+    TRACKING KINFITTER TTAB DAQ EVENTSTORE
+    HDDM xstream
+    evioxx evio
+    ccdb mysqlclient
+    SQLiteCpp sqlite3
+    GLU
+)
+
+# --- Executable ---
+add_executable(hdgeant4_bin src/hdgeant4.cc) # Assuming main is here
+set_target_properties(hdgeant4_bin PROPERTIES OUTPUT_NAME hdgeant4)
+target_link_libraries(hdgeant4_bin hdgeant4)
+
+# --- Utils ---
+add_subdirectory(src/utils)
