@@ -410,7 +410,7 @@ int generate(int nevents)
       prods(1).getMomentum().setPy(lnOut.Mom()[2]);
       prods(1).getMomentum().setPz(lnOut.Mom()[3]);
       prods(1).getMomentum().getMomentum_double().setE(lnOut.Mom()[0]);
-      prods(1).getMomentum().getMomemtum_double().setPx(lnOut.Mom()[1]);
+      prods(1).getMomentum().getMomentum_double().setPx(lnOut.Mom()[1]);
       prods(1).getMomentum().getMomentum_double().setPy(lnOut.Mom()[2]);
       prods(1).getMomentum().getMomentum_double().setPz(lnOut.Mom()[3]);
       prods(1).getProperties().setMass(mLepton);
