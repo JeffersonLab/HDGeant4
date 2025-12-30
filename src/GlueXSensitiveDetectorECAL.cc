@@ -127,7 +127,7 @@ G4bool GlueXSensitiveDetectorECAL::ProcessHits(G4Step* step,
    double tout = step->GetPostStepPoint()->GetGlobalTime();
    G4ThreeVector x = (xin + xout) / 2;
    double t = (tin + tout) / 2;
-   
+
    const G4VTouchable* touch = step->GetPreStepPoint()->GetTouchable();
    const G4AffineTransform &local_from_global = touch->GetHistory()
                                                      ->GetTopTransform();
