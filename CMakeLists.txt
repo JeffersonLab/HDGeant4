@@ -125,3 +125,22 @@ target_link_libraries(hdgeant4_bin hdgeant4)
 
 # --- Utils ---
 add_subdirectory(src/utils)
+
+install(TARGETS hdgeant4_bin
+        RUNTIME DESTINATION bin)
+
+install(TARGETS hdgeant4 cobrems G4fixes
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+
+install(TARGETS hdgeant4 DESTINATION g4py/HDGeant4)
+install(TARGETS cobrems  DESTINATION g4py/Cobrems)
+install(TARGETS G4fixes  DESTINATION g4py/G4fixes)
+
+install(FILES 
+        g4py/cobrems.py 
+        g4py/hdgeant4.py 
+        DESTINATION g4py)
+install(FILES g4py/Cobrems/__init__.py DESTINATION g4py/Cobrems)
+install(FILES g4py/G4fixes/__init__.py DESTINATION g4py/G4fixes)
+install(FILES g4py/HDGeant4/__init__.py DESTINATION g4py/HDGeant4)
