@@ -54,6 +54,7 @@ void GlueXTimer::Reset() {
       int err = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &fClock[thread]);
 #endif
       assert(err == 0);
+      (void)err;
       fTimeLastGo[thread] = fClock[thread].tv_sec + fClock[thread].tv_nsec*1e-9;
    }
    fRunningTotal[thread] = 0;
@@ -73,6 +74,7 @@ void GlueXTimer::Start() {
       int err = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &fClock[thread]);
 #endif
       assert(err == 0);
+      (void)err;
       fTimeLastGo[thread] = fClock[thread].tv_sec + fClock[thread].tv_nsec*1e-9;
       fRunningTotal[thread] = 0;
       fIsStarted[thread] = 1;
@@ -89,6 +91,7 @@ void GlueXTimer::Stop() {
       int err = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &fClock[thread]);
 #endif
       assert(err == 0);
+      (void)err;
       double now = fClock[thread].tv_sec + fClock[thread].tv_nsec*1e-9;
       fRunningTotal[thread] += now - fTimeLastGo[thread];
       fIsRunning[thread] = 0;
@@ -113,6 +116,7 @@ void GlueXTimer::Suspend() {
       int err = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &fClock[thread]);
 #endif
       assert(err == 0);
+      (void)err;
       double now = fClock[thread].tv_sec + fClock[thread].tv_nsec*1e-9;
       fRunningTotal[thread] += now - fTimeLastGo[thread];
       fIsRunning[thread] = 0;
@@ -133,6 +137,7 @@ void GlueXTimer::Resume() {
       int err = clock_gettime(CLOCK_THREAD_CPUTIME_ID, &fClock[thread]);
 #endif
       assert(err == 0);
+      (void)err;
       fTimeLastGo[thread] = fClock[thread].tv_sec + fClock[thread].tv_nsec*1e-9;
       fIsRunning[thread] = 1;
    }
