@@ -464,9 +464,9 @@ void GlueXBeamConversionProcess::ProcessDescription(std::ostream& out) const
 
 
 G4double GlueXBeamConversionProcess::GetMeanFreePath(
-                                     const G4Track &track, 
-                                     G4double previousStepSize,
-                                     G4ForceCondition *condition)
+                                     const G4Track&, 
+                                     G4double,
+                                     G4ForceCondition*)
 {
    return 100*cm;
 }
@@ -605,7 +605,6 @@ G4VParticleChange *GlueXBeamConversionProcess::PostStepDoIt(
          weight_factor = 1 / (1. - BetheHeitler_fraction);
       }
       GlueXUserEventInformation *event_info;
-      const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
       event_info = (GlueXUserEventInformation*)event->GetUserInformation();
       hddm_s::ReactionList rea = event_info->getOutputRecord()->getReactions();
       rea(0).setWeight(rea(0).getWeight() * weight_factor);
@@ -672,8 +671,8 @@ void GlueXBeamConversionProcess::prepareImportanceSamplingPDFs()
    fPaircohPDF->Psum = 0;
    for (int i0=0; i0 < Nbins; ++i0) {
       LDouble_t u0 = (i0 + 0.5) / Nbins;
-      LDouble_t um = pow(um0, u0);
-      LDouble_t Mpair = Mcut / sqrt(um - 1);
+      LDouble_t um1 = pow(um0, u0);
+      LDouble_t Mpair = Mcut / sqrt(um1 - 1);
       LDouble_t k12star2 = sqr(Mpair / 2) - sqr(mLepton);
       LDouble_t qRmin = sqr(Mpair) / (2 * kin);
       LDouble_t uq0 = qRmin / (qRcut + sqrt(sqr(qRcut) + sqr(qRmin)));
@@ -871,8 +870,8 @@ void GlueXBeamConversionProcess::GenerateBeamPairConversion(const G4Step &step)
       LDouble_t Mmin = 2 * mLepton;
       LDouble_t Mcut = 10 * mLepton;  // 5 MeV for electrons
       LDouble_t um0 = 1 + sqr(Mcut / Mmin);
-      LDouble_t um = pow(um0, u0);
-      LDouble_t Mpair = Mcut / sqrt(um - 1 + 1e-99);
+      LDouble_t um1 = pow(um0, u0);
+      LDouble_t Mpair = Mcut / sqrt(um1 - 1 + 1e-99);
       weight *= Mpair * (sqr(Mcut) + sqr(Mpair)) * log(um0) / (2 * sqr(Mcut));
    
       // Generate qR^2 with weight 1 / [qR^2 sqrt(qRcut^2 + qR^2)]
@@ -1297,8 +1296,8 @@ void GlueXBeamConversionProcess::GenerateBetheHeitlerProcess(const G4Step &step)
    LDouble_t umax = 1;
    if (fBHpair_mass_min > Mthresh)
       umax = log(1 + sqr(Mcut / fBHpair_mass_min)) / log(um0);
-   LDouble_t um = pow(um0, u[4] * umax);
-   LDouble_t Mpair = Mcut / sqrt(um - 1 + 1e-99);
+   LDouble_t um1 = pow(um0, u[4] * umax);
+   LDouble_t Mpair = Mcut / sqrt(um1 - 1 + 1e-99);
    weight *= Mpair * (sqr(Mcut) + sqr(Mpair)) * log(um0) / (2 * sqr(Mcut));
    weight *= umax;
 
@@ -1772,8 +1771,8 @@ void GlueXBeamConversionProcess::GenerateTripletProcess(const G4Step &step)
    LDouble_t umax = 1;
    if (fBHpair_mass_min > Mthresh)
       umax = log(1 + sqr(Mcut / fBHpair_mass_min)) / log(um0);
-   LDouble_t um = pow(um0, u[4] * umax);
-   LDouble_t Mpair = Mcut / sqrt(um - 1 + 1e-99);
+   LDouble_t um1 = pow(um0, u[4] * umax);
+   LDouble_t Mpair = Mcut / sqrt(um1 - 1 + 1e-99);
    weight *= Mpair * (sqr(Mcut) + sqr(Mpair)) * log(um0) / (2 * sqr(Mcut));
    weight *= umax;
 
@@ -2068,17 +2067,17 @@ double GlueXBeamConversionProcess::nuclearFormFactor(double Q2_GeV)
            {8.7, 0.000020}
          };
    const double gamma(1.388);
-   const double hbarc(0.197);
+   const double hbarc_GeV_fm(0.197);
 
    double q = sqrt(Q2_GeV);
    double FF = 0;
    if (fTargetZ == 82) {
       for (auto rA : A) {
           double r = rA.first;
-          FF +=  A.at(r) * (sqr(gamma) * cos(q * r/hbarc) +
-                         2 * r * hbarc/q * sin(q * r/hbarc))
+          FF +=  A.at(r) * (sqr(gamma) * cos(q * r/hbarc_GeV_fm) +
+                         2 * r * hbarc_GeV_fm/q * sin(q * r/hbarc_GeV_fm))
                         / (sqr(gamma) + 2 * sqr(r)) *
-                        exp(-sqr(q) / 4 * sqr(gamma/hbarc));
+                        exp(-sqr(q) / 4 * sqr(gamma/hbarc_GeV_fm));
       }
    }
    else if (fTargetZ > 1) {
@@ -2099,7 +2098,7 @@ double GlueXBeamConversionProcess::nuclearFormFactor(double Q2_GeV)
       double adent2 = adent * adent;
       double adent3 = adent2 * adent;
       double cdent = 1.07 * pow(fTargetA, 1/3.);  // fm
-      double q__fm = q / hbarc; // fm^-1
+      double q__fm = q / hbarc_GeV_fm; // fm^-1
       double FF0 = 4 * M_PI * cdent / 3 * (sqr(M_PI * adent) + sqr(cdent));
       FF = 4 * sqr(M_PI) * adent3
            / sqr(q__fm * adent * sinh(M_PI * q__fm * adent))
