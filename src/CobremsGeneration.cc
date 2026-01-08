@@ -51,6 +51,9 @@
 #define COBREMS_GENERATOR_VERBOSITY 0
 #define BOOST_PYTHON_WRAPPING 1
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#include <boost/python.hpp>
+
 #include <iostream>
 #include <stdio.h>
 #include <CobremsGeneration.hh>
