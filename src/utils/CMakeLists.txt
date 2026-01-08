@@ -14,3 +14,8 @@ add_hdgeant4_util(genBH)
 add_hdgeant4_util(geneBH)
 add_hdgeant4_util(adapt)
 add_hdgeant4_util(samplesep)
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(samplesep OpenMP::OpenMP_CXX)
+endif()
+

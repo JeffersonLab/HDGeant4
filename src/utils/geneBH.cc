@@ -89,7 +89,7 @@ LDouble_t FFatomic(LDouble_t qrec) {
    const LDouble_t beta = 2.17e5 / pow(TargetZ, 1/3.);
    return 1 / (1 + sqr(beta * qrec));
 }
-LDouble_t FFnuclear(LDouble_t qrec) {
+LDouble_t FFnuclear(LDouble_t /* qrec */) {
    // This needs to be modified to describe lepton pairs
    // with masses above 100 MeV/c^2.
    return 1;
