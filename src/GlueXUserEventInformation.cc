@@ -146,8 +146,8 @@ GlueXUserEventInformation::~GlueXUserEventInformation()
    }
 }
 
-void GlueXUserEventInformation::AddBeamParticle(int geanttype, double t0,
-                                                const G4ThreeVector &pos, 
+void GlueXUserEventInformation::AddBeamParticle(int geanttype, double /* t0 */,
+                                                const G4ThreeVector& /* pos */, 
                                                 const G4ThreeVector &mom)
 {
    hddm_s::PhysicsEventList pev = fOutputRecord->getPhysicsEvents();
@@ -189,8 +189,8 @@ void GlueXUserEventInformation::AddBeamParticle(int geanttype, double t0,
    polar(0).setPz(pol[2]);
 }
 
-void GlueXUserEventInformation::AddTargetParticle(int geanttype, double t0,
-                                                  const G4ThreeVector &pos,
+void GlueXUserEventInformation::AddTargetParticle(int geanttype, double /* t0 */,
+                                                  const G4ThreeVector& /* pos */,
                                                   const G4ThreeVector &mom)
 {
    hddm_s::PhysicsEventList pev = fOutputRecord->getPhysicsEvents();
@@ -513,9 +513,9 @@ void GlueXUserEventInformation::SetRandomSeeds()
             fStartingSeeds = 0;
          }
       }
-      const long int *s = G4Random::getTheSeeds();
-      fEventSeeds[0] = s[0];
-      fEventSeeds[1] = s[1];
+      const long int *sds = G4Random::getTheSeeds();
+      fEventSeeds[0] = sds[0];
+      fEventSeeds[1] = sds[1];
       rnd = rea(0).addRandoms();
       rnd(0).setSeed1(fEventSeeds[0]);
       rnd(0).setSeed2(fEventSeeds[1]);
