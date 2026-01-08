@@ -3,6 +3,9 @@
 //            using the Boost.Python C++ interface.
 //
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#include <boost/python.hpp>
+
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
@@ -239,9 +242,10 @@ BOOST_PYTHON_MODULE(libhdgeant4)
    ;
 
    class_<GlueXSteppingAction, GlueXSteppingAction*,
-          boost::python::bases<G4UserSteppingAction> >
+          boost::python::bases<G4UserSteppingAction>, boost::noncopyable>
          ("GlueXSteppingAction",
-          "encapsulates actions to take at start and end of each step")
+          "encapsulates actions to take at start and end of each step",
+           boost::python::init<>())
    ;
 
    class_<G4SteppingVerbose, G4SteppingVerbose*>
