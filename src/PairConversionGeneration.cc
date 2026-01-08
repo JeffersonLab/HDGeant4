@@ -28,6 +28,9 @@
 // Any length is in m; energy,momentum,mass in GeV (c=1); angles in
 // radians; time in seconds; cross section in barns.
 
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#include <boost/python.hpp>
+
 #ifdef USING_DIRACXX
 #define BOOST_PYTHON_WRAPPING 1
 
@@ -56,8 +59,8 @@ const TThreeVectorReal posZhat(0,0,1);
 const TThreeVectorReal negZhat(0,0,-1);
 
 PairConversionGeneration::PairConversionGeneration(std::vector<double> Z,
-                                                   std::vector<double> A,
-                                                   std::vector<double> w)
+                                                   std::vector<double> /* A */,
+                                                   std::vector<double> /* w */)
 {
    if (Z.size() == 1) {
        fConverterZ = Z[0];
