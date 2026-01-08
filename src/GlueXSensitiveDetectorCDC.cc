@@ -188,7 +188,7 @@ void GlueXSensitiveDetectorCDC::Initialize(G4HCofThisEvent* hce)
 }
 
 G4bool GlueXSensitiveDetectorCDC::ProcessHits(G4Step* step, 
-                                              G4TouchableHistory* ROhist)
+                                              G4TouchableHistory* /* ROhist */)
 {
    double dEsum = step->GetTotalEnergyDeposit();
    if (dEsum == 0)
@@ -303,9 +303,9 @@ G4bool GlueXSensitiveDetectorCDC::ProcessHits(G4Step* step,
       G4int key = fPointsMap->entries();
       GlueXHitCDCpoint* lastPoint = (*fPointsMap)[key - 1];
       // No more than one truth point per ring in the cdc
-      int ring = GetIdent("ring", touch);
+      int iring = GetIdent("ring", touch);
       if (lastPoint == 0 || lastPoint->track_ != trackID || 
-          lastPoint->ring_ != ring)
+          lastPoint->ring_ != iring)
       {
          GlueXHitCDCpoint newPoint;
          newPoint.ptype_G3 = g3type;
@@ -322,7 +322,7 @@ G4bool GlueXSensitiveDetectorCDC::ProcessHits(G4Step* step,
          newPoint.pz_GeV = pin[2]/GeV;
          newPoint.dEdx_GeV_cm = dEdx/(GeV/cm);
          newPoint.sector_ = sector;
-         newPoint.ring_ = ring;
+         newPoint.ring_ = iring;
          fPointsMap->add(key, newPoint);
       }
    }
@@ -725,8 +725,8 @@ void GlueXSensitiveDetectorCDC::polint(double *xa, double *ya, int n,
    double w;
 
    int i;
-   int m;
-   int ns;
+   int im;
+   int ins;
 
    if ((c = (double*)malloc(n*sizeof(double))) == NULL ||
        (d = (double*)malloc(n*sizeof(double))) == NULL )
@@ -742,23 +742,23 @@ void GlueXSensitiveDetectorCDC::polint(double *xa, double *ya, int n,
       return;
    }
 
-   ns = 0;
+   ins = 0;
    dif = fabs(x-xa[0]);
    for (i = 0; i < n; ++i) {
        dift = fabs(x-xa[i]);
        if (dift < dif) {
-           ns = i;
+           ins = i;
            dif = dift;
        }
        c[i] = ya[i];
        d[i] = ya[i];
    }
-   *y = ya[ns];
-   ns = ns-1;
-   for (m = 0; m < n-1; ++m) {
-      for (i = 0; i < n-m-1; ++i) {
+   *y = ya[ins];
+   ins = ins-1;
+   for (im = 0; im < n-1; ++im) {
+      for (i = 0; i < n-im-1; ++i) {
          ho = xa[i]-x;
-         hp = xa[i+m+1]-x;
+         hp = xa[i+im+1]-x;
          w = c[i+1]-d[i];
          den = ho-hp;
          if (den == 0) {
@@ -776,12 +776,12 @@ void GlueXSensitiveDetectorCDC::polint(double *xa, double *ya, int n,
          d[i] = hp*den;
          c[i] = ho*den;
       }
-      if (2*(ns+1) < n-m-1) {
-         *dy = c[ns+1];
+      if (2*(ins+1) < n-im-1) {
+         *dy = c[ins+1];
       }
       else {
-         *dy = d[ns];
-         ns = ns-1;
+         *dy = d[ins];
+         ins = ins-1;
       }
       *y = (*y)+(*dy);
    }

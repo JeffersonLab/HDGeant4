@@ -116,7 +116,7 @@ void GlueXSensitiveDetectorFCALinsert::Initialize(G4HCofThisEvent* hce)
 }
 
 G4bool GlueXSensitiveDetectorFCALinsert::ProcessHits(G4Step* step, 
-                                               G4TouchableHistory* ROhist)
+                                               G4TouchableHistory* /* ROhist */)
 {
    double dEsum = step->GetTotalEnergyDeposit();
    const G4ThreeVector &pin = step->GetPreStepPoint()->GetMomentum();

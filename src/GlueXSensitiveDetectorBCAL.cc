@@ -131,7 +131,7 @@ void GlueXSensitiveDetectorBCAL::Initialize(G4HCofThisEvent* hce)
 }
 
 G4bool GlueXSensitiveDetectorBCAL::ProcessHits(G4Step* step, 
-                                               G4TouchableHistory* RHhist)
+                                               G4TouchableHistory* /* RHhist */)
 {
    double dEsum = step->GetTotalEnergyDeposit();
    const G4ThreeVector &pin = step->GetPreStepPoint()->GetMomentum();

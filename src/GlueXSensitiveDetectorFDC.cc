@@ -376,11 +376,13 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
       }
    }
    
+#else
+   (void)ROhist;
 #endif
 
    G4ThreeVector x = (xin + xout) / 2;
    G4ThreeVector dx = xout - xin;
-   double t = (tin + tout) / 2;
+   //double t = (tin + tout) / 2;
    double dr = dx.mag();
    double dEdx = (dr > 1e-3*cm)? dEsum/dr : 0;
 
@@ -394,9 +396,9 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
    // This screws up the hit. Check for this case here by looking
    // at tout and making sure it is less than 1 second. If it's
    // not, then just use tin for "t".
-
-   if (tout > 1.0*s)
-      t = tin;
+   //
+   //if (tout > 1.0*s)
+   //   t = tin;
 
    double alpha = atan2(xoutlocal[0] - xinlocal[0], xoutlocal[2] - xinlocal[2]);
    double sinalpha = sin(alpha);
@@ -479,8 +481,8 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
       int dwire = (wire1 < wire2)? 1 : -1;
 
       // deal with the case of tracks crossing two cells
-      for (int wire = wire1; wire != wire2 + dwire; wire += dwire) {
-         double xwire = U_OF_WIRE_ONE + (wire - 1) * WIRE_SPACING;
+      for (int iwire = wire1; iwire != wire2 + dwire; iwire += dwire) {
+         double xiwire = U_OF_WIRE_ONE + (iwire - 1) * WIRE_SPACING;
          G4ThreeVector x0;
          G4ThreeVector x1;
          double dE;
@@ -490,7 +492,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             x1 = xoutlocal;
          }
          else {
-            x0[0] = xwire - 0.5 * dwire * WIRE_SPACING;
+            x0[0] = xiwire - 0.5 * dwire * WIRE_SPACING;
             x0[1] = xinlocal[1] + (x0[0] - xinlocal[0] + 1e-20) *
                     (xoutlocal[1] - xinlocal[1]) / 
                     (xoutlocal[0] - xinlocal[0] + 1e-20);
@@ -500,7 +502,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             if (fabs(x0[2] - xoutlocal[2]) > fabs(xinlocal[2] - xoutlocal[2]))
                x0 = xinlocal;
 
-            x1[0] = xwire + 0.5 * dwire * WIRE_SPACING;
+            x1[0] = xiwire + 0.5 * dwire * WIRE_SPACING;
             x1[1] = xinlocal[1] + (x1[0] - xinlocal[0] + 1e-20) *
                     (xoutlocal[1] - xinlocal[1]) /
                     (xoutlocal[0] - xinlocal[0] + 1e-20);
@@ -514,10 +516,10 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
                          (xoutlocal[2] - xinlocal[2] + 1e-20);
          }
 
-         int key = GlueXHitFDCwire::GetKey(chamber, wire);
+         int key = GlueXHitFDCwire::GetKey(chamber, iwire);
          GlueXHitFDCwire *anode = (*fWiresMap)[key];
          if (anode == 0) {
-            GlueXHitFDCwire newanode(chamber, wire);
+            GlueXHitFDCwire newanode(chamber, iwire);
             fWiresMap->add(key, newanode);
             anode = (*fWiresMap)[key];
          }
@@ -766,28 +768,28 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
          std::vector<GlueXHitFDCwire::hitinfo_t>::iterator hiter;
          for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
             int merge_hits = 0;
-            std::vector<GlueXHitFDCwire::hitinfo_t>::iterator siter;
-            for (siter = splits.begin(); siter != splits.end(); ++siter) {
-               if (fabs(hiter->t_ns - siter->t_ns) < TWO_HIT_TIME_RESOL) {
+            std::vector<GlueXHitFDCwire::hitinfo_t>::iterator wsiter;
+            for (wsiter = splits.begin(); wsiter != splits.end(); ++wsiter) {
+               if (fabs(hiter->t_ns - wsiter->t_ns) < TWO_HIT_TIME_RESOL) {
                   merge_hits = 1;
                   break;
                }
-               else if (hiter->t_ns < siter->t_ns) {
+               else if (hiter->t_ns < wsiter->t_ns) {
                   break;
                }
             }
             if (merge_hits) {
-               if (hiter->t_ns < siter->t_ns) {
-                  double dE_keV = siter->dE_keV;
-                  *siter = *hiter;
-                  siter->dE_keV += dE_keV;
+               if (hiter->t_ns < wsiter->t_ns) {
+                  double dE_keV = wsiter->dE_keV;
+                  *wsiter = *hiter;
+                  wsiter->dE_keV += dE_keV;
                }
                else {
-                  siter->dE_keV += hiter->dE_keV;
+                  wsiter->dE_keV += hiter->dE_keV;
                }
             }
             else {
-               splits.insert(siter, *hiter);
+               splits.insert(wsiter, *hiter);
             }
          }
       }
@@ -1072,9 +1074,9 @@ void GlueXSensitiveDetectorFDC::add_cathode_hit(
                                 double tdrift,
                                 int n_p,
                                 int chamber, 
-                                int module,
-                                int layer, 
-                                int global_wire_number)
+                                int /* module */,
+                                int /* layer */, 
+                                int /* global_wire_number */)
 {
    double q_anode;
    if (!fDrift_clusters) {
@@ -1184,7 +1186,6 @@ int GlueXSensitiveDetectorFDC::add_anode_hit(
    // Next compute the avalanche position along wire.  
    // Correct avalanche position with deflection along wire
    // due to the Lorentz force.
-   double cm2 = cm * cm;
    double cm4 = cm2 * cm2;
    xlocal[1] += (LORENTZ_NR_PAR1 * B[2] * (1 + LORENTZ_NR_PAR2 * BrhoT)) * dx +
                 (LORENTZ_NZ_PAR1 + LORENTZ_NZ_PAR2 * B[2]) * BrhoT * cos(phi) * xlocal[2] +
@@ -1281,8 +1282,8 @@ void GlueXSensitiveDetectorFDC::polint(double *xa, double *ya, int n,
    double w;
 
    int i;
-   int m;
-   int ns;
+   int im;
+   int ins;
 
    if ((c = (double*)malloc(n*sizeof(double))) == NULL ||
        (d = (double*)malloc(n*sizeof(double))) == NULL )
@@ -1298,23 +1299,23 @@ void GlueXSensitiveDetectorFDC::polint(double *xa, double *ya, int n,
       return;
    }
 
-   ns = 0;
+   ins = 0;
    dif = fabs(x-xa[0]);
    for (i = 0; i < n; ++i) {
        dift = fabs(x-xa[i]);
        if (dift < dif) {
-           ns = i;
+           ins = i;
            dif = dift;
        }
        c[i] = ya[i];
        d[i] = ya[i];
    }
-   *y = ya[ns];
-   ns = ns-1;
-   for (m = 0; m < n-1; ++m) {
-      for (i = 0; i < n-m-1; ++i) {
+   *y = ya[ins];
+   ins = ins-1;
+   for (im = 0; im < n-1; ++im) {
+      for (i = 0; i < n-im-1; ++i) {
          ho = xa[i]-x;
-         hp = xa[i+m+1]-x;
+         hp = xa[i+im+1]-x;
          w = c[i+1]-d[i];
          den = ho-hp;
          if (den == 0) {
@@ -1332,12 +1333,12 @@ void GlueXSensitiveDetectorFDC::polint(double *xa, double *ya, int n,
          d[i] = hp*den;
          c[i] = ho*den;
       }
-      if (2*(ns+1) < n-m-1) {
-         *dy = c[ns+1];
+      if (2*(ins+1) < n-im-1) {
+         *dy = c[ins+1];
       }
       else {
-         *dy = d[ns];
-         ns = ns-1;
+         *dy = d[ins];
+         ins = ins-1;
       }
       *y = (*y)+(*dy);
    }

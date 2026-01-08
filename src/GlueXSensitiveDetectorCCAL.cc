@@ -68,9 +68,9 @@ GlueXSensitiveDetectorCCAL::GlueXSensitiveDetectorCCAL(const G4String& name)
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
+      /* JCalibration *jcalib = */ japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       if (japp == 0) {    // dummy
-         jcalib = 0;
+         //jcalib = 0;
          G4cout << "CCAL: ALL parameters loaded from ccdb" << G4endl;
       }
    }
@@ -113,7 +113,7 @@ void GlueXSensitiveDetectorCCAL::Initialize(G4HCofThisEvent* hce)
 }
 
 G4bool GlueXSensitiveDetectorCCAL::ProcessHits(G4Step* step, 
-                                               G4TouchableHistory* ROhist)
+                                               G4TouchableHistory* /* ROhist */)
 {
    double dEsum = step->GetTotalEnergyDeposit();
    if (dEsum == 0)

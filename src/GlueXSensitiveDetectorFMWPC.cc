@@ -79,9 +79,9 @@ GlueXSensitiveDetectorFMWPC::GlueXSensitiveDetectorFMWPC(const G4String& name)
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
+      /* JCalibration *jcalib = */ japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       if (japp == 0) {   // dummy
-         jcalib = 0;
+         //jcalib = 0;
          G4cout << "FMWPC: ALL parameters loaded from ccdb" << G4endl;
       }
    }
@@ -124,7 +124,7 @@ void GlueXSensitiveDetectorFMWPC::Initialize(G4HCofThisEvent* hce)
 }
 
 G4bool GlueXSensitiveDetectorFMWPC::ProcessHits(G4Step* step, 
-                                                G4TouchableHistory* ROhist)
+                                                G4TouchableHistory* /* ROhist */)
 {
    double dEsum = step->GetTotalEnergyDeposit();
    if (dEsum == 0)
@@ -220,20 +220,20 @@ G4bool GlueXSensitiveDetectorFMWPC::ProcessHits(G4Step* step,
 
       // Distance to wire
       double d=0.; // doca to wire
-      double dz=xinlocal[2];
+      double dez=xinlocal[2];
       // angle of incidence
       double alpha=atan2(dx[0],dx[2]);
       double sinalpha=sin(alpha);
       double cosalpha=cos(alpha);
       if (layer % 2 != 0) {
          // Vertical wires
-	double dx=xin[0]-(WIRE_OFFSET+WIRE_PITCH*(wire+0.5));
-	d=fabs(dx*cosalpha-dz*sinalpha);
+	double dex=xin[0]-(WIRE_OFFSET+WIRE_PITCH*(wire+0.5));
+	d=fabs(dex*cosalpha-dez*sinalpha);
       }
       else {
 	// Horizontal wires
-	double dy=xin[1]-(WIRE_OFFSET+WIRE_PITCH*(wire+0.5));
-	d=fabs(dy*cosalpha-dz*sinalpha);
+	double dey=xin[1]-(WIRE_OFFSET+WIRE_PITCH*(wire+0.5));
+	d=fabs(dey*cosalpha-dez*sinalpha);
       }
       
       int key = GlueXHitFMWPCwire::GetKey(layer, wire);
