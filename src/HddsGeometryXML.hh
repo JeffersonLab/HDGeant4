@@ -15,7 +15,7 @@
 class HddsGeometryXML : public JGeometryXML
 {
  public:
-   HddsGeometryXML(std::string url, int run) : JGeometryXML(url, run, "") {}
+   HddsGeometryXML(std::string src, int run) : JGeometryXML(src, run, "") {}
    ~HddsGeometryXML() {}
 
    DOMDocument *getDocument() { return doc; }

@@ -738,6 +738,8 @@ HddsG4Builder::addNewLayer(int volume_id, int layer)
                                   placement->first.second);
 #ifdef CHECK_OVERLAPS_MM
       playerN->CheckOverlaps(1000,CHECK_OVERLAPS_MM);
+#else
+      (void)playerN;
 #endif
 #ifdef DEBUG_PLACEMENT 
       G4cout << "volume " << str.str() 
@@ -770,6 +772,7 @@ HddsG4Builder::addNewLayer(int volume_id, int layer)
                                    fLogicalVolumes[newvol],
                                    moms->second,
                                    axis, ndiv, width, offset);
+      (void)divisionN;
       fLogicalVolumes[newvol]->SetVisAttributes(new G4VisAttributes(false));
 #ifdef DEBUG_PLACEMENT 
       G4cout << ndiv << " copies of division " << str.str() 
@@ -1516,20 +1519,20 @@ void HddsG4Builder::addReflections(int volume_id)
                fCurrentPlacement[childId] = piter;
             }
             fCurrentMother[childId] = mine;
-            std::vector<int>::iterator liter;
-            for (liter = layer.begin(); liter != layer.end(); ++liter) {
-               if (*liter > mine->first.second) {
+            std::vector<int>::iterator literi;
+            for (literi = layer.begin(); literi != layer.end(); ++literi) {
+               if (*literi > mine->first.second) {
 #if DEBUG_REFLECTION
                   G4cout << "HddsG4Builder::addReflections info - "
                          << "reflected volume " << lvol->GetName()
                          << " copy " << cpy.second
                          << " in mother " << mine->second->GetName()
-                         << " onto layer " << *liter
+                         << " onto layer " << *literi
                          << " because child field manager " << mgr
                          << " is different from mother field manager " << fieldmgr
                          << G4endl;
 #endif
-                  addNewLayer(childId, *liter);
+                  addNewLayer(childId, *literi);
                }
             }
          }
