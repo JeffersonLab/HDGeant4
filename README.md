@@ -3,7 +3,6 @@
 ## Authors
 
 * Richard Jones, University of Connecticut, Storrs, CT
-* David Lawrence, Jefferson Lab, Newport News, VA
 * [the GlueX Collaboration](http://www.gluex.org)
 
 ## Description
@@ -52,6 +51,16 @@ Usage: hdgeant4 [options] [<batch.mac>]
     -tN : start N worker threads, default 1
     -rN : set run to N, default taken from control.in
 
+## Python support
+
+This procedure also automatically creates the g4py directory. By adding
+g4py to your PYTHONPATH you will be able to automatically find and load
+all of the python modules associated with the hdgeant4 package simply
+by typing "import hdgeant4".
+
+## Standalone utilities
+
+
 ## Dependencies
 
 See https://halldweb.jlab.org/wiki/index.php/HOWTO_install_and_run_HDGeant4
@@ -73,10 +82,11 @@ on the gluex wiki.
 
 See https://halldweb.jlab.org/wiki/index.php/HOWTO_install_and_run_HDGeant4
 section on visualization, found on the gluex wiki.
+
 ## Bugs
 
 ## How to contribute
 
 ## Contact the authors
 
-Write to richard.t.jones at uconn.edu, or to davidl at jlab.org.
+Write to richard.t.jones at uconn.edu with questions or suggestions.

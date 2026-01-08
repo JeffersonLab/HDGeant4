@@ -1,4 +1,8 @@
-
+* OBSOLETE - DO NOT USE, KEPT FOR HISTORICAL INTEREST ONLY!
+* Maintenance of the GNUmakefile has been dropped, in favor
+* of cmake (CMakeLists.txt), see INSTALL for options.
+* * Richard Jones (richard.t.jones@uconn.edu)
+* * December 30, 2025
 
 Builing Geant4
 -----------------------

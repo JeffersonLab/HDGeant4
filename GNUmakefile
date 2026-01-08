@@ -1,4 +1,10 @@
-# $Id: GNUmakefile,v 1.1 1999-01-07 16:05:42 gunter Exp $
+#
+# OBSOLETE - DO NOT USE, KEPT FOR HISTORICAL INTEREST ONLY!
+# Maintenance of this makefile has been dropped, in favor of
+# cmake (CMakeLists.txt), see INSTALL for options.
+# * Richard Jones (richard.t.jones@uconn.edu)
+#   December 30, 2025
+#
 # --------------------------------------------------------------
 # GNUmakefile for examples module.  Gabriele Cosmo, 06/04/98.
 # --------------------------------------------------------------
@@ -52,7 +58,7 @@ CPPFLAGS += -DG4MULTITHREADED
 #CPPFLAGS += -DVERBOSE_RANDOMS=1
 #CPPFLAGS += -DFORCE_PARTICLE_TYPE_CHARGED_GEANTINO
 #CPPFLAGS += -DBP_DEBUG
-#CPPFLAGS += -DMOD_SPONCE
+#CPPFLAGS += -DMOD_PONCE
 #CPPFLAGS += -DDEBUG_PLACEMENT
 #CPPFLAGS += -DDEBUG_SECTIONPLANE
 #CPPFLAGS += -DDEBUG_SECTIONPLANE_ZAVE
