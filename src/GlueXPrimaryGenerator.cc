@@ -84,21 +84,21 @@ void GlueXPrimaryGenerator::GeneratePrimaryVertex(G4Event *event)
    for (it_vertex = vertices.begin();
         it_vertex != vertices.end(); ++it_vertex)
    {
-      hddm_s::Origin &origin = it_vertex->getOrigin();
-      double x = origin.getVx() * cm;
-      double y = origin.getVy() * cm;
-      double z = origin.getVz() * cm;
-      double t = origin.getT() * ns;
-      x += vtx[0];
-      y += vtx[1];
-      z += vtx[2];
-      t += tvtx;
-      origin.setVx(x/cm);
-      origin.setVy(y/cm);
-      origin.setVz(z/cm);
-      origin.setT(t/ns);
-      G4ThreeVector pos(x, y, z);
-      G4PrimaryVertex* vertex = new G4PrimaryVertex(pos, t);
+      hddm_s::Origin &vorigin = it_vertex->getOrigin();
+      double vx = vorigin.getVx() * cm;
+      double vy = vorigin.getVy() * cm;
+      double vz = vorigin.getVz() * cm;
+      double vt = vorigin.getT() * ns;
+      vx += vtx[0];
+      vy += vtx[1];
+      vz += vtx[2];
+      vt += tvtx;
+      vorigin.setVx(vx/cm);
+      vorigin.setVy(vy/cm);
+      vorigin.setVz(vz/cm);
+      vorigin.setT(vt/ns);
+      G4ThreeVector pos(vx, vy, vz);
+      G4PrimaryVertex* vertex = new G4PrimaryVertex(pos, vt);
       hddm_s::ProductList &products = it_vertex->getProducts();
       hddm_s::ProductList::iterator it_product;
       for (it_product = products.begin();
