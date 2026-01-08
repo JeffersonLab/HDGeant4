@@ -395,11 +395,11 @@ void describe(G4SmartVoxelHeader *vox, std::string mother, int level)
           << " (" << vox->GetMinEquivalentSliceNo() << ","
           << vox->GetMaxEquivalentSliceNo() << ")"
           << std::endl;
-   for (int s=0; s < nslices; ++s) {
+   for (int is=0; is < nslices; ++is) {
       for (int l=0; l < level; ++l)
          G4cout << "  ";
-      G4cout << "    " << s << ": ";
-      G4SmartVoxelProxy *prox = vox->GetSlice(s);
+      G4cout << "    " << is << ": ";
+      G4SmartVoxelProxy *prox = vox->GetSlice(is);
       if (prox->IsHeader()) {
          G4cout << "(holds another level of voxels)" << std::endl;
          describe(prox->GetHeader(), mother, level+1);
