@@ -32,8 +32,8 @@ class GlueXPseudoDetectorTAG
    int addRFsync(const G4Event *event, double tsync) const;
 
  protected:
-   GlueXPseudoDetectorTAG(GlueXPseudoDetectorTAG &src);
-   GlueXPseudoDetectorTAG& operator=(GlueXPseudoDetectorTAG &src);
+   GlueXPseudoDetectorTAG(GlueXPseudoDetectorTAG &src) = delete;
+   GlueXPseudoDetectorTAG& operator=(GlueXPseudoDetectorTAG &src) = delete;
 
    int fRunNo;
 

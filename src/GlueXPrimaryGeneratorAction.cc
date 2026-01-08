@@ -1423,7 +1423,7 @@ void GlueXPrimaryGeneratorAction::configure_beam_vertex()
 #endif
 }
 
-void GlueXPrimaryGeneratorAction::generate_beam_vertex(double v[3])
+void GlueXPrimaryGeneratorAction::generate_beam_vertex(double* /* v[3] */)
 {
 }
 

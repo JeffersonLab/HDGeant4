@@ -51,5 +51,5 @@ void GlueXRunAction::BeginOfRunAction(const G4Run*)
    fPhysicsList->DoProcessReordering();
 }
 
-void GlueXRunAction::EndOfRunAction(const G4Run* evt)
+void GlueXRunAction::EndOfRunAction(const G4Run* /* evt */)
 {}

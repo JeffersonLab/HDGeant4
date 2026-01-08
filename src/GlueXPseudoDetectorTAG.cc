@@ -55,14 +55,6 @@ GlueXPseudoDetectorTAG::~GlueXPseudoDetectorTAG()
    --instanceCount;
 }
 
-GlueXPseudoDetectorTAG::GlueXPseudoDetectorTAG(GlueXPseudoDetectorTAG &src)
-{}
-
-GlueXPseudoDetectorTAG& GlueXPseudoDetectorTAG::operator=(GlueXPseudoDetectorTAG &src)
-{
-   return *this;
-}
-
 inline void GlueXPseudoDetectorTAG::setRunNo(int runno)
 {
    fRunNo = runno;
