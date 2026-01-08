@@ -44,7 +44,7 @@ int GlueXHitCCALpoint::operator==(const GlueXHitCCALpoint &right) const
    return 1;
 }
 
-GlueXHitCCALpoint &GlueXHitCCALpoint::operator+=(const GlueXHitCCALpoint &right)
+GlueXHitCCALpoint &GlueXHitCCALpoint::operator+=(const GlueXHitCCALpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitCCALpoint::operator+= - "
           << "illegal attempt to merge two TruthShower objects in the ccal!"

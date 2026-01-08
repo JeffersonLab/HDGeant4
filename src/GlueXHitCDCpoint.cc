@@ -50,7 +50,7 @@ int GlueXHitCDCpoint::operator==(const GlueXHitCDCpoint &right) const
    return 1;
 }
 
-GlueXHitCDCpoint &GlueXHitCDCpoint::operator+=(const GlueXHitCDCpoint &right)
+GlueXHitCDCpoint &GlueXHitCDCpoint::operator+=(const GlueXHitCDCpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitCDCpoint::operator+= - "
           << "illegal attempt to merge two TruthPoint objects in the cdc!"

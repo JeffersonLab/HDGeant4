@@ -44,7 +44,7 @@ int GlueXHitFTOFpoint::operator==(const GlueXHitFTOFpoint &right) const
    return 1;
 }
 
-GlueXHitFTOFpoint &GlueXHitFTOFpoint::operator+=(const GlueXHitFTOFpoint &right)
+GlueXHitFTOFpoint &GlueXHitFTOFpoint::operator+=(const GlueXHitFTOFpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitFTOFpoint::operator+= - "
           << "illegal attempt to merge two TruthPoint objects in the fTOF!"

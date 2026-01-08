@@ -44,7 +44,7 @@ int GlueXHitCEREpoint::operator==(const GlueXHitCEREpoint &right) const
    return 1;
 }
 
-GlueXHitCEREpoint &GlueXHitCEREpoint::operator+=(const GlueXHitCEREpoint &right)
+GlueXHitCEREpoint &GlueXHitCEREpoint::operator+=(const GlueXHitCEREpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitCEREpoint::operator+= - "
           << "illegal attempt to merge two TruthPoint objects in the Cerenkov!"
