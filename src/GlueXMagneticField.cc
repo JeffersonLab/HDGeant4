@@ -15,15 +15,15 @@
 #include "GlueXDetectorConstruction.hh"
 #include "HddmOutput.hh"
 
-#include <JANA/JApplication.h>
-#include <JANA/Calibrations/JCalibration.h>
-#include <JANA/Calibrations/JCalibrationManager.h>
-
+#include <HDGEOMETRY/DMagneticFieldMapPS2DMap.h>
 #include <HDGEOMETRY/DMagneticFieldMapFineMesh.h>
 #include <HDGEOMETRY/DMagneticFieldMapNoField.h>
 #include <HDGEOMETRY/DMagneticFieldMapConst.h>
-#include <HDGEOMETRY/DMagneticFieldMapPS2DMap.h>
 #include <HDGEOMETRY/DMagneticFieldMapPSConst.h>
+
+#include <JANA/JApplication.h>
+#include <JANA/Calibrations/JCalibration.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
 
 // Create my own subclass of DMagneticFieldMapPS2DMap to gain access
 // to protected data members that are needed to counteract application
@@ -31,10 +31,10 @@
 
 class DMagneticFieldMapPS2DMap_local: public DMagneticFieldMapPS2DMap {
  public:
-  DMagneticFieldMapPS2DMap_local(JApplication *japp, int32_t runnumber=1, string namepath = "Magnets/PairSpectrometer/PS_1.8T_20150513_test")
-  : DMagneticFieldMapPS2DMap(japp, runnumber, namepath) {}
-  DMagneticFieldMapPS2DMap_local(JCalibration *jcalib, string namepath = "Magnets/PairSpectrometer/PS_1.8T_20150513_test")
-  : DMagneticFieldMapPS2DMap(jcalib, namepath) {}
+  DMagneticFieldMapPS2DMap_local(JApplication *jappl, int32_t runnumber=1, string namepath = "Magnets/PairSpectrometer/PS_1.8T_20150513_test")
+  : DMagneticFieldMapPS2DMap(jappl, runnumber, namepath) {}
+  DMagneticFieldMapPS2DMap_local(JCalibration *jcali, string namepath = "Magnets/PairSpectrometer/PS_1.8T_20150513_test")
+  : DMagneticFieldMapPS2DMap(jcali, namepath) {}
   DMagneticFieldMapPS2DMap_local(DMagneticFieldMapPS2DMap &src)
   : DMagneticFieldMapPS2DMap(src) {}
 
@@ -42,7 +42,7 @@ class DMagneticFieldMapPS2DMap_local: public DMagneticFieldMapPS2DMap {
   void set_z_shift(double offset) { z_shift = offset; }
 };
 
-void DMagneticFieldMapPS2DMap::GetField(DVector3 const& p, DVector3& B) const
+void DMagneticFieldMapPS2DMap::GetField(DVector3 const& /* p */, DVector3& /* B */) const
 {
   std::cout << "Error - DMagneticFieldMapPS2DMap::GetField(DVector3 const& p, DVector3& B) const" 
             << " should never be called!!" << std::endl;

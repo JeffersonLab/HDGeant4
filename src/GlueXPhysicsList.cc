@@ -538,7 +538,7 @@ void GlueXPhysicsList::DoHadronicInteractions(G4int flag)
    }
 }
 
-void GlueXPhysicsList::DoDeltaRayProduction(G4int flag)
+void GlueXPhysicsList::DoDeltaRayProduction(G4int /* flag */)
 {
 }
 
@@ -561,7 +561,7 @@ void GlueXPhysicsList::DoCerenkovRadiation(G4int flag)
    }
 }
 
-void GlueXPhysicsList::DoOpticalAbsorption(G4int flag)
+void GlueXPhysicsList::DoOpticalAbsorption(G4int /* flag */)
 {}
 
 void GlueXPhysicsList::SelectActiveProcesses(G4int verbosity)
