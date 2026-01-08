@@ -78,7 +78,7 @@ class GlueXUserEventInformation: public G4VUserEventInformation
    static void setTrackingVerbose(int vlevel) {
       fTrackingVerboseLevel = vlevel;
    }
-   static int getTrackingVerbose(int vlevel) {
+   static int getTrackingVerbose() {
       return fTrackingVerboseLevel;
    }
 
