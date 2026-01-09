@@ -1,3 +1,3 @@
 # G4fixes python module
 
-from libG4fixes import *
+from .libG4fixes import *

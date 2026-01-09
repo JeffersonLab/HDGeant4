@@ -1,3 +1,3 @@
 # HDGeant4 python modules
 
-from libhdgeant4 import *
+from .libhdgeant4 import *

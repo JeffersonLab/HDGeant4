@@ -43,6 +43,18 @@ else()
     message(FATAL_ERROR "Cannot find G4fixes directory ${G4FIXES_DIR_PATH}, please create and try again.")
 endif()
 
+find_package(OpenGL REQUIRED)
+find_path(MY_GLU_INCLUDE_DIR GL/glu.h 
+    PATHS /usr/include /usr/local/include
+    NO_DEFAULT_PATH
+)
+find_library(MY_GLU_LIBRARY NAMES GLU 
+    PATHS /usr/lib64 /usr/lib
+    NO_DEFAULT_PATH
+)
+message(STATUS "GLU Header: ${MY_GLU_INCLUDE_DIR}")
+message(STATUS "GLU Library: ${MY_GLU_LIBRARY}")
+
 set(OLD_LOG_LEVEL ${CMAKE_MESSAGE_LOG_LEVEL})
 set(CMAKE_MESSAGE_LOG_LEVEL ERROR)
 find_package(ROOT REQUIRED COMPONENTS Geom TMVA TreePlayer)
@@ -135,7 +147,7 @@ add_library(hdds SHARED
 file(GLOB G4FIXES_SRC "src/${G4FIXES_DIR_NAME}/*.cc" "src/G4debug/*.cc")
 add_library(G4fixes SHARED src/G4fixes.cc ${G4FIXES_SRC})
 target_compile_definitions(G4fixes PRIVATE ${Geant4_DEFINITIONS})
-target_link_libraries(G4fixes ${Geant4_LIBRARIES} Boost::python Python3::Python)
+target_link_libraries(G4fixes ${Geant4_LIBRARIES} Boost::python Python3::Python ${MY_GLU_LIBRARY})
 
 # 3. Cobrems Library
 file(GLOB COBREMS_SRC "src/Cobrems*.cc")

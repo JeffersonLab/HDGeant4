@@ -11,6 +11,7 @@
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include "DANA/DEvent.h"
+#include <JANA/JApplication.h>
 #include <DANA/DApplication.h>
 #include <GlueXUserOptions.hh>
 #include <GlueXDetectorConstruction.hh>
@@ -113,6 +114,16 @@ bool GetGlobalExitNormal(int world, G4ThreeVector *point,
    return 0;
 }
 
+void CB_DApplication_Init(CB_DApplication* self) {
+   if (self) {
+      JApplication *dapp = self->GetJApp();
+      if (dapp) {
+          //dapp->AddPlugin("JANA");
+          dapp->Initialize();
+      }
+   }
+}
+
 // Create a python module containing all of the G4 user classes
 // that are needed to run the HDGeant simulation from python.
 // Here it is named libhdgeant4 (happens to also be the name of
@@ -130,7 +141,7 @@ BOOST_PYTHON_MODULE(libhdgeant4)
           "singleton class holding configuration data for current run, "
           "part of the standard jana framework",
           boost::python::init<>())
-      .def("Init", &JApplication::Initialize)
+      .def("Init", &CB_DApplication_Init)
    ;
 
    enum_<jerror_t>("jerror_t")
