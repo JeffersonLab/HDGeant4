@@ -4,14 +4,16 @@
 // author: richard.t.jones at uconn.edu
 // version: september 24, 2016
 
+#include "HddmOutput.hh"
+#include "HddsG4Builder.hh"
+
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserTrackInformation.hh"
 #include "GlueXPrimaryGeneratorAction.hh"
 #include "G4SystemOfUnits.hh"
-#include "G4Run.hh"
-#include "HddmOutput.hh"
-#include "HddsG4Builder.hh"
 #include "Randomize.hh"
+#include "G4Run.hh"
+
 #include <exception>
 
 #include <map>
@@ -687,6 +689,6 @@ void GlueXUserEventInformation::Dlog(std::string msg, bool rewind)
       ++fDlogreading[logfile.str()];
    }
    else {
-      *((ofstream*)fDlogfile[logfile.str()]) << msg << std::endl;
+      *((std::ofstream*)fDlogfile[logfile.str()]) << msg << std::endl;
    }
 }
