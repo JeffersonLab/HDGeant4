@@ -186,6 +186,7 @@ int main(int argc,char** argv)
    G4MTRunManager runManager;
    runManager.SetNumberOfThreads(worker_threads);
 #else
+   (void)worker_threads;
    G4RunManager runManager;
 #endif
    runManager.SetVerboseLevel(0);
