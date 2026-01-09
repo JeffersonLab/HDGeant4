@@ -18,6 +18,31 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Geant4 REQUIRED ui_all vis_all gdml)
 include(${Geant4_USE_FILE})
 
+if(${Geant4_VERSION_MAJOR} LESS 10)
+    set(G4_MAJOR_PADDED ${Geant4_VERSION_MAJOR})
+    set(G4_MINOR_PADDED ${Geant4_VERSION_MINOR})
+    set(G4_PATCH_PADDED ${Geant4_VERSION_PATCH})
+else()
+    set(G4_MAJOR_PADDED ${Geant4_VERSION_MAJOR})
+    if(${Geant4_VERSION_MINOR} LESS 10)
+        set(G4_MINOR_PADDED 0${Geant4_VERSION_MINOR})
+    else()
+        set(G4_MINOR_PADDED ${Geant4_VERSION_MINOR})
+    endif()
+    if(${Geant4_VERSION_PATCH} LESS 10)
+        set(G4_PATCH_PADDED 0${Geant4_VERSION_PATCH})
+    else()
+        set(G4_PATCH_PADDED ${Geant4_VERSION_PATCH})
+    endif()
+endif()
+set(G4FIXES_DIR_NAME "G4.${G4_MAJOR_PADDED}.${G4_MINOR_PADDED}.p${G4_PATCH_PADDED}fixes")
+set(G4FIXES_DIR_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/${G4FIXES_DIR_NAME}")
+if(IS_DIRECTORY ${G4FIXES_DIR_PATH})
+    message(STATUS "Using G4fixes from ${G4FIXES_DIR_PATH}")
+else()
+    message(FATAL_ERROR "Cannot find G4fixes directory ${G4FIXES_DIR_PATH}, please create and try again.")
+endif()
+
 set(OLD_LOG_LEVEL ${CMAKE_MESSAGE_LOG_LEVEL})
 set(CMAKE_MESSAGE_LOG_LEVEL ERROR)
 find_package(ROOT REQUIRED COMPONENTS Geom TMVA TreePlayer)
@@ -42,19 +67,44 @@ set(HALLD_RECON_HOME $ENV{HALLD_RECON_HOME})
 set(HDDS_HOME $ENV{HDDS_HOME})
 set(JANA_HOME $ENV{JANA_HOME})
 
-# --- Global Compiler Flags & Macros ---
-add_definitions(
-    -DUSING_DIRACXX 
-    -DUSE_SSE2 
-    -DBYPASS_DRAWING_CLIPPED_VOLUMES
-    -DLAYERED_GEOMETRY_PICKING_EXTENSIONS
-    -DREDUCE_OPTIMIZATION_OF_CDC=1
-    -DG4VIS_BUILD_OPENGL_DRIVER
-    -DG4VIS_BUILD_OPENGLX_DRIVER
-    -DG4MULTITHREADED
-    -DG4VIS_USE
-    -DG4UI_USE
-)
+# Options to be selected at build time
+option(USE_DIRACXX "Use Dirac++ library" ON)
+if(USE_DIRACXX)
+    add_definitions(-DUSING_DIRACXX)
+endif()
+
+option(BYPASS_DRAWING_CLIPPED_VOLUMES "Bypass code that clips hidden volumes in visualization" ON)
+if(BYPASS_DRAWING_CLIPPED_VOLUMES)
+    add_definitions(-DLAYERED_GEOMETRY_PICKING_EXTENSIONS)
+endif()
+
+set(REDUCE_OPTIMIZATION_OF_CDC "1" CACHE STRING "CDC optimization reduction level")
+add_definitions(-DREDUCE_OPTIMIZATION_OF_CDC=${REDUCE_OPTIMIZATION_OF_CDC})
+
+option(G4VIS_BUILD_OPENGL_DRIVER "Build the OpenGL driver" ON)
+if(G4VIS_BUILD_OPENGL_DRIVER)
+    add_definitions(-DG4VIS_BUILD_OPENGL_DRIVER)
+endif()
+
+option(G4VIS_BUILD_OPENGLX_DRIVER "Build the OpenGLX driver" ON)
+if(G4VIS_BUILD_OPENGLX_DRIVER)
+    add_definitions(-DG4VIS_BUILD_OPENGLX_DRIVER)
+endif()
+
+option(G4MULTITHREADED "Build a multithreaded executable" ON)
+if(G4MULTITHREADED)
+    add_definitions(-DG4MULTITHREADED)
+endif()
+
+option(USE_G4VIS "Enable Geant4 visualization" ON)
+if(USE_G4VIS)
+    add_definitions(-DG4VIS_USE)
+endif()
+
+option(USE_G4UI "Enable the Geant4 interactive user interface" ON)
+if(USE_G4UI)
+    add_definitions(-DG4UI_USE)
+endif()
 
 # Conditional Macro for DIRC
 if(EXISTS "${HALLD_RECON_HOME}/src/libraries/DIRC/DDIRCPmtHit.cc")
@@ -64,7 +114,7 @@ endif()
 # --- Include Directories ---
 include_directories(
     src
-    src/G4fixes
+    src/${G4FIXES_DIR_NAME}
     src/G4debug
     ${HDDS_HOME}
     ${HALLD_RECON_HOME}/$ENV{BMS_OSNAME}/include
@@ -82,7 +132,7 @@ add_library(hdds SHARED
 )
 
 # 2. G4fixes Library
-file(GLOB G4FIXES_SRC "src/G4fixes/*.cc" "src/G4debug/*.cc")
+file(GLOB G4FIXES_SRC "src/${G4FIXES_DIR_NAME}/*.cc" "src/G4debug/*.cc")
 add_library(G4fixes SHARED src/G4fixes.cc ${G4FIXES_SRC})
 target_compile_definitions(G4fixes PRIVATE ${Geant4_DEFINITIONS})
 target_link_libraries(G4fixes ${Geant4_LIBRARIES} Boost::python Python3::Python)
