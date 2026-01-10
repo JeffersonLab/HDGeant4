@@ -32,6 +32,18 @@ from G4fixes import *
 from Geant4 import *
 from HDGeant4 import *
 
+import hddm_s
+import numpy as np
+
+def find_map_class():
+    search_type = "std::map<int, std::string>" # This is what we're looking for
+    for mod_name, module in sys.modules.items():
+        if not mod_name.startswith('HD'): continue # Filter for your stack if desired
+        for attr_name in dir(module):
+            attr = getattr(module, attr_name)
+            if hasattr(attr, '__name__') and 'map' in attr.__name__.lower():
+                print(f"Found potential match: {mod_name}.{attr_name}")
+
 def init():
   '''
   Initialize the jana framework and the Geant4 toolkit runtime,
@@ -46,6 +58,36 @@ def init():
   if not opts.ReadControl_in("control.in"):
     raise IOError("simulation needs control.in, init failed!")
     sys.exit(3)
+  icargo = GlueXUserOptions_int_map()
+  scargo = GlueXUserOptions_string_map()
+  if opts.Find("RUNNO", icargo) and len(icargo) > 0:
+    HddmOutput.setRunNo(icargo[1])
+  elif opts.Find("RUNG", icargo) and len(icargo) > 0:
+    HddmOutput.setRunNo(icargo[1])
+  elif (opts.Find("INFILE", scargo) and len(scargo) > 0) or \
+       (opts.Find("INFI", scargo) and len(scargo) > 0):
+    for rec in hddm_s.istream(scargo[1]):
+      for pev in rec.getPhysicsEvents():
+        HddmOutput.setRunNo(pev.runNo)
+        break
+      else:
+        continue
+      break
+  else:
+    HddmOutput.setRunNo(9999)
+
+  # open output hddm file
+  hddmOut = 0
+  if opts.Find("OUTFILE", scargo) and len(scargo) > 0:
+    hddmOut = HddmOutput(scargo[1])
+
+  # set the random seeds
+  if opts.Find("RNDM", icargo) and len(icargo) > 0:
+    if len(icargo) == 2:
+      seeds = np.array([icargo[1], icargo[2]], dtype=np.int64)
+    else:
+      seeds = np.array([0,0], dtype=np.int64)
+    libhdgeant4.GlueXUserEventInformation.SetStartingSeeds(seeds.tolist())
 
   # define the detector geometry
   global geom

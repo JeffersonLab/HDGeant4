@@ -21,10 +21,24 @@
 #include <GlueXSteppingAction.hh>
 #include <GlueXSteppingVerbose.hh>
 #include <GlueXPhysicsList.hh>
+#include <HddmOutput.hh>
 
 #include <G4SystemOfUnits.hh>
 #include <G4OpenGLViewer.hh>
 #include <G4TransportationManager.hh>
+#include "GlueXUserEventInformation.hh"
+
+// --- Helper for the static seed array ---
+void SetStartingSeeds_wrapper(boost::python::list seedList) {
+    if (len(seedList) != 2) {
+        PyErr_SetString(PyExc_ValueError, "Seed list must contain exactly 2 integers.");
+        boost::python::throw_error_already_set();
+    }
+    long int seeds[2];
+    seeds[0] = boost::python::extract<long int>(seedList[0]);
+    seeds[1] = boost::python::extract<long int>(seedList[1]);
+    GlueXUserEventInformation::SetStartingSeeds(seeds);
+}
 
 // We must wrap an abstract C++ type so python 
 // knows how to override pure virtual methods.
@@ -268,6 +282,89 @@ BOOST_PYTHON_MODULE(libhdgeant4)
           boost::python::bases<G4SteppingVerbose> >
          ("GlueXSteppingVerbose",
           "encapsulates actions to take at start and end of each step (verbose)")
+   ;
+
+   class_<HddmOutput, boost::noncopyable>(
+       "HddmOutput",
+       "HDDM output handler for Geant4 events",
+       boost::python::init<const std::string&>())
+
+       .def("WriteOutputHDDM", &HddmOutput::WriteOutputHDDM)
+       .staticmethod("WriteOutputHDDM")
+
+       .def("getRunNo", &HddmOutput::getRunNo)
+       .staticmethod("getRunNo")
+
+       .def("getEventNo", &HddmOutput::getEventNo)
+       .staticmethod("getEventNo")
+
+       .def("incrementEventNo", &HddmOutput::incrementEventNo)
+       .staticmethod("incrementEventNo")
+
+       .def("setRunNo", &HddmOutput::setRunNo)
+       .staticmethod("setRunNo")
+
+       .def("setEventNo", &HddmOutput::setEventNo)
+       .staticmethod("setEventNo")
+   ;
+    
+   class_<BCALincidentParticle>("BCALincidentParticle", boost::python::init<>())
+       .def_readwrite("pos", &BCALincidentParticle::pos)
+       .def_readwrite("mom", &BCALincidentParticle::mom)
+       .def_readwrite("E", &BCALincidentParticle::E)
+       .def_readwrite("ptype", &BCALincidentParticle::ptype)
+       .def_readwrite("trackID", &BCALincidentParticle::trackID)
+   ;
+
+   class_<G4VUserEventInformation, boost::noncopyable>
+       ("G4VUserEventInformation", boost::python::no_init)
+   ;
+
+   class_<GlueXUserEventInformation, boost::python::bases<G4VUserEventInformation>, boost::noncopyable>
+       ("GlueXUserEventInformation", boost::python::init<hddm_s::HDDM*>())
+
+       .def("AddBeamParticle", static_cast<void (GlueXUserEventInformation::*)(int, double, const G4ThreeVector&, const G4ThreeVector&)>(&GlueXUserEventInformation::AddBeamParticle))
+       .def("AddBeamParticle", static_cast<void (GlueXUserEventInformation::*)(int, double, const G4ThreeVector&, const G4ThreeVector&, const G4ThreeVector&)>(&GlueXUserEventInformation::AddBeamParticle))
+       .def("AddTargetParticle", static_cast<void (GlueXUserEventInformation::*)(int, double, const G4ThreeVector&, const G4ThreeVector&)>(&GlueXUserEventInformation::AddTargetParticle))
+       .def("AddTargetParticle", static_cast<void (GlueXUserEventInformation::*)(int, double, const G4ThreeVector&, const G4ThreeVector&, const G4ThreeVector&)>(&GlueXUserEventInformation::AddTargetParticle))
+       .def("AddPrimaryVertex", &GlueXUserEventInformation::AddPrimaryVertex)
+       .def("AddSecondaryVertex", &GlueXUserEventInformation::AddSecondaryVertex)
+       .def("AddMCtrajectoryPoint", &GlueXUserEventInformation::AddMCtrajectoryPoint)
+
+       .def("GetRunNo", &GlueXUserEventInformation::GetRunNo)
+       .def("GetEventNo", &GlueXUserEventInformation::GetEventNo)
+       .def("GetBeamPhotonEnergy", &GlueXUserEventInformation::GetBeamPhotonEnergy)
+       .def("GetGlueXTrackID", static_cast<int (GlueXUserEventInformation::*)(int)>(&GlueXUserEventInformation::GetGlueXTrackID))
+       .def("GetGlueXTrackID", static_cast<int (GlueXUserEventInformation::*)(const G4Track*)>(&GlueXUserEventInformation::GetGlueXTrackID))
+       .def("SetGlueXTrackID", &GlueXUserEventInformation::SetGlueXTrackID)
+
+       .def("AssignNextGlueXTrackID", &GlueXUserEventInformation::AssignNextGlueXTrackID, (boost::python::arg("track")=static_cast<G4Track*>(0)))
+       .def("AssignBCALincidentID", &GlueXUserEventInformation::AssignBCALincidentID)
+       .def("GetBCALincidentParticle", &GlueXUserEventInformation::GetBCALincidentParticle, boost::python::return_internal_reference<>())
+
+       .def("SetKeepEvent", &GlueXUserEventInformation::SetKeepEvent)
+       .def("GetKeepEvent", &GlueXUserEventInformation::GetKeepEvent)
+
+       .def("SetStartingSeeds", SetStartingSeeds_wrapper)
+       .staticmethod("SetStartingSeeds")
+       .def("SetRandomSeeds", &GlueXUserEventInformation::SetRandomSeeds)
+
+       .def("Print", &GlueXUserEventInformation::Print)
+
+       .def("Dlog", static_cast<void (GlueXUserEventInformation::*)(std::string, bool)>(&GlueXUserEventInformation::Dlog))
+       .def("Dlog", static_cast<void (*)(std::string)>(&GlueXUserEventInformation::Dlog))
+       .staticmethod("Dlog")
+
+       .def("getOutputRecord", &GlueXUserEventInformation::getOutputRecord, boost::python::return_internal_reference<>())
+
+       .def("setWriteNoHitEvents", &GlueXUserEventInformation::setWriteNoHitEvents)
+       .staticmethod("setWriteNoHitEvents")
+       .def("getWriteNoHitEvents", &GlueXUserEventInformation::getWriteNoHitEvents)
+       .staticmethod("getWriteNoHitEvents")
+       .def("setTrackingVerbose", &GlueXUserEventInformation::setTrackingVerbose)
+       .staticmethod("setTrackingVerbose")
+       .def("getTrackingVerbose", &GlueXUserEventInformation::getTrackingVerbose)
+       .staticmethod("getTrackingVerbose")
    ;
 
    def("pickPoint3D", pickPoint3D);
