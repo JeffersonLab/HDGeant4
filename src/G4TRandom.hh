@@ -109,11 +109,11 @@ inline void G4TRandom::Rannor(Double_t &a, Double_t &b) {
    CLHEP::RandGauss::shoot(a, b);
 }
 
-inline void G4TRandom::ReadRandom(const char *filename) {
+inline void G4TRandom::ReadRandom(const char* /* filename */) {
    // not implemented
 }
 
-inline void G4TRandom::SetSeed(ULong_t seed) {
+inline void G4TRandom::SetSeed(ULong_t /* seed */) {
    // not implemented
 }
 
@@ -150,6 +150,6 @@ inline Double_t G4TRandom::Uniform(Double_t x1, Double_t x2) {
    return CLHEP::RandFlat::shoot(x1, x2);
 }
 
-inline void G4TRandom::WriteRandom(const char *filename) const {
+inline void G4TRandom::WriteRandom(const char* /* filename*/) const {
    // not implemented
 }

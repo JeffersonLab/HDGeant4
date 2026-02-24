@@ -18,6 +18,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Geant4 REQUIRED ui_all vis_all gdml)
 include(${Geant4_USE_FILE})
 
+find_package(HDDM REQUIRED)
+
 if(${Geant4_VERSION_MAJOR} LESS 10)
     set(G4_MAJOR_PADDED ${Geant4_VERSION_MAJOR})
     set(G4_MINOR_PADDED ${Geant4_VERSION_MINOR})
@@ -213,7 +215,8 @@ target_link_libraries(hdgeant4 PUBLIC
     RF TAGGER PAIR_SPECTROMETER START_COUNTER TOF TRD
     ANALYSIS HDGEOMETRY PID TAC TPOL TRIGGER CERE
     TRACKING KINFITTER TTAB DAQ EVENTSTORE
-    HDDM xstream
+    HDDM
+    HDDM::xstream
     evioxx evio
     ccdb mysqlclient
     SQLiteCpp sqlite3
