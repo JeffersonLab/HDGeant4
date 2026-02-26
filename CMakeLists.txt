@@ -199,8 +199,7 @@ target_compile_definitions(hdgeant4 PUBLIC
 )
 target_link_directories(hdgeant4 PUBLIC 
     "${HALLD_RECON_HOME}/$ENV{BMS_OSNAME}/lib"
-    "$ENV{EVIOROOT}/lib" 
-    "$ENV{SQLITECPP_HOME}/lib"
+    "$ENV{SQLITECPP_HOME}/lib64"
     "$ENV{SQLITE_HOME}/lib"
     "$ENV{CCDB_HOME}/lib"
 )
@@ -217,7 +216,6 @@ target_link_libraries(hdgeant4 PUBLIC
     TRACKING KINFITTER TTAB DAQ EVENTSTORE
     HDDM
     HDDM::xstream
-    evioxx evio
     ccdb mysqlclient
     SQLiteCpp sqlite3
     GLU
