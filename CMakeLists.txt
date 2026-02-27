@@ -20,6 +20,10 @@ include(${Geant4_USE_FILE})
 
 find_package(HDDM REQUIRED)
 
+set(CMAKE_SKIP_INSTALL_RPATH FALSE)
+set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 if(${Geant4_VERSION_MAJOR} LESS 10)
     set(G4_MAJOR_PADDED ${Geant4_VERSION_MAJOR})
     set(G4_MINOR_PADDED ${Geant4_VERSION_MINOR})
@@ -199,9 +203,8 @@ target_compile_definitions(hdgeant4 PUBLIC
 )
 target_link_directories(hdgeant4 PUBLIC 
     "${HALLD_RECON_HOME}/$ENV{BMS_OSNAME}/lib"
-    "$ENV{EVIOROOT}/lib" 
-    "$ENV{SQLITECPP_HOME}/lib"
-    "$ENV{SQLITE_HOME}/lib"
+    "$ENV{SQLITECPP_HOME}/lib64"
+    "$ENV{SQLITE_HOME}/lib64"
     "$ENV{CCDB_HOME}/lib"
 )
 target_link_libraries(hdgeant4 PUBLIC
@@ -217,7 +220,6 @@ target_link_libraries(hdgeant4 PUBLIC
     TRACKING KINFITTER TTAB DAQ EVENTSTORE
     HDDM
     HDDM::xstream
-    evioxx evio
     ccdb mysqlclient
     SQLiteCpp sqlite3
     GLU
