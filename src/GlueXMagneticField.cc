@@ -42,12 +42,6 @@ class DMagneticFieldMapPS2DMap_local: public DMagneticFieldMapPS2DMap {
   void set_z_shift(double offset) { z_shift = offset; }
 };
 
-void DMagneticFieldMapPS2DMap::GetField(DVector3 const& /* p */, DVector3& /* B */) const
-{
-  std::cout << "Error - DMagneticFieldMapPS2DMap::GetField(DVector3 const& p, DVector3& B) const" 
-            << " should never be called!!" << std::endl;
-}
-
 // Implementation code for class GlueXUniformMagField
 
 GlueXUniformMagField::GlueXUniformMagField(G4ThreeVector B, G4double unit,
