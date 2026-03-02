@@ -204,7 +204,7 @@ target_compile_definitions(hdgeant4 PUBLIC
 target_link_directories(hdgeant4 PUBLIC 
     "${HALLD_RECON_HOME}/$ENV{BMS_OSNAME}/lib"
     "$ENV{SQLITECPP_HOME}/lib64"
-    "$ENV{SQLITE_HOME}/lib64"
+    "$ENV{SQLITE_HOME}/lib"
     "$ENV{CCDB_HOME}/lib"
 )
 target_link_libraries(hdgeant4 PUBLIC
@@ -236,7 +236,7 @@ add_subdirectory(src/utils)
 install(TARGETS hdgeant4_bin
         RUNTIME DESTINATION bin)
 
-install(TARGETS hdgeant4 cobrems G4fixes
+install(TARGETS hdgeant4 cobrems G4fixes hdds
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
 
