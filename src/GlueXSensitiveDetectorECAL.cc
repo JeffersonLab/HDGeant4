@@ -20,6 +20,9 @@
 #include <JANA/JApplication.h>
 #include <JANA/Calibrations/JCalibrationManager.h>
 
+// Scale factors to match reconstructed to generated
+double GlueXSensitiveDetectorECAL::SHOWER_ENERGY_SCALE_FACTOR =  1.0;
+double GlueXSensitiveDetectorECAL::MIP_ENERGY_SCALE_FACTOR = 1.36;
 
 // Cutoff on the number of allowed hits per block
 int GlueXSensitiveDetectorECAL::MAX_HITS = 100;

@@ -46,6 +46,8 @@ class GlueXSensitiveDetectorECAL : public G4VSensitiveDetector
    static double C_EFFECTIVE;
    static double TWO_HIT_TIME_RESOL;
    static double THRESH_MEV;
+   static double SHOWER_ENERGY_SCALE_FACTOR;
+   static double MIP_ENERGY_SCALE_FACTOR;
 
    static int instanceCount;
    static G4Mutex fMutex;
