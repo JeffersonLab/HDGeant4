@@ -3,6 +3,9 @@ macro(add_hdgeant4_util UTIL_NAME)
     add_executable(${UTIL_NAME} ${UTIL_NAME}.cc)
     target_link_libraries(${UTIL_NAME} 
         hdgeant4 
+        ROOT::Geom
+        ROOT::TMVA
+        ROOT::TreePlayer
         ${ROOT_LIBRARIES} 
         # Add DANA libs manually or via a FindDANA.cmake if available
         -L$ENV{HALLD_RECON_HOME}/$ENV{BMS_OSNAME}/lib -lHDGEOMETRY -lDANA

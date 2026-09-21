@@ -69,6 +69,10 @@ set(CMAKE_MESSAGE_LOG_LEVEL ${OLD_LOG_LEVEL})
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+
 find_package(Boost REQUIRED COMPONENTS python)
 
 # For XERCES (required by HDDS and Geant4 GDML)
@@ -210,6 +214,9 @@ target_link_directories(hdgeant4 PUBLIC
 target_link_libraries(hdgeant4 PUBLIC
     hdds G4fixes cobrems
     ${Geant4_LIBRARIES}
+    ROOT::Geom
+    ROOT::TMVA
+    ROOT::TreePlayer
     ${ROOT_LIBRARIES}
     ${XercesC_LIBRARIES}
     Diracxx::Dirac
