@@ -20,6 +20,7 @@
 #include <GlueXSteppingAction.hh>
 #include <GlueXSteppingVerbose.hh>
 #include <GlueXPhysicsList.hh>
+#include <GlueXExceptionHandler.hh>
 
 class GlueXUserActionInitialization : public G4VUserActionInitialization
 {
@@ -27,8 +28,13 @@ class GlueXUserActionInitialization : public G4VUserActionInitialization
    GlueXUserActionInitialization(GlueXPhysicsList *plist)
     : fPhysicsList(plist) {}
    ~GlueXUserActionInitialization() {}
-   
+
    virtual void Build() const {
+      // G4StateManager (and thus the exception handler registered with
+      // it) is thread-local, so this must be installed on every worker
+      // thread, not just once at startup.
+      new GlueXExceptionHandler();
+
       SetUserAction(new GlueXRunAction(fPhysicsList));
       SetUserAction(new GlueXEventAction());
       SetUserAction(new GlueXStackingAction());
@@ -38,6 +44,8 @@ class GlueXUserActionInitialization : public G4VUserActionInitialization
    }
 
    virtual void BuildForMaster() const {
+      new GlueXExceptionHandler();
+
       SetUserAction(new GlueXRunAction(fPhysicsList));
    }
 

@@ -7,6 +7,7 @@
 #include "GlueXRunAction.hh"
 #include "GlueXPhysicsList.hh"
 #include "GlueXUserEventInformation.hh"
+#include "GlueXExceptionHandler.hh"
 
 #include "G4VisManager.hh"
 #include "G4ViewParameters.hh"
@@ -52,4 +53,17 @@ void GlueXRunAction::BeginOfRunAction(const G4Run*)
 }
 
 void GlueXRunAction::EndOfRunAction(const G4Run* /* evt */)
-{}
+{
+   // The occurrence counter is shared (process-wide) across all worker
+   // threads, so only report it once, from the master thread's run
+   // action, after MT has synchronized all workers at end-of-run.
+   if (IsMaster()) {
+      G4long n = GlueXExceptionHandler::GetGeomNav0003Count();
+      if (n > 0) {
+         G4cout << "GlueXRunAction: total GeomNav0003 exit-normal warnings "
+                   "(G4Navigator::GetLocalExitNormal, tracks nearly "
+                   "parallel to a geometry boundary) this run: " << n
+                << G4endl;
+      }
+   }
+}
