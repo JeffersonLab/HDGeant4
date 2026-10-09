@@ -144,7 +144,7 @@ GlueXSensitiveDetectorFDC::GlueXSensitiveDetectorFDC(const G4String& name)
       THRESH_KEV = fdc_parms.at("FDC_THRESH_KEV");
       THRESH_STRIPS = fdc_parms.at("FDC_THRESH_STRIPS");
       DIFFUSION_COEFF = fdc_parms.at("FDC_DIFFUSION_COEFF")*cm*cm/s;
-      FDC_TIME_WINDOW = fdc_parms.at("FDC_TIME_WINDOW");
+      FDC_TIME_WINDOW = fdc_parms.at("FDC_TIME_WINDOW")*ns;
       U_OF_WIRE_ONE = -(WIRES_PER_PLANE -1) * WIRE_SPACING / 2;
       U_OF_STRIP_ONE = -(STRIPS_PER_PLANE -1) * STRIP_SPACING / 2;
 

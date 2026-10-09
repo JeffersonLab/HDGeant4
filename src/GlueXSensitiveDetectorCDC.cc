@@ -104,7 +104,7 @@ GlueXSensitiveDetectorCDC::GlueXSensitiveDetectorCDC(const G4String& name)
       TWO_HIT_TIME_RESOL = cdc_parms.at("CDC_TWO_HIT_RESOL")*ns;
       MAX_HITS = cdc_parms.at("CDC_MAX_HITS");
       THRESH_KEV = cdc_parms.at("CDC_THRESH_KEV");
-      CDC_TIME_WINDOW = cdc_parms.at("CDC_TIME_WINDOW");
+      CDC_TIME_WINDOW = cdc_parms.at("CDC_TIME_WINDOW")*ns;
       
       // Decide which drift time tables to load based on
       // whether or not a magnetic field is present.
