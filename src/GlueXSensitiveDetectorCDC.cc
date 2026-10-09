@@ -49,7 +49,7 @@ double GlueXSensitiveDetectorCDC::THRESH_MV = 1.;
 double GlueXSensitiveDetectorCDC::STRAW_RADIUS = 0.776*cm;
 
 // Straw hits are accepted from t=0 up to this maximum time
-double GlueXSensitiveDetectorCDC::CDC_TIME_WINDOW = 1000*ns;
+double GlueXSensitiveDetectorCDC::CDC_TIME_WINDOW = 1294*ns;
 
 // Parameters for setting signal pulse height
 double GlueXSensitiveDetectorCDC::GAS_GAIN = 1e5;
@@ -104,7 +104,8 @@ GlueXSensitiveDetectorCDC::GlueXSensitiveDetectorCDC(const G4String& name)
       TWO_HIT_TIME_RESOL = cdc_parms.at("CDC_TWO_HIT_RESOL")*ns;
       MAX_HITS = cdc_parms.at("CDC_MAX_HITS");
       THRESH_KEV = cdc_parms.at("CDC_THRESH_KEV");
-
+      CDC_TIME_WINDOW = cdc_parms.at("CDC_TIME_WINDOW");
+      
       // Decide which drift time tables to load based on
       // whether or not a magnetic field is present.
  
