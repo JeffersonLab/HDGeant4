@@ -49,7 +49,7 @@ double GlueXSensitiveDetectorFDC::THRESH_ANODE = 1.*pC;
 double GlueXSensitiveDetectorFDC::THRESH_STRIPS = 5.*pC;
 
 // Straw hits are accepted from t=0 up to this maximum time
-double GlueXSensitiveDetectorFDC::FDC_TIME_WINDOW = 304*ns;
+double GlueXSensitiveDetectorFDC::FDC_TIME_WINDOW = 352*ns;
 
 // Parameters for setting signal pulse height
 double GlueXSensitiveDetectorFDC::GAS_GAIN = 8e4;

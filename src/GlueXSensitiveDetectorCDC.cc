@@ -49,7 +49,7 @@ double GlueXSensitiveDetectorCDC::THRESH_MV = 1.;
 double GlueXSensitiveDetectorCDC::STRAW_RADIUS = 0.776*cm;
 
 // Straw hits are accepted from t=0 up to this maximum time
-double GlueXSensitiveDetectorCDC::CDC_TIME_WINDOW = 1294*ns;
+double GlueXSensitiveDetectorCDC::CDC_TIME_WINDOW = 1312*ns;
 
 // Parameters for setting signal pulse height
 double GlueXSensitiveDetectorCDC::GAS_GAIN = 1e5;
