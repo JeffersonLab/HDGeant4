@@ -1231,7 +1231,7 @@ int GlueXSensitiveDetectorFDC::add_anode_hit(
    double tmin = dradius / v_max;
 
    // longitidinal diffusion, derived from Garfield calculations
-   double dt = (G4RandGauss::shoot() - 0.5) *
+   double dt = G4RandGauss::shoot() *
                (39.44*ns * dx4/cm4 / (0.5 - dz2/cm2) + 
                 56.00*ns * dz4/cm4 / (0.5 - dx2/cm2) +
                 0.01566*ns * dx4/cm4 / (dz4/cm4 + 0.002) / (0.251 - dx2/cm2));
