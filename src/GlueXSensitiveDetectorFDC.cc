@@ -28,6 +28,7 @@
 
 
 #include <stdlib.h>
+#include <algorithm>
 #include <math.h>
 
 const double fC = 1e-15 * coulomb;
@@ -531,7 +532,8 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
          int merge_hits = 0;
          std::vector<GlueXHitFDCwire::hitinfo_t>::iterator hiter;
          for (hiter = anode->hits.begin(); hiter != anode->hits.end(); ++hiter) {
-            if (itrack == hiter->itrack_ && fabs(tin - hiter->t1_ns*ns) < 0.01) {
+            // stitch only consecutive steps of the same Geant4 track, not secondaries (delta rays) starting where it stopped
+            if (trackID == hiter->g4track_ && fabs(tin - hiter->t1_ns*ns) < 0.01) {
                merge_hits = 1;
                break;
             }
@@ -550,6 +552,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             hiter = anode->hits.insert(hiter, GlueXHitFDCwire::hitinfo_t());
             hiter->dE_keV = dE/keV;
             hiter->itrack_ = itrack;
+            hiter->g4track_ = trackID;
             hiter->ptype_G3 = g3type;
             hiter->t0_ns = tin/ns;
             hiter->t1_ns = tout/ns;
@@ -636,7 +639,10 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
       std::vector<GlueXHitFDCwire::hitinfo_t> hits;
       while (splits.size() > 0) {
          for (unsigned int ih=1; ih < splits.size(); ++ih) {
-            if (fabs(splits[ih].t0_ns - splits[0].t1_ns) < 0.5*ns) {
+            // same Geant4 track only: other tracks keep their own segment and drift distance,
+            // and are combined with this one below (earliest time wins, dE summed)
+            if (splits[ih].g4track_ == splits[0].g4track_ &&
+                fabs(splits[ih].t0_ns - splits[0].t1_ns) < 0.5*ns) {
                splits[0].dE_keV += splits[ih].dE_keV;
                splits[0].t1_ns = splits[ih].t1_ns;
                splits[0].x1_g = splits[ih].x1_g;
@@ -717,6 +723,8 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
          double dradius_cm = hits[0].d_cm;
          int ptype_G3 = hits[0].ptype_G3;
          int itrack = hits[0].itrack_;
+         int g4track = hits[0].g4track_;
+         double t_unsmeared_ns = hits[0].t_unsmeared_ns;
          double t0_ns = hits[0].t0_ns;
          double t1_ns = hits[0].t1_ns;
          G4ThreeVector x0_g = hits[0].x0_g;
@@ -733,6 +741,8 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                   splits.back().d_cm = dradius_cm;
                   splits.back().ptype_G3 = ptype_G3;
                   splits.back().itrack_ = itrack;
+                  splits.back().g4track_ = g4track;
+                  splits.back().t_unsmeared_ns = t_unsmeared_ns;
                   splits.back().t_ns = double(i);
                   splits.back().t0_ns = t0_ns;
                   splits.back().t1_ns = t1_ns;
@@ -760,6 +770,9 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                dE_keV = 0;
             }
          }
+         // pulse still over threshold at the end of the readout window
+         if (over_threshold)
+            splits.back().dE_keV = dE_keV;
          delete [] samples;
       }
       else {
@@ -881,7 +894,9 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                }
             }
             else if (threshold_toggle) {
-               // Find the first peak
+               // Find the first peak; if there is no local maximum
+               // (short or monotonic pulse) use the largest sample
+               hits.back().q_fC = *std::max_element(samples + istart, samples + i);
                for (int j = istart + 1; j < i - 1; j++) {
                   if (samples[j] > samples[j-1] && samples[j] > samples[j+1]) {
                      hits.back().q_fC = samples[j];
@@ -893,6 +908,7 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
          }
          int i = num_samples - 1;
          if (samples[i] > THRESH_STRIPS && threshold_toggle) {
+            hits.back().q_fC = *std::max_element(samples + istart, samples + num_samples);
             for (int j = istart + 1; j < i - 1; j++) {
                if (samples[j] > samples[j-1] && samples[j] > samples[j+1]) {
                   hits.back().q_fC = samples[j];
