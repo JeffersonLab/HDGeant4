@@ -531,7 +531,8 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
          int merge_hits = 0;
          std::vector<GlueXHitFDCwire::hitinfo_t>::iterator hiter;
          for (hiter = anode->hits.begin(); hiter != anode->hits.end(); ++hiter) {
-            if (itrack == hiter->itrack_ && fabs(tin - hiter->t1_ns*ns) < 0.01) {
+            // stitch only consecutive steps of the same Geant4 track, not secondaries (delta rays) starting where it stopped
+            if (trackID == hiter->g4track_ && fabs(tin - hiter->t1_ns*ns) < 0.01) {
                merge_hits = 1;
                break;
             }
@@ -550,6 +551,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             hiter = anode->hits.insert(hiter, GlueXHitFDCwire::hitinfo_t());
             hiter->dE_keV = dE/keV;
             hiter->itrack_ = itrack;
+            hiter->g4track_ = trackID;
             hiter->ptype_G3 = g3type;
             hiter->t0_ns = tin/ns;
             hiter->t1_ns = tout/ns;
@@ -636,7 +638,10 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
       std::vector<GlueXHitFDCwire::hitinfo_t> hits;
       while (splits.size() > 0) {
          for (unsigned int ih=1; ih < splits.size(); ++ih) {
-            if (fabs(splits[ih].t0_ns - splits[0].t1_ns) < 0.5*ns) {
+            // same Geant4 track only: other tracks keep their own segment and drift distance,
+            // and are combined with this one below (earliest time wins, dE summed)
+            if (splits[ih].g4track_ == splits[0].g4track_ &&
+                fabs(splits[ih].t0_ns - splits[0].t1_ns) < 0.5*ns) {
                splits[0].dE_keV += splits[ih].dE_keV;
                splits[0].t1_ns = splits[ih].t1_ns;
                splits[0].x1_g = splits[ih].x1_g;

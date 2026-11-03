@@ -44,6 +44,7 @@ class GlueXHitFDCwire : public G4VHit
       G4double d_cm;       // distance (cm) of closest cluster to the wire
       G4double itrack_;    // track index of first particle making this hit
       G4double ptype_G3;   // G3 type of first particle making this hit
+      G4int g4track_;      // Geant4 track ID of the track segment (secondaries share itrack_ with their parent)
       G4double t0_ns;      // start time of the track segment making this hit
       G4double t1_ns;      // end time time of the track segment making this hit
       G4ThreeVector x0_g;  // global coordinates of start of track segment
