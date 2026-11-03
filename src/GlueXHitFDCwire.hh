@@ -34,19 +34,19 @@ class GlueXHitFDCwire : public G4VHit
 
    // no reason to hide hit data
 
-   G4int chamber_;            // FDC chamber, count from upstream starting at 1
-   G4int wire_;               // wire number, ordered by u starting at 1
+   G4int chamber_ = 0; // FDC chamber, count from upstream starting at 1
+   G4int wire_ = 0;    // wire number, ordered by u starting at 1
 
    struct hitinfo_t {
-      G4double dE_keV;     // energy deposited (keV)
-      G4double t_ns;       // pulse leading-edge time (ns)
-      G4double t_unsmeared_ns; // pulse leading-edge time unsmeared (ns)
-      G4double d_cm;       // distance (cm) of closest cluster to the wire
-      G4double itrack_;    // track index of first particle making this hit
-      G4double ptype_G3;   // G3 type of first particle making this hit
-      G4int g4track_;      // Geant4 track ID of the track segment (secondaries share itrack_ with their parent)
-      G4double t0_ns;      // start time of the track segment making this hit
-      G4double t1_ns;      // end time time of the track segment making this hit
+      G4double dE_keV = 0;         // energy deposited (keV)
+      G4double t_ns = 0;           // pulse leading-edge time (ns)
+      G4double t_unsmeared_ns = 0; // pulse leading-edge time unsmeared (ns)
+      G4double d_cm = 0;           // distance (cm) of closest cluster to the wire
+      G4double itrack_ = 0;        // track index of first particle making this hit
+      G4double ptype_G3 = 0;       // G3 type of first particle making this hit
+      G4int g4track_ = 0;          // Geant4 track ID of the track segment (secondaries share itrack_ with their parent)
+      G4double t0_ns = 0;          // start time of the track segment making this hit
+      G4double t1_ns = 0;          // end time time of the track segment making this hit
       G4ThreeVector x0_g;  // global coordinates of start of track segment
       G4ThreeVector x0_l;  // local coordinates of start of track segment
       G4ThreeVector x1_g;  // global coordinates of end of track segment

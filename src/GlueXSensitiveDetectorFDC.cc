@@ -28,6 +28,7 @@
 
 
 #include <stdlib.h>
+#include <algorithm>
 #include <math.h>
 
 const double fC = 1e-15 * coulomb;
@@ -722,6 +723,8 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
          double dradius_cm = hits[0].d_cm;
          int ptype_G3 = hits[0].ptype_G3;
          int itrack = hits[0].itrack_;
+         int g4track = hits[0].g4track_;
+         double t_unsmeared_ns = hits[0].t_unsmeared_ns;
          double t0_ns = hits[0].t0_ns;
          double t1_ns = hits[0].t1_ns;
          G4ThreeVector x0_g = hits[0].x0_g;
@@ -738,6 +741,8 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                   splits.back().d_cm = dradius_cm;
                   splits.back().ptype_G3 = ptype_G3;
                   splits.back().itrack_ = itrack;
+                  splits.back().g4track_ = g4track;
+                  splits.back().t_unsmeared_ns = t_unsmeared_ns;
                   splits.back().t_ns = double(i);
                   splits.back().t0_ns = t0_ns;
                   splits.back().t1_ns = t1_ns;
@@ -765,6 +770,9 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                dE_keV = 0;
             }
          }
+         // pulse still over threshold at the end of the readout window
+         if (over_threshold)
+            splits.back().dE_keV = dE_keV;
          delete [] samples;
       }
       else {
@@ -886,7 +894,9 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                }
             }
             else if (threshold_toggle) {
-               // Find the first peak
+               // Find the first peak; if there is no local maximum
+               // (short or monotonic pulse) use the largest sample
+               hits.back().q_fC = *std::max_element(samples + istart, samples + i);
                for (int j = istart + 1; j < i - 1; j++) {
                   if (samples[j] > samples[j-1] && samples[j] > samples[j+1]) {
                      hits.back().q_fC = samples[j];
@@ -898,6 +908,7 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
          }
          int i = num_samples - 1;
          if (samples[i] > THRESH_STRIPS && threshold_toggle) {
+            hits.back().q_fC = *std::max_element(samples + istart, samples + num_samples);
             for (int j = istart + 1; j < i - 1; j++) {
                if (samples[j] > samples[j-1] && samples[j] > samples[j+1]) {
                   hits.back().q_fC = samples[j];
