@@ -1,6 +1,21 @@
 
 # HDGeant4 - Geant4 simulation of the Hall D beam line and GlueX spectrometer
 
+Following the lead of the Geant4 developers, HDGeant4 uses cmake for building
+and installation. The following steps build a fresh hdgeant4 binary with all
+its libraries, including supported c-extension python libraries and utilities.
+
+   $ mkdir build
+   $ cd build
+   $ cmake -DCMAKE_INSTALL_PREFIX=/home/halld/HDGeant4/x86_64-alma9 \
+      -DGeant4_DIR=$G4ROOT/lib64/Geant4-10.7.4 \
+      -DDiracxx_DIR=$DIRACXX_DIR/lib/cmake/Diracxx
+      -DJANA_DIR=$JANA_HOME/lib/JANA/cmake \
+      [ and other build options you need, see below ]
+     ..
+   $ cmake --build .
+   $ cmake --install
+
 ## Build options
 
 The configuration options for the build are found near the top of the
@@ -65,7 +80,7 @@ below.
   processing: [off]
      CPPFLAGS += -DDEBUG_SECTIONPLANE_ZAVE
 
-## Build instructions (Linux)
+## Dependencies
 
 After editing the top-level GNUmakefile to select the desired options, as
 explained above, it is time to build the executable binaries from the
@@ -96,8 +111,3 @@ stored in bin. The shared object libraries needed to run hdgeant4 are
 located in the lib64 directory. Your shall LD_LIBRARY_PATH should include
 this lib64 directory, the one in your active sim-recon tree, and the one
 in your local geant4 build directory, among others.
-
-This procedure also automatically creates the g4py directory. By adding
-g4py to your PYTHONPATH you will be able to automatically find and load
-all of the python modules associated with the hdgeant4 package simply
-by typing "import hdgeant4".

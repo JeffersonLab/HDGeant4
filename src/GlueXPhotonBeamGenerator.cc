@@ -603,7 +603,7 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
    }
 }
 
-double GlueXPhotonBeamGenerator::GenerateTriggerTime(const G4Event *event)
+double GlueXPhotonBeamGenerator::GenerateTriggerTime(const G4Event* /* event */)
 {
    // The primary interaction vertex time is referenced to a clock
    // whose t=0 is synchronized to the crossing of a beam bunch

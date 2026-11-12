@@ -491,10 +491,10 @@ G4String G4OpenGLViewer::Pick(GLdouble x, GLdouble y)
     G4ThreeVector xlast;
     for (unsigned int a = 0; a < pickMap.size(); a++) {
       if (pickMap[a]->getAttributes().size() > 0) {
-        G4ThreeVector x = pickMap[a]->getPickCoordinates3D();
-        if (!x.isNear(xlast, 0.001 * CLHEP::cm)) {
+        G4ThreeVector xx = pickMap[a]->getPickCoordinates3D();
+        if (!xx.isNear(xlast, 0.001 * CLHEP::cm)) {
           txt += pickMap[a]->print();
-          xlast = x;
+          xlast = xx;
         }
       }
     }

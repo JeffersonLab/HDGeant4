@@ -44,7 +44,7 @@ int GlueXHitFMWPCpoint::operator==(const GlueXHitFMWPCpoint &right) const
    return 1;
 }
 
-GlueXHitFMWPCpoint &GlueXHitFMWPCpoint::operator+=(const GlueXHitFMWPCpoint &right)
+GlueXHitFMWPCpoint &GlueXHitFMWPCpoint::operator+=(const GlueXHitFMWPCpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitFMWPCpoint::operator+= - "
           << "illegal attempt to merge two TruthPoint objects in the forward MWPC!"

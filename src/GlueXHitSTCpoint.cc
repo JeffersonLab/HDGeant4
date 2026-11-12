@@ -48,7 +48,7 @@ int GlueXHitSTCpoint::operator==(const GlueXHitSTCpoint &right) const
    return 1;
 }
 
-GlueXHitSTCpoint &GlueXHitSTCpoint::operator+=(const GlueXHitSTCpoint &right)
+GlueXHitSTCpoint &GlueXHitSTCpoint::operator+=(const GlueXHitSTCpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitSTCpoint::operator+= - "
           << "illegal attempt to merge two TruthPoint objects in the stc!"

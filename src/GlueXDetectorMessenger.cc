@@ -6,8 +6,6 @@
 
 #include "GlueXDetectorMessenger.hh"
 
-#include "G4SystemOfUnits.hh"
-#include "GlueXDetectorConstruction.hh"
 #include "G4UIdirectory.hh"
 #include "G4UIcmdWithAString.hh"
 #include "G4UIcmdWithADoubleAndUnit.hh"
@@ -18,6 +16,10 @@
 #include "GlueXPhysicsList.hh"
 #include "GlueXPrimaryGeneratorAction.hh"
 #include "GlueXBeamConversionProcess.hh"
+
+#include "GlueXDetectorConstruction.hh"
+
+#include "G4SystemOfUnits.hh"
 
 GlueXDetectorMessenger::GlueXDetectorMessenger(GlueXDetectorConstruction* myDet)
 :myDetector(myDet)

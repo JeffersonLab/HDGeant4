@@ -67,9 +67,6 @@ GlueXSteppingAction::GlueXSteppingAction()
 
 }
 
-GlueXSteppingAction::GlueXSteppingAction(const GlueXSteppingAction &src)
-{}
-
 GlueXSteppingAction::~GlueXSteppingAction()
 {
 #if BACKGROUND_PROFILING

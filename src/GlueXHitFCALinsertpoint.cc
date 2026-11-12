@@ -42,7 +42,7 @@ int GlueXHitFCALinsertpoint::operator==(const GlueXHitFCALinsertpoint &right) co
    return 1;
 }
 
-GlueXHitFCALinsertpoint &GlueXHitFCALinsertpoint::operator+=(const GlueXHitFCALinsertpoint &right)
+GlueXHitFCALinsertpoint &GlueXHitFCALinsertpoint::operator+=(const GlueXHitFCALinsertpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitFCALinsertpoint::operator+= - "
           << "illegal attempt to merge two TruthShower objects in the fcal!"

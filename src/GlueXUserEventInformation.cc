@@ -4,14 +4,16 @@
 // author: richard.t.jones at uconn.edu
 // version: september 24, 2016
 
+#include "HddmOutput.hh"
+#include "HddsG4Builder.hh"
+
 #include "GlueXUserEventInformation.hh"
 #include "GlueXUserTrackInformation.hh"
 #include "GlueXPrimaryGeneratorAction.hh"
 #include "G4SystemOfUnits.hh"
-#include "G4Run.hh"
-#include "HddmOutput.hh"
-#include "HddsG4Builder.hh"
 #include "Randomize.hh"
+#include "G4Run.hh"
+
 #include <exception>
 
 #include <map>
@@ -146,8 +148,8 @@ GlueXUserEventInformation::~GlueXUserEventInformation()
    }
 }
 
-void GlueXUserEventInformation::AddBeamParticle(int geanttype, double t0,
-                                                const G4ThreeVector &pos, 
+void GlueXUserEventInformation::AddBeamParticle(int geanttype, double /* t0 */,
+                                                const G4ThreeVector& /* pos */, 
                                                 const G4ThreeVector &mom)
 {
    hddm_s::PhysicsEventList pev = fOutputRecord->getPhysicsEvents();
@@ -161,9 +163,14 @@ void GlueXUserEventInformation::AddBeamParticle(int geanttype, double t0,
    pmo(0).setPx(mom[0]/GeV);
    pmo(0).setPy(mom[1]/GeV);
    pmo(0).setPz(mom[2]/GeV);
+   hddm_s::Momentum_doubleList pmod = pmo(0).addMomentum_doubles();
+   pmod(0).setPx(mom[0]/GeV);
+   pmod(0).setPy(mom[1]/GeV);
+   pmod(0).setPz(mom[2]/GeV);
    double mass = GlueXPrimaryGeneratorAction::GetMass(geanttype);
    double E = sqrt(mass*mass + mom[0]*mom[0] + mom[1]*mom[1] + mom[2]*mom[2]);
    pmo(0).setE(E/GeV);
+   pmod(0).setE(E/GeV);
    hddm_s::PropertiesList pro = beam(0).addPropertiesList();
    int pdg = GlueXPrimaryGeneratorAction::ConvertGeant3ToPdg(geanttype);
    G4ParticleDefinition *g4type = GlueXPrimaryGeneratorAction::GetParticle(pdg);
@@ -184,8 +191,8 @@ void GlueXUserEventInformation::AddBeamParticle(int geanttype, double t0,
    polar(0).setPz(pol[2]);
 }
 
-void GlueXUserEventInformation::AddTargetParticle(int geanttype, double t0,
-                                                  const G4ThreeVector &pos,
+void GlueXUserEventInformation::AddTargetParticle(int geanttype, double /* t0 */,
+                                                  const G4ThreeVector& /* pos */,
                                                   const G4ThreeVector &mom)
 {
    hddm_s::PhysicsEventList pev = fOutputRecord->getPhysicsEvents();
@@ -199,9 +206,14 @@ void GlueXUserEventInformation::AddTargetParticle(int geanttype, double t0,
    pmo(0).setPx(mom[0]/GeV);
    pmo(0).setPy(mom[1]/GeV);
    pmo(0).setPz(mom[2]/GeV);
+   hddm_s::Momentum_doubleList pmod = pmo(0).addMomentum_doubles();
+   pmod(0).setPx(mom[0]/GeV);
+   pmod(0).setPy(mom[1]/GeV);
+   pmod(0).setPz(mom[2]/GeV);
    double mass = GlueXPrimaryGeneratorAction::GetMass(geanttype);
    double E = sqrt(mass*mass + mom[0]*mom[0] + mom[1]*mom[1] + mom[2]*mom[2]);
    pmo(0).setE(E/GeV);
+   pmod(0).setE(E/GeV);
    hddm_s::PropertiesList pro = targ(0).addPropertiesList();
    int pdg = GlueXPrimaryGeneratorAction::ConvertGeant3ToPdg(geanttype);
    G4ParticleDefinition *g4type = GlueXPrimaryGeneratorAction::GetParticle(pdg);
@@ -257,6 +269,11 @@ void GlueXUserEventInformation::AddPrimaryVertex(const G4PrimaryVertex &vertex)
       pmo(0).setPy(py);
       pmo(0).setPz(pz);
       pmo(0).setE(E);
+      hddm_s::Momentum_doubleList pmod = pmo(0).addMomentum_doubles();
+      pmod(0).setPx(px);
+      pmod(0).setPy(py);
+      pmod(0).setPz(pz);
+      pmod(0).setE(E);
       double polx = part->GetPolX();
       double poly = part->GetPolY();
       double polz = part->GetPolZ();
@@ -321,6 +338,11 @@ void GlueXUserEventInformation::AddSecondaryVertex(
        pmo(0).setPy(py);
        pmo(0).setPz(pz);
        pmo(0).setE(E);
+       hddm_s::Momentum_doubleList pmod = pmo(0).addMomentum_doubles();
+       pmod(0).setPx(px);
+       pmod(0).setPy(py);
+       pmod(0).setPz(pz);
+       pmod(0).setE(E);
        double polx = secondaries[ip]->GetPolarization()[0];
        double poly = secondaries[ip]->GetPolarization()[1];
        double polz = secondaries[ip]->GetPolarization()[2];
@@ -493,9 +515,9 @@ void GlueXUserEventInformation::SetRandomSeeds()
             fStartingSeeds = 0;
          }
       }
-      const long int *s = G4Random::getTheSeeds();
-      fEventSeeds[0] = s[0];
-      fEventSeeds[1] = s[1];
+      const long int *sds = G4Random::getTheSeeds();
+      fEventSeeds[0] = sds[0];
+      fEventSeeds[1] = sds[1];
       rnd = rea(0).addRandoms();
       rnd(0).setSeed1(fEventSeeds[0]);
       rnd(0).setSeed2(fEventSeeds[1]);
@@ -667,6 +689,6 @@ void GlueXUserEventInformation::Dlog(std::string msg, bool rewind)
       ++fDlogreading[logfile.str()];
    }
    else {
-      *((ofstream*)fDlogfile[logfile.str()]) << msg << std::endl;
+      *((std::ofstream*)fDlogfile[logfile.str()]) << msg << std::endl;
    }
 }

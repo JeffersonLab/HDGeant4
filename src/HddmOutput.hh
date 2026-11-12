@@ -32,8 +32,8 @@ class HddmOutput
    static void setEventNo(int eventno);
 
  protected:
-   HddmOutput(HddmOutput &src);
-   HddmOutput& operator=(HddmOutput &src);
+   HddmOutput(HddmOutput &src) = delete;
+   HddmOutput& operator=(HddmOutput &src) = delete;
 
    static int fRunNo;
    static int fEventNo;

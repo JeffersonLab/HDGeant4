@@ -32,7 +32,7 @@
 class GlueXHitDIRCflash : public G4VHit
 {
  public:
-   GlueXHitDIRCflash(G4int bar=0);
+   GlueXHitDIRCflash(G4int ibar=0);
    GlueXHitDIRCflash(const GlueXHitDIRCflash &src);
    int operator==(const GlueXHitDIRCflash &right) const;
    GlueXHitDIRCflash &operator+=(const GlueXHitDIRCflash &right);
@@ -57,8 +57,8 @@ class GlueXHitDIRCflash : public G4VHit
    std::vector<hitinfo_t> hits;
 
    G4int GetKey() const { return GetKey(bar_); }
-   static G4int GetKey(G4int bar) {
-      return bar;
+   static G4int GetKey(G4int ibar) {
+      return ibar;
    }
 };
 

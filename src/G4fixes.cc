@@ -1,3 +1,6 @@
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#include <boost/python.hpp>
+
 #include <iostream>
 #include <boost/python.hpp>
 

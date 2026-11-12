@@ -173,8 +173,8 @@ GlueXKlongConversionModel::GlueXKlongConversionModel()
 GlueXKlongConversionModel::~GlueXKlongConversionModel()
 {}
 
-void GlueXKlongConversionModel::Initialise(const G4ParticleDefinition* particle,
-                                           const G4DataVector& cuts)
+void GlueXKlongConversionModel::Initialise(const G4ParticleDefinition* /* particle */,
+                                           const G4DataVector& /* cuts */)
 {
    SetLowEnergyLimit(gammaPhiXS_Emin);
    SetHighEnergyLimit(gammaPhiXS_Emax);
@@ -234,12 +234,12 @@ G4double GlueXKlongConversionProcess::PostStepGetPhysicalInteractionLength(
 }
 
 G4double GlueXKlongConversionModel::ComputeCrossSectionPerAtom(
-                              const G4ParticleDefinition* photon,
+                                    const G4ParticleDefinition* /* photon */,
                                     G4double kinEnergy, 
                                     G4double Z, 
                                     G4double A, 
-                                    G4double cut,
-                                    G4double emax)
+                                    G4double /* cut */,
+                                    G4double /* emax */)
 {
    int iEbin = (kinEnergy <= gammaPhiXS_ub_Emax)?  (kinEnergy - 1e-6) / (gammaPhiXS_dE) : 0;
    G4double xs_atom = 0;
@@ -266,10 +266,10 @@ G4double GlueXKlongConversionModel::ComputeCrossSectionPerAtom(
 
 void GlueXKlongConversionModel::SampleSecondaries(
                          std::vector<G4DynamicParticle*>* secondaries,
-                         const G4MaterialCutsCouple* material_couple,
+                         const G4MaterialCutsCouple* /* material_couple */,
                          const G4DynamicParticle* photon,
-                         G4double tmin,
-                         G4double maxEnergy)
+                         G4double /* tmin */,
+                         G4double /* maxEnergy */)
 {
    G4ThreeVector mom = photon->GetMomentum();
    G4ThreeVector pol = photon->GetPolarization();

@@ -25,8 +25,6 @@
 // of the recoil electron, correlation of the photon polarization with
 // emission angle, etc.) simply by histogramming it over a sample.
 
-#include <GlueXBremsstrahlungGenerator.hh>
-
 #include <iostream>
 #include <stdlib.h>
 #include <math.h>
@@ -46,6 +44,8 @@
 #include <constants.h>
 
 #include <G4ios.hh>
+
+#include <GlueXBremsstrahlungGenerator.hh>
 
 TTree *GlueXBremsstrahlungGenerator::fTree = 0;
 TFile *GlueXBremsstrahlungGenerator::fTreeFile = 0;

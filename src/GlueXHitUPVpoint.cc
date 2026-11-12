@@ -44,7 +44,7 @@ int GlueXHitUPVpoint::operator==(const GlueXHitUPVpoint &right) const
    return 1;
 }
 
-GlueXHitUPVpoint &GlueXHitUPVpoint::operator+=(const GlueXHitUPVpoint &right)
+GlueXHitUPVpoint &GlueXHitUPVpoint::operator+=(const GlueXHitUPVpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitUPVpoint::operator+= - "
           << "illegal attempt to merge two TruthPoint objects in the UPV!"

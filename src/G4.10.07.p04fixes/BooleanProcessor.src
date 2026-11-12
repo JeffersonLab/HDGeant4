@@ -1402,8 +1402,8 @@ void BooleanProcessor::assemblePolyhedra()
     bool accept_left = false;
     int ileft = unsuitable_faces.front();
     if (ileft == 0) ileft = result_faces.front();
-    int iedge = faces[ileft].iedges[0];
-    int inode = edges[iedge].i1;
+    int iedge0 = faces[ileft].iedges[0];
+    int inode = edges[iedge0].i1;
     if (isInside(nodes[inode].v,unknown_faces)) {
       switch (operation) {
        case OP_SUBTRACTION :
@@ -1420,8 +1420,8 @@ void BooleanProcessor::assemblePolyhedra()
       }
     }
     else {
-      iedge = faces[icand].iedges[0];
-      inode = edges[iedge].i1;
+      iedge0 = faces[icand].iedges[0];
+      inode = edges[iedge0].i1;
       if (isInside(nodes[inode].v,unsuitable_faces)) {
         switch (operation) {
          case OP_SUBTRACTION :

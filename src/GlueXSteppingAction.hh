@@ -19,12 +19,12 @@ class GlueXSteppingAction : public G4UserSteppingAction
 {
  public:
    GlueXSteppingAction();
-   GlueXSteppingAction(const GlueXSteppingAction &src);
+   GlueXSteppingAction(const GlueXSteppingAction &src) = delete;
    ~GlueXSteppingAction();
    void UserSteppingAction(const G4Step*);
 
  private:
-   GlueXSteppingAction &operator=(const GlueXSteppingAction &src);
+   GlueXSteppingAction &operator=(const GlueXSteppingAction &src) = delete;
 
  protected:
    static int fStopTracksInCollimator;

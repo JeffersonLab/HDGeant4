@@ -61,9 +61,9 @@ GlueXSensitiveDetectorPS::GlueXSensitiveDetectorPS(const G4String& name)
                 << "cannot continue." << G4endl;
          exit(-1);
       }
-      JCalibration *jcalib = japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
+      /* JCalibration *jcalib = */ japp->GetService<JCalibrationManager>()->GetJCalibration(runno);
       if (japp == 0) {    // dummy
-         jcalib = 0;
+         //jcalib = 0;
          G4cout << "PS: ALL parameters loaded from ccdb" << G4endl;
       }
    }
@@ -106,7 +106,7 @@ void GlueXSensitiveDetectorPS::Initialize(G4HCofThisEvent* hce)
 }
 
 G4bool GlueXSensitiveDetectorPS::ProcessHits(G4Step* step, 
-                                             G4TouchableHistory* ROhist)
+                                             G4TouchableHistory* /* ROhist */)
 {
    double dEsum = step->GetTotalEnergyDeposit();
    if (dEsum == 0)
@@ -273,7 +273,7 @@ void GlueXSensitiveDetectorPS::EndOfEvent(G4HCofThisEvent*)
    hddm_s::HitView &hitview = record->getPhysicsEvent().getHitView();
    if (hitview.getPairSpectrometerFines().size() == 0)
       hitview.addPairSpectrometerFines();
-   hddm_s::PairSpectrometerFine &ps = hitview.getPairSpectrometerFine();
+   hddm_s::PairSpectrometerFine &psf = hitview.getPairSpectrometerFine();
 
    // Collect and output the PsTruthHits
    for (siter = tiles->begin(); siter != tiles->end(); ++siter) {
@@ -286,7 +286,7 @@ void GlueXSensitiveDetectorPS::EndOfEvent(G4HCofThisEvent*)
          }
       }
       if (hits.size() > 0) {
-         hddm_s::PsTileList tile = ps.addPsTiles(1);
+         hddm_s::PsTileList tile = psf.addPsTiles(1);
          tile(0).setArm(siter->second->arm_);
          tile(0).setColumn(siter->second->column_);
          int hitscount = hits.size();
@@ -309,7 +309,7 @@ void GlueXSensitiveDetectorPS::EndOfEvent(G4HCofThisEvent*)
 
    // Collect and output the psTruthPoints
    for (piter = points->begin(); piter != points->end(); ++piter) {
-      hddm_s::PsTruthPointList point = ps.addPsTruthPoints(1);
+      hddm_s::PsTruthPointList point = psf.addPsTruthPoints(1);
       point(0).setE(piter->second->E_GeV);
       point(0).setDEdx(piter->second->dEdx_GeV_cm);
       point(0).setPrimary(piter->second->primary_);

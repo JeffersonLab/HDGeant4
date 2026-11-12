@@ -1,7 +1,7 @@
 /run/verbose 2
 /control/verbose 2
 /vis/verbose errors
-/vis/open OGLSX 600x600+10+50
+/vis/open OGLSX 900x900+10+50
 /vis/ogl/set/displayListLimit 1500000
 /vis/viewer/set/autoRefresh false
 /vis/viewer/set/background white

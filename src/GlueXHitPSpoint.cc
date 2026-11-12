@@ -50,7 +50,7 @@ int GlueXHitPSpoint::operator==(const GlueXHitPSpoint &right) const
    return 1;
 }
 
-GlueXHitPSpoint &GlueXHitPSpoint::operator+=(const GlueXHitPSpoint &right)
+GlueXHitPSpoint &GlueXHitPSpoint::operator+=(const GlueXHitPSpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitPSpoint::operator+= - "
           << "illegal attempt to merge two TruthPoint objects in the ps!"

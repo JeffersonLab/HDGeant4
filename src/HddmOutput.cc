@@ -44,14 +44,6 @@ HddmOutput::~HddmOutput()
    --instanceCount;
 }
 
-HddmOutput::HddmOutput(HddmOutput &src)
-{}
-
-HddmOutput& HddmOutput::operator=(HddmOutput &src)
-{
-   return *this;
-}
-
 void HddmOutput::setRunNo(int runno)
 {
    G4AutoLock barrier(&fMutex);

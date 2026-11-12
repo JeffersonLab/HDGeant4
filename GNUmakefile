@@ -1,4 +1,10 @@
-# $Id: GNUmakefile,v 1.1 1999-01-07 16:05:42 gunter Exp $
+#
+# OBSOLETE - DO NOT USE, KEPT FOR HISTORICAL INTEREST ONLY!
+# Maintenance of this makefile has been dropped, in favor of
+# cmake (CMakeLists.txt), see INSTALL for options.
+# * Richard Jones (richard.t.jones@uconn.edu)
+#   December 30, 2025
+#
 # --------------------------------------------------------------
 # GNUmakefile for examples module.  Gabriele Cosmo, 06/04/98.
 # --------------------------------------------------------------
@@ -52,7 +58,7 @@ CPPFLAGS += -DG4MULTITHREADED
 #CPPFLAGS += -DVERBOSE_RANDOMS=1
 #CPPFLAGS += -DFORCE_PARTICLE_TYPE_CHARGED_GEANTINO
 #CPPFLAGS += -DBP_DEBUG
-#CPPFLAGS += -DMOD_SPONCE
+#CPPFLAGS += -DMOD_PONCE
 #CPPFLAGS += -DDEBUG_PLACEMENT
 #CPPFLAGS += -DDEBUG_SECTIONPLANE
 #CPPFLAGS += -DDEBUG_SECTIONPLANE_ZAVE
@@ -92,7 +98,7 @@ DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -lSTART_COUNTER -lTAGGER -lTOF -lTPOL -lTRACKING \
            -lTRIGGER -lDAQ -lTTAB -lEVENTSTORE -lKINFITTER -lTAC \
            -L$(SQLITECPP_HOME)/$(SQLITECPP_LIBDIR) -lSQLiteCpp -L$(SQLITE_HOME)/lib -Wl,-rpath=$(SQLITE_HOME)/lib -lsqlite3 \
-           -lxstream -lbz2 -lz \
+           -L$(HDDM_DIR)/lib -lxstream -lbz2 -lz \
            -L/usr/lib64/mysql -lmysqlclient\
            -Wl,-rpath,${JANA_HOME}/lib -L$(JANA_HOME)/lib -lJANA \
            -L$(CCDB_HOME)/lib -lccdb \
@@ -148,7 +154,10 @@ g4fixes: $(G4TMPDIR)/libG4fixes.so
 CXXFLAGS = -g -O4 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
 
 GCCVERSION = $(shell gcc --version | awk -F'[. ]*' '/gcc/{print $$3}')
-ifeq ($(shell test $(GCCVERSION) -ge 8; echo $$?),0)
+ifeq ($(shell test $(GCCVERSION) -ge 11; echo $$?),0)
+    CPPFLAGS += -std=c++20
+    CXXFLAGS += -std=c++20
+else ifeq ($(shell test $(GCCVERSION) -ge 8; echo $$?),0)
     CPPFLAGS += -std=c++17
     CXXFLAGS += -std=c++17
 else ifeq ($(shell test $(GCCVERSION) -ge 5; echo $$?),0)
@@ -266,7 +275,7 @@ show_env:
 	@echo PYTHON_GE_3 = $(PYTHON_GE_3)
 
 diff:
-	diff -q -r ../jlab . -x ".[a-z]*" -x tmp -x bin -x "*.pyc" -x "*.so" -x test -x "*-orig"
+	diff -q -r ../alma9-MT . -x ".[a-z]*" -x tmp -x bin -x "*.pyc" -x "*.so" -x test -x "*-orig"
 
 check_flags:
 	@echo CPPFLAGS=$(CPPFLAGS)

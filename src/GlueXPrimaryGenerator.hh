@@ -28,10 +28,8 @@ class GlueXPrimaryGenerator: public G4VPrimaryGenerator
    hddm_s::istream *fHDDMistream;
 
  private:
-   GlueXPrimaryGenerator(const GlueXPrimaryGenerator &src) {}
-   GlueXPrimaryGenerator &operator=(const GlueXPrimaryGenerator &src) {
-      return *this;
-   }
+   GlueXPrimaryGenerator(const GlueXPrimaryGenerator &src) = delete;
+   GlueXPrimaryGenerator &operator=(const GlueXPrimaryGenerator &src) = delete;
 };
 
 #endif
