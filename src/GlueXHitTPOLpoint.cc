@@ -44,7 +44,7 @@ int GlueXHitTPOLpoint::operator==(const GlueXHitTPOLpoint &right) const
    return 1;
 }
 
-GlueXHitTPOLpoint &GlueXHitTPOLpoint::operator+=(const GlueXHitTPOLpoint &right)
+GlueXHitTPOLpoint &GlueXHitTPOLpoint::operator+=(const GlueXHitTPOLpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitTPOLpoint::operator+= - "
           << "illegal attempt to merge two TruthPoint objects in the tpol!"

@@ -472,14 +472,16 @@ void compute_energy(const char *sample1, const char *sample2,
 }
 
 #ifdef __CUDACC__
-void compute_energy_gpu(const char *sample1, const char *sample2,
-                        std::vector<float> &energy)
+void compute_energy_gpu(const char* /* sample1 */,
+                        const char* /* sample2 */,
+                        std::vector<float>& /* energy */)
 {
 }
 
 #else
-void compute_energy_gpu(const char *sample1, const char *sample2,
-                        std::vector<float> &energy)
+void compute_energy_gpu(const char* /* sample1 */,
+                        const char* /* sample2 */,
+                        std::vector<float>& /* energy */)
 {
    std::cout << "gpu not implemented" << std::endl;
 }

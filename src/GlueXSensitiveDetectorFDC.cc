@@ -28,6 +28,7 @@
 
 
 #include <stdlib.h>
+#include <algorithm>
 #include <math.h>
 
 const double fC = 1e-15 * coulomb;
@@ -49,7 +50,7 @@ double GlueXSensitiveDetectorFDC::THRESH_ANODE = 1.*pC;
 double GlueXSensitiveDetectorFDC::THRESH_STRIPS = 5.*pC;
 
 // Straw hits are accepted from t=0 up to this maximum time
-double GlueXSensitiveDetectorFDC::FDC_TIME_WINDOW = 1000*ns;
+double GlueXSensitiveDetectorFDC::FDC_TIME_WINDOW = 352*ns;
 
 // Parameters for setting signal pulse height
 double GlueXSensitiveDetectorFDC::GAS_GAIN = 8e4;
@@ -144,6 +145,7 @@ GlueXSensitiveDetectorFDC::GlueXSensitiveDetectorFDC(const G4String& name)
       THRESH_KEV = fdc_parms.at("FDC_THRESH_KEV");
       THRESH_STRIPS = fdc_parms.at("FDC_THRESH_STRIPS");
       DIFFUSION_COEFF = fdc_parms.at("FDC_DIFFUSION_COEFF")*cm*cm/s;
+      FDC_TIME_WINDOW = fdc_parms.at("FDC_TIME_WINDOW")*ns;
       U_OF_WIRE_ONE = -(WIRES_PER_PLANE -1) * WIRE_SPACING / 2;
       U_OF_STRIP_ONE = -(STRIPS_PER_PLANE -1) * STRIP_SPACING / 2;
 
@@ -376,11 +378,13 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
       }
    }
    
+#else
+   (void)ROhist;
 #endif
 
    G4ThreeVector x = (xin + xout) / 2;
    G4ThreeVector dx = xout - xin;
-   double t = (tin + tout) / 2;
+   //double t = (tin + tout) / 2;
    double dr = dx.mag();
    double dEdx = (dr > 1e-3*cm)? dEsum/dr : 0;
 
@@ -394,9 +398,9 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
    // This screws up the hit. Check for this case here by looking
    // at tout and making sure it is less than 1 second. If it's
    // not, then just use tin for "t".
-
-   if (tout > 1.0*s)
-      t = tin;
+   //
+   //if (tout > 1.0*s)
+   //   t = tin;
 
    double alpha = atan2(xoutlocal[0] - xinlocal[0], xoutlocal[2] - xinlocal[2]);
    double sinalpha = sin(alpha);
@@ -479,8 +483,8 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
       int dwire = (wire1 < wire2)? 1 : -1;
 
       // deal with the case of tracks crossing two cells
-      for (int wire = wire1; wire != wire2 + dwire; wire += dwire) {
-         double xwire = U_OF_WIRE_ONE + (wire - 1) * WIRE_SPACING;
+      for (int iwire = wire1; iwire != wire2 + dwire; iwire += dwire) {
+         double xiwire = U_OF_WIRE_ONE + (iwire - 1) * WIRE_SPACING;
          G4ThreeVector x0;
          G4ThreeVector x1;
          double dE;
@@ -490,7 +494,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             x1 = xoutlocal;
          }
          else {
-            x0[0] = xwire - 0.5 * dwire * WIRE_SPACING;
+            x0[0] = xiwire - 0.5 * dwire * WIRE_SPACING;
             x0[1] = xinlocal[1] + (x0[0] - xinlocal[0] + 1e-20) *
                     (xoutlocal[1] - xinlocal[1]) / 
                     (xoutlocal[0] - xinlocal[0] + 1e-20);
@@ -500,7 +504,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             if (fabs(x0[2] - xoutlocal[2]) > fabs(xinlocal[2] - xoutlocal[2]))
                x0 = xinlocal;
 
-            x1[0] = xwire + 0.5 * dwire * WIRE_SPACING;
+            x1[0] = xiwire + 0.5 * dwire * WIRE_SPACING;
             x1[1] = xinlocal[1] + (x1[0] - xinlocal[0] + 1e-20) *
                     (xoutlocal[1] - xinlocal[1]) /
                     (xoutlocal[0] - xinlocal[0] + 1e-20);
@@ -514,10 +518,10 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
                          (xoutlocal[2] - xinlocal[2] + 1e-20);
          }
 
-         int key = GlueXHitFDCwire::GetKey(chamber, wire);
+         int key = GlueXHitFDCwire::GetKey(chamber, iwire);
          GlueXHitFDCwire *anode = (*fWiresMap)[key];
          if (anode == 0) {
-            GlueXHitFDCwire newanode(chamber, wire);
+            GlueXHitFDCwire newanode(chamber, iwire);
             fWiresMap->add(key, newanode);
             anode = (*fWiresMap)[key];
          }
@@ -528,7 +532,8 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
          int merge_hits = 0;
          std::vector<GlueXHitFDCwire::hitinfo_t>::iterator hiter;
          for (hiter = anode->hits.begin(); hiter != anode->hits.end(); ++hiter) {
-            if (itrack == hiter->itrack_ && fabs(tin - hiter->t1_ns*ns) < 0.01) {
+            // stitch only consecutive steps of the same Geant4 track, not secondaries (delta rays) starting where it stopped
+            if (trackID == hiter->g4track_ && fabs(tin - hiter->t1_ns*ns) < 0.01) {
                merge_hits = 1;
                break;
             }
@@ -547,6 +552,7 @@ G4bool GlueXSensitiveDetectorFDC::ProcessHits(G4Step* step,
             hiter = anode->hits.insert(hiter, GlueXHitFDCwire::hitinfo_t());
             hiter->dE_keV = dE/keV;
             hiter->itrack_ = itrack;
+            hiter->g4track_ = trackID;
             hiter->ptype_G3 = g3type;
             hiter->t0_ns = tin/ns;
             hiter->t1_ns = tout/ns;
@@ -633,7 +639,10 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
       std::vector<GlueXHitFDCwire::hitinfo_t> hits;
       while (splits.size() > 0) {
          for (unsigned int ih=1; ih < splits.size(); ++ih) {
-            if (fabs(splits[ih].t0_ns - splits[0].t1_ns) < 0.5*ns) {
+            // same Geant4 track only: other tracks keep their own segment and drift distance,
+            // and are combined with this one below (earliest time wins, dE summed)
+            if (splits[ih].g4track_ == splits[0].g4track_ &&
+                fabs(splits[ih].t0_ns - splits[0].t1_ns) < 0.5*ns) {
                splits[0].dE_keV += splits[ih].dE_keV;
                splits[0].t1_ns = splits[ih].t1_ns;
                splits[0].x1_g = splits[ih].x1_g;
@@ -714,6 +723,8 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
          double dradius_cm = hits[0].d_cm;
          int ptype_G3 = hits[0].ptype_G3;
          int itrack = hits[0].itrack_;
+         int g4track = hits[0].g4track_;
+         double t_unsmeared_ns = hits[0].t_unsmeared_ns;
          double t0_ns = hits[0].t0_ns;
          double t1_ns = hits[0].t1_ns;
          G4ThreeVector x0_g = hits[0].x0_g;
@@ -730,6 +741,8 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                   splits.back().d_cm = dradius_cm;
                   splits.back().ptype_G3 = ptype_G3;
                   splits.back().itrack_ = itrack;
+                  splits.back().g4track_ = g4track;
+                  splits.back().t_unsmeared_ns = t_unsmeared_ns;
                   splits.back().t_ns = double(i);
                   splits.back().t0_ns = t0_ns;
                   splits.back().t1_ns = t1_ns;
@@ -757,6 +770,9 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                dE_keV = 0;
             }
          }
+         // pulse still over threshold at the end of the readout window
+         if (over_threshold)
+            splits.back().dE_keV = dE_keV;
          delete [] samples;
       }
       else {
@@ -766,28 +782,28 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
          std::vector<GlueXHitFDCwire::hitinfo_t>::iterator hiter;
          for (hiter = hits.begin(); hiter != hits.end(); ++hiter) {
             int merge_hits = 0;
-            std::vector<GlueXHitFDCwire::hitinfo_t>::iterator siter;
-            for (siter = splits.begin(); siter != splits.end(); ++siter) {
-               if (fabs(hiter->t_ns - siter->t_ns) < TWO_HIT_TIME_RESOL) {
+            std::vector<GlueXHitFDCwire::hitinfo_t>::iterator wsiter;
+            for (wsiter = splits.begin(); wsiter != splits.end(); ++wsiter) {
+               if (fabs(hiter->t_ns - wsiter->t_ns) < TWO_HIT_TIME_RESOL) {
                   merge_hits = 1;
                   break;
                }
-               else if (hiter->t_ns < siter->t_ns) {
+               else if (hiter->t_ns < wsiter->t_ns) {
                   break;
                }
             }
             if (merge_hits) {
-               if (hiter->t_ns < siter->t_ns) {
-                  double dE_keV = siter->dE_keV;
-                  *siter = *hiter;
-                  siter->dE_keV += dE_keV;
+               if (hiter->t_ns < wsiter->t_ns) {
+                  double dE_keV = wsiter->dE_keV;
+                  *wsiter = *hiter;
+                  wsiter->dE_keV += dE_keV;
                }
                else {
-                  siter->dE_keV += hiter->dE_keV;
+                  wsiter->dE_keV += hiter->dE_keV;
                }
             }
             else {
-               splits.insert(siter, *hiter);
+               splits.insert(wsiter, *hiter);
             }
          }
       }
@@ -878,7 +894,9 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
                }
             }
             else if (threshold_toggle) {
-               // Find the first peak
+               // Find the first peak; if there is no local maximum
+               // (short or monotonic pulse) use the largest sample
+               hits.back().q_fC = *std::max_element(samples + istart, samples + i);
                for (int j = istart + 1; j < i - 1; j++) {
                   if (samples[j] > samples[j-1] && samples[j] > samples[j+1]) {
                      hits.back().q_fC = samples[j];
@@ -890,6 +908,7 @@ void GlueXSensitiveDetectorFDC::EndOfEvent(G4HCofThisEvent*)
          }
          int i = num_samples - 1;
          if (samples[i] > THRESH_STRIPS && threshold_toggle) {
+            hits.back().q_fC = *std::max_element(samples + istart, samples + num_samples);
             for (int j = istart + 1; j < i - 1; j++) {
                if (samples[j] > samples[j-1] && samples[j] > samples[j+1]) {
                   hits.back().q_fC = samples[j];
@@ -1085,9 +1104,9 @@ void GlueXSensitiveDetectorFDC::add_cathode_hit(
                                 double tdrift,
                                 int n_p,
                                 int chamber, 
-                                int module,
-                                int layer, 
-                                int global_wire_number)
+                                int /* module */,
+                                int /* layer */, 
+                                int /* global_wire_number */)
 {
    double q_anode;
    if (!fDrift_clusters) {
@@ -1197,7 +1216,6 @@ int GlueXSensitiveDetectorFDC::add_anode_hit(
    // Next compute the avalanche position along wire.  
    // Correct avalanche position with deflection along wire
    // due to the Lorentz force.
-   double cm2 = cm * cm;
    double cm4 = cm2 * cm2;
    xlocal[1] += (LORENTZ_NR_PAR1 * B[2] * (1 + LORENTZ_NR_PAR2 * BrhoT)) * dx +
                 (LORENTZ_NZ_PAR1 + LORENTZ_NZ_PAR2 * B[2]) * BrhoT * cos(phi) * xlocal[2] +
@@ -1243,7 +1261,7 @@ int GlueXSensitiveDetectorFDC::add_anode_hit(
    double tmin = dradius / v_max;
 
    // longitidinal diffusion, derived from Garfield calculations
-   double dt = (G4RandGauss::shoot() - 0.5) *
+   double dt = G4RandGauss::shoot() *
                (39.44*ns * dx4/cm4 / (0.5 - dz2/cm2) + 
                 56.00*ns * dz4/cm4 / (0.5 - dx2/cm2) +
                 0.01566*ns * dx4/cm4 / (dz4/cm4 + 0.002) / (0.251 - dx2/cm2));
@@ -1294,8 +1312,8 @@ void GlueXSensitiveDetectorFDC::polint(double *xa, double *ya, int n,
    double w;
 
    int i;
-   int m;
-   int ns;
+   int im;
+   int ins;
 
    if ((c = (double*)malloc(n*sizeof(double))) == NULL ||
        (d = (double*)malloc(n*sizeof(double))) == NULL )
@@ -1311,23 +1329,23 @@ void GlueXSensitiveDetectorFDC::polint(double *xa, double *ya, int n,
       return;
    }
 
-   ns = 0;
+   ins = 0;
    dif = fabs(x-xa[0]);
    for (i = 0; i < n; ++i) {
        dift = fabs(x-xa[i]);
        if (dift < dif) {
-           ns = i;
+           ins = i;
            dif = dift;
        }
        c[i] = ya[i];
        d[i] = ya[i];
    }
-   *y = ya[ns];
-   ns = ns-1;
-   for (m = 0; m < n-1; ++m) {
-      for (i = 0; i < n-m-1; ++i) {
+   *y = ya[ins];
+   ins = ins-1;
+   for (im = 0; im < n-1; ++im) {
+      for (i = 0; i < n-im-1; ++i) {
          ho = xa[i]-x;
-         hp = xa[i+m+1]-x;
+         hp = xa[i+im+1]-x;
          w = c[i+1]-d[i];
          den = ho-hp;
          if (den == 0) {
@@ -1345,12 +1363,12 @@ void GlueXSensitiveDetectorFDC::polint(double *xa, double *ya, int n,
          d[i] = hp*den;
          c[i] = ho*den;
       }
-      if (2*(ns+1) < n-m-1) {
-         *dy = c[ns+1];
+      if (2*(ins+1) < n-im-1) {
+         *dy = c[ins+1];
       }
       else {
-         *dy = d[ns];
-         ns = ns-1;
+         *dy = d[ins];
+         ins = ins-1;
       }
       *y = (*y)+(*dy);
    }

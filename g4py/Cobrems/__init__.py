@@ -1,3 +1,3 @@
 # cobrems python modules
 
-from libcobrems import *
+from .libcobrems import *

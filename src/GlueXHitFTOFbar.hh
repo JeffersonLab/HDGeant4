@@ -60,8 +60,8 @@ class GlueXHitFTOFbar : public G4VHit
    std::vector<hitinfo_t> hits;
 
    G4int GetKey() const { return GetKey(plane_, bar_); }
-   static G4int GetKey(G4int plane, G4int bar) {
-      return (plane << 10) + bar;
+   static G4int GetKey(G4int iplane, G4int ibar) {
+      return (iplane << 10) + ibar;
    }
 };
 

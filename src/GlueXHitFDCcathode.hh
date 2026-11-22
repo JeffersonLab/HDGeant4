@@ -33,17 +33,17 @@ class GlueXHitFDCcathode : public G4VHit
 
    // no reason to hide hit data
 
-   G4int chamber_;        // chamber number, from upstream starting at 1
-   G4int plane_;          // cathode plane number, from upstream starting at 1
-   G4int strip_;          // cathode strip number, ordered by u starting at 1
+   G4int chamber_ = 0; // chamber number, from upstream starting at 1
+   G4int plane_ = 0;   // cathode plane number, from upstream starting at 1
+   G4int strip_ = 0;   // cathode strip number, ordered by u starting at 1
 
    struct hitinfo_t {
-      G4double q_fC;       // pulse integral (fC)
-      G4double t_ns;       // pulse leading-edge time (ns)
-      G4double itrack_;    // track index of first particle making this hit
-      G4double ptype_G3;   // G3 type of first particle making this hit
-      G4double u_cm;       // location of hit wire in adjacent wire plane
-      G4double v_cm;       // location of avalanche along wire in adjacent plane
+      G4double q_fC = 0;     // pulse integral (fC)
+      G4double t_ns = 0;     // pulse leading-edge time (ns)
+      G4double itrack_ = 0;  // track index of first particle making this hit
+      G4double ptype_G3 = 0; // G3 type of first particle making this hit
+      G4double u_cm = 0;     // location of hit wire in adjacent wire plane
+      G4double v_cm = 0;     // location of avalanche along wire in adjacent plane
    };
    std::vector<hitinfo_t> hits;
 

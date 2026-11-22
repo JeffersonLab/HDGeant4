@@ -52,6 +52,15 @@ class CobremsGeneration {
    void setTargetThetay(double thetay);
    void setTargetThetaz(double thetaz);
    void setTargetOrientation(double thetax, double thetay, double thetaz);
+   void setTargetCrystalNsites(int nsites);
+   void setTargetCrystalAtomicNumber(int Z);
+   void setTargetCrystalAtomicWeight(double A_amu);
+   void setTargetCrystalDensity(double rho_g_cm3);
+   void setTargetCrystalLatticeConstant(double a_m);
+   void setTargetCrystalRadiationLength(double radlen_m);
+   void setTargetCrystalDebyeWallerConst(double A_per_GeV2);
+   void setTargetCrystalMosaicSpread(double sigma_rad);
+   void setTargetCrystalBetaFF(double beta_per_GeV2);
    void setPhotonEnergyMin(double Emin_GeV);
    void RotateTarget(double thetax, double thetay, double thetaz);
    void setCollimatedFlag(bool flag);
@@ -283,6 +292,42 @@ inline void CobremsGeneration::setTargetOrientation(double thetax,
    fTargetThetay = thetay;
    fTargetThetaz = thetaz;
    updateTargetOrientation();
+}
+
+inline void CobremsGeneration::setTargetCrystalNsites(int nsites) {
+      fTargetCrystal.nsites = nsites;
+}
+
+inline void CobremsGeneration::setTargetCrystalAtomicNumber(int Z) {
+      fTargetCrystal.Z = Z;
+}
+
+inline void CobremsGeneration::setTargetCrystalAtomicWeight(double A_amu) {
+      fTargetCrystal.A = A_amu;
+}
+
+inline void CobremsGeneration::setTargetCrystalDensity(double rho_g_cm3) {
+      fTargetCrystal.density = rho_g_cm3;
+}
+
+inline void CobremsGeneration::setTargetCrystalLatticeConstant(double a_m) {
+      fTargetCrystal.lattice_constant = a_m;
+}
+
+inline void CobremsGeneration::setTargetCrystalRadiationLength(double radlen_m) {
+      fTargetCrystal.radiation_length = radlen_m;
+}
+
+inline void CobremsGeneration::setTargetCrystalDebyeWallerConst(double A_per_GeV2) {
+      fTargetCrystal.Debye_Waller_const = A_per_GeV2;
+}
+
+inline void CobremsGeneration::setTargetCrystalMosaicSpread(double sigma_rad) {
+      fTargetCrystal.mosaic_spread = sigma_rad;
+}
+
+inline void CobremsGeneration::setTargetCrystalBetaFF(double beta_per_GeV2) {
+      fTargetCrystal.betaFF = beta_per_GeV2;
 }
 
 inline void CobremsGeneration::setPhotonEnergyMin(double Emin_GeV) {

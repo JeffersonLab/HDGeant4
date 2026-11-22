@@ -1,3 +1,10 @@
+#
+# OBSOLETE - DO NOT USE, KEPT FOR HISTORICAL INTEREST ONLY!
+# Maintenance of this makefile has been dropped, in favor of
+# cmake (CMakeLists.txt), see INSTALL for options.
+# * Richard Jones (richard.t.jones@uconn.edu)
+#   December 30, 2025
+#
 # --------------------------------------------------------------
 # GNUmakefile for examples module.  Gabriele Cosmo, 06/04/98.
 # --------------------------------------------------------------
@@ -26,7 +33,7 @@ ifdef DIRACXX_DIR
     endif
 endif
 
-PYTHON_CONFIG = python3-config
+PYTHON_CONFIG = python-config
 
 CPPFLAGS += -I$(HDDS_HOME) -I./src -I./src/G4fixes
 CPPFLAGS += -I./src/G4debug
@@ -45,13 +52,13 @@ CPPFLAGS += -DREDUCE_OPTIMIZATION_OF_CDC=1
 #CPPFLAGS += -DG4UI_USE_EXECUTIVE
 CPPFLAGS += -DG4VIS_BUILD_OPENGL_DRIVER
 CPPFLAGS += -DG4VIS_BUILD_OPENGLX_DRIVER
-#CPPFLAGS += -DG4MULTITHREADED
+CPPFLAGS += -DG4MULTITHREADED
 #CPPFLAGS += -DUSING_BERNARD
 #CPPFLAGS += -DMERGE_STEPS_BEFORE_HITS_GENERATION
 #CPPFLAGS += -DVERBOSE_RANDOMS=1
 #CPPFLAGS += -DFORCE_PARTICLE_TYPE_CHARGED_GEANTINO
 #CPPFLAGS += -DBP_DEBUG
-#CPPFLAGS += -DMOD_SPONCE
+#CPPFLAGS += -DMOD_PONCE
 #CPPFLAGS += -DDEBUG_PLACEMENT
 #CPPFLAGS += -DDEBUG_SECTIONPLANE
 #CPPFLAGS += -DDEBUG_SECTIONPLANE_ZAVE
@@ -70,11 +77,7 @@ G4debug_sources := $(wildcard src/G4debug/*.cc)
 HDDS_sources := $(HDDS_HOME)/XString.cpp $(HDDS_HOME)/XParsers.cpp $(HDDS_HOME)/hddsCommon.cpp
 
 ROOTLIBS = $(shell root-config --libs) -lGeom -lTMVA -lTreePlayer
-ifeq ($(shell test -s $(ROOTSYS)/lib/libtbb.so.2 && echo -n yes),yes)
-    ROOTLIBS += $(ROOTSYS)/lib/libtbb.so.2
-else ifeq ($(shell test -s $(ROOTSYS)/lib64/libtbb.so.2 && echo -n yes),yes)
-    ROOTLIBS += $(ROOTSYS)/lib64/libtbb.so.2
-else
+ifeq ($(shell test -s $(ROOTSYS)/lib/libtbb.so && echo -n yes),yes)
     ROOTLIBS += $(ROOTSYS)/lib/libtbb.so
 endif
 ifeq ($(shell test -s $(VDTHOME)/lib/libvdt.so && echo -n yes),yes)
@@ -95,39 +98,31 @@ DANALIBS = -L$(HALLD_RECON_HOME)/$(BMS_OSNAME)/lib -lHDGEOMETRY -lDANA \
            -lSTART_COUNTER -lTAGGER -lTOF -lTPOL -lTRACKING \
            -lTRIGGER -lDAQ -lTTAB -lEVENTSTORE -lKINFITTER -lTAC \
            -L$(SQLITECPP_HOME)/$(SQLITECPP_LIBDIR) -lSQLiteCpp -L$(SQLITE_HOME)/lib -Wl,-rpath=$(SQLITE_HOME)/lib -lsqlite3 \
-           -lxstream -lbz2 -lz \
+           -L$(HDDM_DIR)/lib -lxstream -lbz2 -lz \
            -L/usr/lib64/mysql -lmysqlclient\
-           -L$(JANA_HOME)/lib -lJANA \
+           -Wl,-rpath,${JANA_HOME}/lib -L$(JANA_HOME)/lib -lJANA \
            -L$(CCDB_HOME)/lib -lccdb \
-           -L$(EVIOROOT)/lib -levioxx -levio \
            -lpthread -ldl
+
+ifdef EVIOROOT
+DANALIBS += -L$(EVIOROOT)/lib -levioxx -levio
+endif
 
 ifdef ETROOT
 DANALIBS += -L$(ETROOT)/lib -let -let_remote
 endif
 
 G4shared_libs := $(wildcard $(G4ROOT)/lib64/*.so)
-BOOST169_EXISTS = $(shell [ -d /usr/lib64/boost169 ] && echo true || echo false)
 ifeq ($(PYTHON_GE_3), true)
-  ifeq ($(BOOST169_EXISTS), true)
-    BOOST_PYTHON_LIB = -L /usr/lib64/boost169 -lboost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION) -lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)m
-    CPPFLAGS += -I/usr/include/boost169 -DBOOST_NO_AUTO_PTR -DBOOST_BIND_GLOBAL_PLACEHOLDERS
-  else
-    BOOST_PYTHON_LIB = -lboost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION) -lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-    CPPFLAGS += -DBOOST_NO_AUTO_PTR -DBOOST_BIND_GLOBAL_PLACEHOLDERS
-  endif
+  BOOST_PYTHON_LIB = -lboost_python$(PYTHON_MAJOR_VERSION)$(PYTHON_MINOR_VERSION) -lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+  CPPFLAGS += -DBOOST_NO_AUTO_PTR -DBOOST_BIND_GLOBAL_PLACEHOLDERS
 else
   BOOST_PYTHON_LIB = -lboost_python
 endif
 
-HDF5CPP_EXISTS = $(shell [ -f $(HDF5ROOT)/lib/libhdf5_cpp.a ] && echo true || echo false)
 ifdef HDF5ROOT
-  CPPFLAGS += -DHDF5_SUPPORT -I ${HDF5ROOT}/include
-  ifeq ($(HDF5CPP_EXISTS), true)
-    DANALIBS +=	-L $(HDF5ROOT)/lib -lhdf5_cpp -lhdf5_hl -lhdf5 -lsz -lz -lbz2 -ldl 
-  else
-    DANALIBS +=	-L $(HDF5ROOT)/lib -lhdf5_hl -lhdf5 -lsz -lz -lbz2 -ldl 
-  endif
+CPPFLAGS += -DHDF5_SUPPORT -I ${HDF5ROOT}/include
+DANALIBS +=	-L $(HDF5ROOT)/lib -lhdf5_cpp -lhdf5_hl -lhdf5 -lsz -lz -lbz2 -ldl 
 endif
 
 INTYLIBS += -Wl,--whole-archive $(DANALIBS) -Wl,--no-whole-archive
@@ -154,10 +149,13 @@ cobrems: $(G4TMPDIR)/libcobrems.so
 hdds:  $(G4TMPDIR)/libhdds.so
 g4fixes: $(G4TMPDIR)/libG4fixes.so
 
-CXXFLAGS = -g -O0 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
+CXXFLAGS = -g -O4 -fPIC -W -Wall -pedantic -Wno-non-virtual-dtor -Wno-long-long
 
 GCCVERSION = $(shell gcc --version | awk -F'[. ]*' '/gcc/{print $$3}')
-ifeq ($(shell test $(GCCVERSION) -ge 8; echo $$?),0)
+ifeq ($(shell test $(GCCVERSION) -ge 11; echo $$?),0)
+    CPPFLAGS += -std=c++20
+    CXXFLAGS += -std=c++20
+else ifeq ($(shell test $(GCCVERSION) -ge 8; echo $$?),0)
     CPPFLAGS += -std=c++17
     CXXFLAGS += -std=c++17
 else ifeq ($(shell test $(GCCVERSION) -ge 5; echo $$?),0)

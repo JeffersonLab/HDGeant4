@@ -15,13 +15,14 @@
 #include "G4Threading.hh"
 #include "G4AutoLock.hh"
 
-#include "G4SystemOfUnits.hh"
 #include "G4VUserDetectorConstruction.hh"
 #include <G4VUserParallelWorld.hh>
 #include <G4ThreeVector.hh>
-#include <GlueXMagneticField.hh>
 #include <HddsG4Builder.hh>
 #include <HddsGeometryXML.hh>
+#include <GlueXMagneticField.hh>
+
+#include "G4SystemOfUnits.hh"
 
 class G4Box;
 class G4LogicalVolume;

@@ -13,6 +13,8 @@
 #ifndef GlueXSensitiveDetectorDIRC_h
 #define GlueXSensitiveDetectorDIRC_h 1
 
+#include <TGraph.h>
+
 #include "G4VSensitiveDetector.hh"
 #include "G4AutoLock.hh"
 
@@ -20,8 +22,6 @@
 #include "GlueXHitDIRCPmt.hh"
 #include "GlueXHitDIRCBar.hh"
 #include "GlueXHitDIRCWob.hh"
-
-#include <TGraph.h>
 
 class G4Step;
 class G4HCofThisEvent;

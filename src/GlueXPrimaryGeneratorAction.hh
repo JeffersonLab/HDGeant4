@@ -148,8 +148,8 @@ class GlueXPrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
    static void setTargetCenterZ(double Z) {
       fTargetCenterZ = Z;
    }
-   static void setTargetLength(double L) {
-      fTargetLength = L;
+   static void setTargetLength(double length) {
+      fTargetLength = length;
    }
    static double getTargetCenterZ() {
       return fTargetCenterZ;

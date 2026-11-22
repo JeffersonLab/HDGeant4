@@ -54,7 +54,7 @@ int GlueXHitFDCpoint::operator==(const GlueXHitFDCpoint &right) const
    return 1;
 }
 
-GlueXHitFDCpoint &GlueXHitFDCpoint::operator+=(const GlueXHitFDCpoint &right)
+GlueXHitFDCpoint &GlueXHitFDCpoint::operator+=(const GlueXHitFDCpoint& /* right */)
 {
    G4cerr << "Error in GlueXHitFDCpoint::operator+= - "
           << "illegal attempt to merge two TruthPoint objects in the fdc!"

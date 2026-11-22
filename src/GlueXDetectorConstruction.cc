@@ -4,11 +4,7 @@
 // author: richard.t.jones at uconn.edu
 // version: may 12, 2012
  
-#include "GlueXDetectorConstruction.hh"
-#include "GlueXDetectorMessenger.hh"
-#include "GlueXMagneticField.hh"
-#include "HddmOutput.hh"
-
+#include "GlueXSensitiveDetectorDIRC.hh"
 #include "GlueXSensitiveDetectorCDC.hh"
 #include "GlueXSensitiveDetectorFDC.hh"
 #include "GlueXSensitiveDetectorSTC.hh"
@@ -19,7 +15,6 @@
 #include "GlueXSensitiveDetectorCCAL.hh"
 #include "GlueXSensitiveDetectorECAL.hh"
 #include "GlueXSensitiveDetectorFTOF.hh"
-#include "GlueXSensitiveDetectorDIRC.hh"
 #include "GlueXSensitiveDetectorCERE.hh"
 #include "GlueXSensitiveDetectorFMWPC.hh"
 #include "GlueXSensitiveDetectorUPV.hh"
@@ -28,6 +23,10 @@
 #include "GlueXSensitiveDetectorTPOL.hh"
 #include "GlueXSensitiveDetectorCTOF.hh"
 
+#include "GlueXDetectorConstruction.hh"
+#include "GlueXDetectorMessenger.hh"
+#include "GlueXMagneticField.hh"
+#include "HddmOutput.hh"
 
 #include "G4Version.hh"
 #include "G4LogicalVolume.hh"
@@ -118,9 +117,15 @@ GlueXDetectorConstruction::GlueXDetectorConstruction(G4String hddsFile)
       }
       XString xmlFile = hddsFile.c_str();
       char *dirpath = new char[hddsFile.size() + 2];
-      chdir(dirname(strcpy(dirpath, hddsFile.c_str())));
+      if (chdir(dirname(strcpy(dirpath, hddsFile.c_str()))) != 0) {
+          G4cerr << "Error: Could not change directory to " << dirpath << G4endl;
+          exit(1);
+      }
       document = buildDOMDocument(xmlFile,false);
-      chdir(saved_cwd);
+      if (chdir(saved_cwd) != 0) {
+          G4cerr << "Error: Could not return to original directory!" << G4endl;
+          exit(1);
+      }
       delete [] saved_cwd;
       delete [] dirpath;
    }
@@ -160,9 +165,8 @@ GlueXDetectorConstruction::GlueXDetectorConstruction(G4String hddsFile)
       exit(9);
    }
 
-   DOMNode* docEl;
    try {
-      docEl = document->getDocumentElement();
+      (void)document->getDocumentElement();
    }
    catch (DOMException& e) {
       G4cerr << APP_NAME << " - Woops " << e.msg << G4endl;

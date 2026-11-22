@@ -11,4 +11,5 @@ void OpenGLXpreload() {
     dpy = XOpenDisplay(0);
     /* get an appropriate visual */
     vi = glXChooseVisual(dpy, DefaultScreen(dpy), attributeList);
+    (void)vi;
 }

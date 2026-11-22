@@ -101,10 +101,8 @@ class GlueXPhotonBeamGenerator: public G4VPrimaryGenerator
 
  private:
    GlueXPhotonBeamGenerator();
-   GlueXPhotonBeamGenerator(const GlueXPhotonBeamGenerator &src) {}
-   GlueXPhotonBeamGenerator &operator=(const GlueXPhotonBeamGenerator &src) {
-      return *this;
-   }
+   GlueXPhotonBeamGenerator(const GlueXPhotonBeamGenerator &src) = delete;
+   GlueXPhotonBeamGenerator &operator=(const GlueXPhotonBeamGenerator &src) = delete;
 };
 
 #endif

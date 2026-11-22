@@ -817,6 +817,7 @@ void AdaptiveSampler::Cell::optimize()
                                  subcell[1]->opt_nhit +
                                  subcell[2]->opt_nhit;
                assert (abs(opt_ntot - opt_nhit) < 2);
+               (void)opt_ntot;
             }
             subcell[n]->opt_subset = opt_subset * r;
             subcell[n]->optimize();

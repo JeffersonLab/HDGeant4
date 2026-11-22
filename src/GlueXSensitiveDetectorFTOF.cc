@@ -119,7 +119,7 @@ void GlueXSensitiveDetectorFTOF::Initialize(G4HCofThisEvent* hce)
 }
 
 G4bool GlueXSensitiveDetectorFTOF::ProcessHits(G4Step* step, 
-                                               G4TouchableHistory* ROhist)
+                                               G4TouchableHistory* /* ROhist */)
 {
    double dEsum = step->GetTotalEnergyDeposit();
    if (dEsum == 0)

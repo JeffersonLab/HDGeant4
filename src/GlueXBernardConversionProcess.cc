@@ -173,9 +173,9 @@ void GlueXBernardConversionProcess::ProcessDescription(std::ostream& out) const
 }
 
 G4double GlueXBernardConversionProcess::GetMeanFreePath(
-                                     const G4Track &track, 
-                                     G4double previousStepSize,
-                                     G4ForceCondition *condition)
+                                        const G4Track& /* track */, 
+                                        G4double /* previousStepSize */,
+                                        G4ForceCondition* /* condition */)
 {
    return 100*cm;
 }
@@ -330,16 +330,16 @@ void GlueXBernardConversionProcess::GenerateConversionVertex(const G4Track &trac
    GlueXUserEventInformation *event_info;
    const G4Event *event = G4RunManager::GetRunManager()->GetCurrentEvent();
    event_info = (GlueXUserEventInformation*)event->GetUserInformation();
-   for (int s=0; s < pchange->GetNumberOfSecondaries(); ++s) {
+   for (int is=0; is < pchange->GetNumberOfSecondaries(); ++is) {
       GlueXUserTrackInformation *trackinfo = new GlueXUserTrackInformation();
       if (event_info) {
          trackinfo->SetGlueXTrackID(event_info->AssignNextGlueXTrackID());
       }
-      pchange->GetSecondary(s)->SetPosition(x0);
-      pchange->GetSecondary(s)->SetGlobalTime(t0);
-      pchange->GetSecondary(s)->SetUserInformation(trackinfo);
-      pchange->GetSecondary(s)->SetTrackStatus(fStopAndKill);
-      secondaries.push_back(pchange->GetSecondary(s));
+      pchange->GetSecondary(is)->SetPosition(x0);
+      pchange->GetSecondary(is)->SetGlobalTime(t0);
+      pchange->GetSecondary(is)->SetUserInformation(trackinfo);
+      pchange->GetSecondary(is)->SetTrackStatus(fStopAndKill);
+      secondaries.push_back(pchange->GetSecondary(is));
    }
 
    // append secondary vertex to MC record
