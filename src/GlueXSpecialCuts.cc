@@ -13,11 +13,12 @@
 #include "G4VParticleChange.hh"
 #include "G4LossTableManager.hh"
 
-G4UserLimits *GlueXSpecialCuts::fUserLimits = 0;
 G4Mutex GlueXSpecialCuts::fMutex = G4MUTEX_INITIALIZER;
 
 GlueXSpecialCuts::GlueXSpecialCuts(const G4String& aName)
-  : G4VProcess(aName, fUserDefined)
+  : G4VProcess(aName, fUserDefined),
+    theLossTableManager(G4LossTableManager::Instance()),
+    fUserLimits(0)
 {
    // set Process Sub Type
    SetProcessSubType(static_cast<int>(USER_SPECIAL_CUTS));
@@ -28,11 +29,19 @@ GlueXSpecialCuts::GlueXSpecialCuts(const G4String& aName)
 }
 
 GlueXSpecialCuts::~GlueXSpecialCuts()
-{}
+{
+   if (fUserLimits)
+      delete fUserLimits;
+}
 
 GlueXSpecialCuts::GlueXSpecialCuts(GlueXSpecialCuts& right)
-  : G4VProcess(right)
-{}
+  : G4VProcess(right),
+    theLossTableManager(G4LossTableManager::Instance()),
+    fUserLimits(0)
+{
+   if (right.fUserLimits)
+      fUserLimits = new G4UserLimits(*right.fUserLimits);
+}
 
 G4double GlueXSpecialCuts::
 PostStepGetPhysicalInteractionLength( const G4Track& aTrack,

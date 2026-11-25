@@ -73,7 +73,7 @@ class GlueXSpecialCuts : public G4VProcess
    GlueXSpecialCuts& operator=(const GlueXSpecialCuts& right);
 
    G4LossTableManager* theLossTableManager;
-   static G4UserLimits *fUserLimits;
+   G4UserLimits *fUserLimits;   // owned by this process: one per particle type
    static G4Mutex fMutex;
 };
 
