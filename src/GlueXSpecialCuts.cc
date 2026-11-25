@@ -17,6 +17,7 @@ G4Mutex GlueXSpecialCuts::fMutex = G4MUTEX_INITIALIZER;
 
 GlueXSpecialCuts::GlueXSpecialCuts(const G4String& aName)
   : G4VProcess(aName, fUserDefined),
+    theLossTableManager(G4LossTableManager::Instance()),
     fUserLimits(0)
 {
    // set Process Sub Type
@@ -35,6 +36,7 @@ GlueXSpecialCuts::~GlueXSpecialCuts()
 
 GlueXSpecialCuts::GlueXSpecialCuts(GlueXSpecialCuts& right)
   : G4VProcess(right),
+    theLossTableManager(G4LossTableManager::Instance()),
     fUserLimits(0)
 {
    if (right.fUserLimits)
