@@ -63,7 +63,8 @@ int g4random_seeds(CLHEP::HepRandomEngine *eng=0) {
 
 GlueXPhotonBeamGenerator::GlueXPhotonBeamGenerator(CobremsGeneration *gen)
  : fCobrems(gen),
-   fTagger(0)
+   fTagger(0),
+   fRadiatorDepth(1)
 {
    fCobrems->setTargetCrystal(RADIATOR_MATERIAL);
    GlueXUserOptions *user_opts = GlueXUserOptions::GetInstance();
@@ -266,6 +267,7 @@ void GlueXPhotonBeamGenerator::GeneratePrimaryVertex(G4Event* anEvent)
    double Ebeam(endpoint_GeV);
    for (int igamma=0; igamma < ngammas; ++igamma) {
       fCobrems->setTargetThickness(raddz_m * uz[igamma]);
+      fRadiatorDepth = uz[igamma];
       GenerateBeamPhoton(anEvent, t0);
       int nvertex = anEvent->GetNumberOfPrimaryVertex();
       G4PrimaryVertex *vertex = anEvent->GetPrimaryVertex(nvertex - 1);
@@ -338,6 +340,7 @@ void GlueXPhotonBeamGenerator::GeneratePrimaryVertex(G4Event* anEvent)
    }
    fCobrems->setBeamEnergy(endpoint_GeV);
    fCobrems->setTargetThickness(raddz_m);
+   fRadiatorDepth = 1;
 #else
    GenerateBeamPhoton(anEvent, 0);
 #endif //MULTIPLE_BEAM_GAMMAS_PER_ELECTRON
@@ -552,7 +555,10 @@ void GlueXPhotonBeamGenerator::GenerateBeamPhoton(G4Event* anEvent, double t0)
          theta2 = fIncoherentPDFtheta02 * (1 / (y + 1e-99) - 1);
          double dNidxdy = fCobrems->Rate_dNidxdt2(x, theta2) *
                           fIncoherentPDFtheta02 / (y*y + 1e-99);
-         double Pfactor = dNidxdy / dNidxdyPDF;
+         // The rate is proportional to the target thickness, which is set
+         // to the depth of the vertex in GeneratePrimaryVertex. Take that
+         // factor out, or a vertex at very small depth is never accepted.
+         double Pfactor = dNidxdy / dNidxdyPDF / fRadiatorDepth;
          if (Pfactor > fIncoherentPDFlogx.Pmax)
             fIncoherentPDFlogx.Pmax = Pfactor;
          if (Pfactor > fIncoherentPDFy.Pcut) {

@@ -53,6 +53,7 @@ class GlueXPhotonBeamGenerator: public G4VPrimaryGenerator
    ImportanceSampler fIncoherentPDFy;
    double fIncoherentPDFtheta02;
    double fIncoherentPDFmeanx;
+   double fRadiatorDepth; // depth of vertex / radiator thickness
 
    void prepareImportanceSamplingPDFs();
 
